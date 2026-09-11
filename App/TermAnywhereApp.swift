@@ -17,7 +17,9 @@ import TermCore
 
 @MainActor final class AppStore: ObservableObject {
     @Published var hosts: [TermCore.Host] = []
+    #if os(iOS)
     @Published var sessions: [UUID: TerminalSession] = [:]
+    #endif
     @Published var keyNames: [String] = []
     @Published var awsNames: [String] = []
     @Published var error: String?
@@ -40,7 +42,9 @@ import TermCore
     private func apply(_ state: SyncedConfiguration) {
         hosts = state.sortedHosts
         preferences = state.preferences?.value ?? TerminalPreferences()
+        #if os(iOS)
         for session in sessions.values { session.applyPreferences(preferences) }
+        #endif
     }
     func savePreferences(_ value: TerminalPreferences) {
         do { try configuration.save(preferences: value) } catch { self.error = error.localizedDescription }
@@ -65,6 +69,7 @@ import TermCore
         let imported = try JSONDecoder().decode([TermCore.Host].self, from: data)
         try configuration.save(hosts: imported)
     }
+    #if os(iOS)
     func session(for host: TermCore.Host) -> TerminalSession {
         if let existing = sessions[host.id] {
             // A cloud edit must not interrupt a running terminal.
@@ -75,4 +80,5 @@ import TermCore
         return session
     }
     func closeSession(_ id: UUID) { sessions[id]?.disconnect(); sessions.removeValue(forKey: id) }
+    #endif
 }

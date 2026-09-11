@@ -5,7 +5,7 @@ Status: first development build. See README.md for completed checks and remainin
 ## Structure
 
 - `App`: SwiftUI host list and forms, UIKit/SwiftTerm terminal, accessory keys, and connection state shown to the user.
-- `MacApp`: native Mac host editor, SSH/AWS import previews, and AppKit/SwiftTerm terminal. The Mac target shares the app store, connection lifetime, credentials form, settings, and configuration sync with iOS.
+- `MacApp`: native Mac configuration companion with host editors, SSH/AWS import previews, and separate credential pages. The Mac target shares the configuration store, credentials form, settings, and sync with iOS. Terminal sessions are compiled only for iOS.
 - `Sources/TermCore`: saved connection models, Keychain storage, SSH session lifetime, AWS signing and SSM transport, and tmux binding detection.
 - `Sources/CSSH`: a small bridge to libssh2. SSH operations run on a serial worker queue.
 - `Scripts`: reproducible native dependency builds and selected-host export. The app needs no Mac process at runtime.
@@ -35,7 +35,7 @@ Re-query on every connection and reconnection, and on manual Refresh. Do not par
 
 ## Recovery
 
-Initial connection can create or attach to a named session. Recovery must attach to the existing session; it must not silently create a replacement. Keep the last terminal screen while disconnected. Discard unsent keystrokes on connection loss. Retry transient failures with bounded delays while active. Stop for trust or credential decisions and explicit disconnects.
+Initial connection can create or attach to a named session. Recovery must attach to the existing session; it must not silently create a replacement. Keep the last terminal screen after a network interruption. Explicit Disconnect closes the local terminal view, dismisses its input and tools, and returns to Hosts. Create a fresh local session only after a new host selection. Discard unsent keystrokes on connection loss. Retry transient failures with bounded delays while active. Stop for trust or credential decisions and explicit disconnects.
 
 App state is independent of transient SwiftUI view creation. On return to the foreground, check the connection and reconnect if needed. Remote tmux retains remote programs; the app retains only local connection references. Closing the app's session does not kill the remote tmux session.
 
@@ -65,7 +65,7 @@ The import sheet lists explicit aliases in the selected SSH config. Users can ty
 
 The SSH key picker opens `.ssh` and shows hidden files. An empty destination name uses the key's filename. The AWS import sheet reads static profiles, displays only their names, and saves only selected entries to the Mac Keychain. It accepts a session token but has no credential-refresh service. Imported credential values do not enter configuration records. New imports use iCloud Keychain unless the user turns off sync before import. Replacements preserve the existing storage choice, including iCloud Keychain when enabled.
 
-Use a single native Mac window with a sidebar, host form, and terminal view. Preserve the shared SSH/SSM and tmux recovery code. Use AppKit input, selection, and copy/paste. Show a confirmation sheet for pastes with line breaks or control characters. Keep remote clipboard requests disabled through the terminal delegate defaults.
+Use one native Mac window. The sidebar contains SSH Keys, AWS Profiles, and Hosts. Selecting a host opens its editor; selecting a credential type opens its management page. Show sync status below the sidebar. Keep imports and Add host in the toolbar. Label shared terminal settings Mobile Terminal and host tmux settings tmux on iPhone and iPad. Save updates configuration without opening a connection. The Mac app has no terminal screen, connection controls, or SwiftTerm dependency. Shared transport code remains available to the command-line validation tool.
 
 This personal development build runs without App Sandbox so system OpenSSH can resolve the user's existing local configuration. It is signed with hardened runtime and the iCloud entitlement. This is not a Mac App Store or notarized distribution build.
 

@@ -2,7 +2,11 @@ import SwiftUI
 import UniformTypeIdentifiers
 import TermCore
 
+enum CredentialPage { case all, keys, aws }
+
 struct CredentialsView: View {
+    var page: CredentialPage = .all
+    var showsDone = true
     @EnvironmentObject private var store: AppStore
     @Environment(\.dismiss) private var dismiss
     @State private var importingKey = false
@@ -21,6 +25,7 @@ struct CredentialsView: View {
     var body: some View {
         NavigationStack {
             Form {
+                if page != .aws {
                 Section {
                     ForEach(store.keyNames, id: \.self) { name in credentialRow(name, prefix: "key:", icon: "key.fill") }
                     Toggle("Sync new keys with iCloud Keychain", isOn: $syncNewKeys)
@@ -36,6 +41,8 @@ struct CredentialsView: View {
                     Button("Import private key", systemImage: "square.and.arrow.down") { importingKey = true }.disabled(keyName.trimmingCharacters(in: .whitespaces).isEmpty)
                     #endif
                 } header: { Text("SSH keys") } footer: { Text("Keys use iCloud Keychain by default. Turn off the switch to keep a new key on this device. Replacing a synced key updates its shared copy. Enter encrypted-key passphrases when connecting.") }
+                }
+                if page != .keys {
                 Section {
                     #if os(macOS)
                     Button("Import AWS profiles from this Mac…") { importingAWS = true }
@@ -54,6 +61,7 @@ struct CredentialsView: View {
                         } catch { message = error.localizedDescription }
                     }.disabled(profile.isEmpty || accessKey.isEmpty || secretKey.isEmpty)
                 } header: { Text("AWS credentials") } footer: { Text("Profiles use iCloud Keychain by default. The switch applies to new profiles. Replacing a credential that uses iCloud Keychain updates its shared copy. Temporary credentials still expire.") }
+                }
                 Section("iCloud Keychain") {
                     Text("Enable Passwords & Keychain in iCloud settings on each device, using the same Apple Account. Apple controls delivery; the storage label does not confirm arrival on another device.")
                     Button("Refresh credentials", systemImage: "arrow.clockwise") { refresh() }
@@ -68,7 +76,7 @@ struct CredentialsView: View {
             .formStyle(.grouped)
             .sheet(isPresented: $importingAWS) { MacAWSImportView().environmentObject(store) }
             #endif
-            .navigationTitle("Keys and AWS")
+            .navigationTitle(page == .keys ? "SSH Keys" : page == .aws ? "AWS Profiles" : "Keys and AWS")
             .onAppear { refresh() }
             .alert(item: $pendingChange) { change in
                 let confirm: Alert.Button = change.operation == .enable
@@ -76,7 +84,7 @@ struct CredentialsView: View {
                     : .destructive(Text(change.action)) { changeStorage(change) }
                 return Alert(title: Text(change.title), message: Text(change.explanation), primaryButton: confirm, secondaryButton: .cancel())
             }
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+            .toolbar { if showsDone { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } } }
             .fileImporter(isPresented: $importingKey, allowedContentTypes: [.data, .plainText]) { result in
                 do { importKey(try result.get()) } catch { message = error.localizedDescription }
             }

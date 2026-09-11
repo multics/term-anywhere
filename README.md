@@ -1,6 +1,6 @@
 # Term Anywhere
 
-A personal SSH terminal for iPhone, iPad, and Mac. Minimum OS: iOS/iPadOS 26 and macOS 26. The current Mac build supports Apple Silicon. This is a development build.
+A personal SSH terminal for iPhone and iPad, with a Mac configuration companion. Minimum OS: iOS/iPadOS 26 and macOS 26. The current Mac build supports Apple Silicon. This is a development build.
 
 The app supports direct SSH and SSH through AWS Systems Manager. It uses private keys, device Keychain storage, and server fingerprint checks. It can attach to a named tmux session and read that server's active prefix and bindings on each connection. The keyboard adds Esc, one-shot Ctrl, Tab, arrows, symbols, and detected tmux actions.
 
@@ -35,9 +35,10 @@ Enable **iCloud → Key-value storage** for the app's identifier and provisionin
 Open `~/Applications/Term Anywhere.app`.
 
 1. Select **Import → Read SSH config**. Review the aliases and select **Preview hosts**. Select the hosts to import. You can type additional aliases from Include files. OpenSSH resolves their effective settings.
-2. Open **Keys and AWS profiles**. Select **Import private key**; the picker opens `.ssh` and shows hidden files. Use the key name from the host settings, or leave the name empty to use the filename.
-3. Select **Import AWS profiles from this Mac** and choose the static profiles to save. New profiles use iCloud Keychain unless you turn off their import switch. You can also enter a profile manually.
-4. Select a host to edit it. **Save** writes the settings locally and to the shared iCloud store. **Open terminal** saves the host and starts a connection.
+2. Select **SSH Keys** in the sidebar. Select **Import private key**; the picker opens `.ssh` and shows hidden files. Use the key name from the host settings, or leave the name empty to use the filename.
+3. Select **AWS Profiles** in the sidebar, then **Import AWS profiles from this Mac** and choose the static profiles to save. New profiles use iCloud Keychain unless you turn off their import switch. You can also enter a profile manually.
+4. Select a host to edit it. **Save** writes the settings locally and to the shared iCloud store. Use **SSH Keys** and **AWS Profiles** in the sidebar to manage credentials. The Mac app has no embedded terminal.
+5. Use **Settings → Mobile Terminal** to configure the iPhone and iPad terminal. The sidebar shows the configuration sync status.
 
 The Mac uses the same iCloud settings store as iPhone and iPad. SSH keys and AWS profiles use the shared iCloud Keychain group by default. Trust decisions still need separate setup on each device. The Mac import does not modify `.ssh/config` or `.aws/credentials`. Use trusted SSH config files: OpenSSH can evaluate local `Match exec` directives while resolving them.
 
@@ -92,7 +93,7 @@ Validation date: 2026-09-10 (America/Los_Angeles). Toolchain: Xcode 26.6, Swift 
 | Check | Result |
 | --- | --- |
 | macOS core tests | 19 passed: includes configuration merges and native SSH/AWS import checks |
-| Native Mac app | Signed default-sync build launched; import switches and storage labels inspected. Three SSH keys and four AWS profiles showed iCloud Keychain with no migration issues. Earlier SSH/AWS import previews passed |
+| Native Mac app | Signed configuration companion installed and launched. Host editor, separate SSH Keys and AWS Profiles pages, sidebar sync status, and Mobile Terminal settings inspected. Three SSH keys and four AWS profiles retained their iCloud Keychain labels. Mac Keychain retest: 10 passed |
 | Hosted iOS tests | Ten Keychain tests passed on each physical device. Four input/Keychain tests also passed in Simulator. Earlier live run passed direct SSH and both AWS profile paths |
 | Hosted Mac Keychain tests | Ten passed: includes default sync, legacy migration, persistent local choices, updates, collisions, migration failure, and local trust |
 | Actual iCloud transfer | Synthetic SSH key and AWS profile, including session token, transferred from Mac to both iPhone and iPad. Exact key bytes and decoded AWS fields matched. Synthetic items removed after testing |

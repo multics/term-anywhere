@@ -11,7 +11,6 @@
 		0C0DBF301BD839D14621074B /* ConfigurationSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = F95E071FF0A5BB5E041CC047 /* ConfigurationSync.swift */; };
 		0FC608BFFE16CAFD3C0B8029 /* ThirdPartyNotices.txt in Resources */ = {isa = PBXBuildFile; fileRef = E9EF21EA2EB966A7E7F6FAA9 /* ThirdPartyNotices.txt */; };
 		10B5CA1735B2C21046416E4B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 72F6D4379F251CF492710EAB /* Assets.xcassets */; };
-		192075C9EDE3CFABFB896F0F /* TerminalSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = E260444A780A9616953992ED /* TerminalSession.swift */; };
 		1B3D08C7DB4E0F2705F86D15 /* ConfigurationSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = F95E071FF0A5BB5E041CC047 /* ConfigurationSync.swift */; };
 		1E37C6292B12DD241460628F /* SSMMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F1ACD30831169FB1298DC6C /* SSMMessage.swift */; };
 		276CDD00736720A26502F6B8 /* SSHConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A542E0E4DB3FE3C3C16E33 /* SSHConnection.swift */; };
@@ -46,7 +45,6 @@
 		78296273498FAAB6372DC4E6 /* TerminalSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = E260444A780A9616953992ED /* TerminalSession.swift */; };
 		7D760DB567C2E77D316D69B6 /* CSSH.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 70C483CC1D0BE3BACC12BE9F /* CSSH.h */; };
 		8838924BA73129BD7D75DEBF /* CSSH.c in Sources */ = {isa = PBXBuildFile; fileRef = 075A5C113BAAA48AEFB4561D /* CSSH.c */; };
-		8F353DA5D620CD07B8574169 /* MacTerminalScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAA8D79B671296608465025D /* MacTerminalScreen.swift */; };
 		90A70A8990DFB64D0734F1CD /* AWSSigning.swift in Sources */ = {isa = PBXBuildFile; fileRef = E74AD3422CA2F6BA1880F5A6 /* AWSSigning.swift */; };
 		981F3E74DED42D81F8B74000 /* TmuxBindings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B553F1A06FF7F06B01A8EAE /* TmuxBindings.swift */; };
 		99279BDFC1F390FB0B5DCB8C /* module.modulemap in CopyFiles */ = {isa = PBXBuildFile; fileRef = D2D782176811BCC4187E4D84 /* module.modulemap */; };
@@ -55,7 +53,6 @@
 		A0BE3EB1FDE5447CAFB33C37 /* MacConfigurationImport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C14B232BF03474FBD75FDFA2 /* MacConfigurationImport.swift */; };
 		A1A8C6E53E9DE182FF702569 /* SafeTerminalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB4017206F090A236B2BF637 /* SafeTerminalView.swift */; };
 		A6B1CFEDF627D6B5EB576452 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = F5C5E2B67A4EEDAD5533E1B1 /* SwiftTerm */; };
-		A839562E06DE41465B8109AE /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = E66C083D2CC6C59633FF75C0 /* SwiftTerm */; };
 		ADB4A4D3DC0839BE36B23360 /* libssh2.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 9712191D15665A55F4FF253E /* libssh2.h */; };
 		AE6C48712ED8A1FD741743CB /* libCSSH.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 40C9F395AA8CF5B9391C699A /* libCSSH.a */; };
 		B0096274F71E0984E8821AE9 /* TermCoreMac.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0C92E02B110F68623ACBB779 /* TermCoreMac.framework */; };
@@ -257,7 +254,6 @@
 		C47D3923DA57DDC93649ECA7 /* libCSSHMac.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libCSSHMac.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		D2D782176811BCC4187E4D84 /* module.modulemap */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.module-map"; path = module.modulemap; sourceTree = "<group>"; };
 		D3FF3D783F627B1D46EAE767 /* MacImportViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacImportViews.swift; sourceTree = "<group>"; };
-		DAA8D79B671296608465025D /* MacTerminalScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacTerminalScreen.swift; sourceTree = "<group>"; };
 		DFEE8DFA113E47D9BF83387A /* MacHostListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacHostListView.swift; sourceTree = "<group>"; };
 		E260444A780A9616953992ED /* TerminalSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalSession.swift; sourceTree = "<group>"; };
 		E29EA05109ED0B03B1A30C29 /* TermAnywhere.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TermAnywhere.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -290,7 +286,6 @@
 				D7C796197B0FA265EBA48D2A /* TermCoreMac.framework in Frameworks */,
 				FE29F36C9B08B01AF99FB628 /* libCSSHMac.a in Frameworks */,
 				3C9DC946747A5A918E7E7862 /* OpenSSL.xcframework in Frameworks */,
-				A839562E06DE41465B8109AE /* SwiftTerm in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -449,7 +444,6 @@
 				53C4085E50C888D2712B656B /* Info.plist */,
 				DFEE8DFA113E47D9BF83387A /* MacHostListView.swift */,
 				D3FF3D783F627B1D46EAE767 /* MacImportViews.swift */,
-				DAA8D79B671296608465025D /* MacTerminalScreen.swift */,
 				40C1CF8ECED60499037D9EFD /* TermAnywhereMac.entitlements */,
 			);
 			path = MacApp;
@@ -475,7 +469,6 @@
 			);
 			name = TermAnywhereMac;
 			packageProductDependencies = (
-				E66C083D2CC6C59633FF75C0 /* SwiftTerm */,
 			);
 			productName = TermAnywhereMac;
 			productReference = F5781F10B371317551A62AAB /* TermAnywhereMac.app */;
@@ -782,10 +775,8 @@
 				9BBD26CFFBC0A5A86C3C94A0 /* CredentialsView.swift in Sources */,
 				61DC3F56745C7571D6A5B88E /* MacHostListView.swift in Sources */,
 				D1846C4E004D9F81E34F1B86 /* MacImportViews.swift in Sources */,
-				8F353DA5D620CD07B8574169 /* MacTerminalScreen.swift in Sources */,
 				EED623208A5538998DA810FF /* SettingsView.swift in Sources */,
 				3F82813CE7152753CF45EA7C /* TermAnywhereApp.swift in Sources */,
-				192075C9EDE3CFABFB896F0F /* TerminalSession.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1496,11 +1487,6 @@
 
 /* Begin XCSwiftPackageProductDependency section */
 		AF02E64AE255234BFEA9FC73 /* SwiftTerm */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 6C0DE53AB6FDB0A91323C462 /* XCRemoteSwiftPackageReference "SwiftTerm" */;
-			productName = SwiftTerm;
-		};
-		E66C083D2CC6C59633FF75C0 /* SwiftTerm */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 6C0DE53AB6FDB0A91323C462 /* XCRemoteSwiftPackageReference "SwiftTerm" */;
 			productName = SwiftTerm;

@@ -5,6 +5,13 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var sync: ConfigurationSync
     @State private var confirmingAccount = false
+    private var terminalSectionTitle: String {
+        #if os(macOS)
+        "Mobile Terminal"
+        #else
+        "Terminal"
+        #endif
+    }
     var body: some View {
         NavigationStack {
             Form {
@@ -18,7 +25,7 @@ struct SettingsView: View {
                         Button("Check iCloud") { sync.start() }
                     }
                 }
-                Section("Terminal") {
+                Section(terminalSectionTitle) {
                     Toggle("Option as Meta", isOn: Binding(get: { store.preferences.optionAsMeta }, set: { enabled in
                         var value = store.preferences; value.optionAsMeta = enabled; store.savePreferences(value)
                     }))
