@@ -10,6 +10,7 @@ Provide a native Mac configuration app to manage hosts, SSH keys, and static AWS
 
 ## Required behavior
 
+- Support Light, Dark, and System appearance for the app UI and terminal. Default to System. Save and sync this preference through iCloud.
 - Follow Apple Human Interface Guidelines. Use native controls, adaptive iPhone/iPad layouts, readable terminal text, and accessible labels.
 - Support SSH keys, including encrypted private keys. Store credentials in the device Keychain. Verify server host keys before authentication.
 - Support the current AIxC and NR SSM connection pattern: AWS authorization, an AWS-StartSSHSession tunnel, then SSH authentication.

@@ -32,10 +32,9 @@ struct HostListView: View {
                             if store.sessions[host.id]?.isLive == true { Image(systemName: "circle.fill").font(.system(size: 7)).foregroundStyle(.green).accessibilityLabel("Connected") }
                         }.padding(.vertical, 5)
                     }
-                    .contextMenu {
-                        Button("Edit host", systemImage: "pencil") { editing = host }
-                        Button("Disconnect", systemImage: "xmark.circle") { store.closeSession(host.id) }
-                    }
+                    .modifier(HostRowActions(host: host, edit: { editing = host }, remove: {
+                        do { try store.removeHost(host.id) } catch { store.error = error.localizedDescription }
+                    }, disconnect: store.sessions[host.id]?.canDisconnect == true ? { store.closeSession(host.id) } : nil))
                 }
             }
             .navigationTitle("Hosts")

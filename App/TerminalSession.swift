@@ -23,7 +23,8 @@ import TermCore
     private var connectTask: Task<Void, Never>?
     var hasStarted = false
     private var hasAttached = false
-    private var wantsConnection = false
+    @Published private var wantsConnection = false
+    var canDisconnect: Bool { isLive || isConnecting || wantsConnection }
     private var retryCount = 0
     private var generation = UUID()
 

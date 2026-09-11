@@ -15,9 +15,10 @@ public struct TerminalPreferences: Codable, Equatable, Sendable {
 public struct ConfigurationRecord<Value: Codable & Equatable & Sendable>: Codable, Equatable, Sendable {
     public var value: Value
     public var modified: Date
+    public var deleted: Bool?
     public var revision: String
-    public init(_ value: Value, modified: Date = Date(), revision: String = UUID().uuidString) {
-        self.value = value; self.modified = modified; self.revision = revision
+    public init(_ value: Value, modified: Date = Date(), revision: String = UUID().uuidString, deleted: Bool = false) {
+        self.value = value; self.modified = modified; self.revision = revision; self.deleted = deleted ? true : nil
     }
     public func isNewer(than other: Self) -> Bool {
         modified == other.modified ? revision > other.revision : modified > other.modified
@@ -30,13 +31,27 @@ public struct SyncedConfiguration: Codable, Equatable, Sendable {
     public var hosts: [String: ConfigurationRecord<Host>] = [:]
     public var preferences: ConfigurationRecord<TerminalPreferences>?
     public init() {}
-    public var sortedHosts: [Host] { hosts.values.map(\.value).sorted { $0.name == $1.name ? $0.id.uuidString < $1.id.uuidString : $0.name < $1.name } }
+    public var sortedHosts: [Host] {
+        let visible: [Host] = hosts.values.compactMap { record in record.deleted == true ? nil : record.value }
+        let alphabetical = visible.sorted { a, b in
+            if a.name == b.name { return a.id.uuidString < b.id.uuidString }
+            return a.name < b.name
+        }
+        return alphabetical
+    }
     public mutating func save(_ host: Host, modified: Date = Date()) throws {
         try host.validate()
         let key = Self.hostPrefix + host.id.uuidString
+        guard hosts[key]?.deleted != true else { throw ConnectionError.message("This host was removed on another device. Add it again as a new host to restore it.") }
         guard hosts[key]?.value != host else { return }
         let next = max(modified, (hosts[key]?.modified ?? .distantPast).addingTimeInterval(0.001))
         hosts[key] = ConfigurationRecord(host, modified: next)
+    }
+    public mutating func removeHost(id: UUID, modified: Date = Date()) {
+        let key = Self.hostPrefix + id.uuidString
+        guard let existing = hosts[key], existing.deleted != true else { return }
+        let next = max(modified, existing.modified.addingTimeInterval(0.001))
+        hosts[key] = ConfigurationRecord(existing.value, modified: next, deleted: true)
     }
     public mutating func save(_ value: TerminalPreferences, modified: Date = Date()) throws {
         try value.validate()
@@ -49,6 +64,11 @@ public struct SyncedConfiguration: Codable, Equatable, Sendable {
             let record = try JSONDecoder().decode(ConfigurationRecord<Host>.self, from: data)
             try record.value.validate()
             guard key == Self.hostPrefix + record.value.id.uuidString else { throw ConnectionError.message("An iCloud host has an invalid identifier.") }
+            // Removal wins over edits to the same ID, including edits made while offline.
+            if let current = hosts[key] {
+                if current.deleted == true && record.deleted != true { return }
+                if record.deleted == true && current.deleted != true { hosts[key] = record; return }
+            }
             if hosts[key].map({ record.isNewer(than: $0) }) ?? true { hosts[key] = record }
         } else if key == Self.preferencesKey {
             let record = try JSONDecoder().decode(ConfigurationRecord<TerminalPreferences>.self, from: data)

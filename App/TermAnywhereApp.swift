@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 import TermCore
 
 @main struct TermAnywhereApp: App {
@@ -23,6 +24,7 @@ import TermCore
     #if os(iOS)
     @Published var sessions: [UUID: TerminalSession] = [:]
     @Published private(set) var selectedHostID: UUID?
+    private var sessionObservers: [UUID: AnyCancellable] = [:]
     #endif
     @Published var keyNames: [String] = []
     @Published var awsNames: [String] = []
@@ -47,6 +49,7 @@ import TermCore
         hosts = state.sortedHosts
         preferences = state.preferences?.value ?? TerminalPreferences()
         #if os(iOS)
+        for id in Array(sessions.keys) where state.hosts[SyncedConfiguration.hostPrefix + id.uuidString]?.deleted == true { closeSession(id) }
         for session in sessions.values { session.applyPreferences(preferences) }
         #endif
     }
@@ -66,6 +69,7 @@ import TermCore
     func save(_ host: TermCore.Host) throws {
         try configuration.save(hosts: [host])
     }
+    func removeHost(_ id: UUID) throws { try configuration.removeHost(id) }
     func importHosts(_ url: URL) throws {
         let scoped = url.startAccessingSecurityScopedResource(); defer { if scoped { url.stopAccessingSecurityScopedResource() } }
         let data = try Data(contentsOf: url)
@@ -89,12 +93,14 @@ import TermCore
             existing.disconnect()
         }
         let session = TerminalSession(host: host, store: self); sessions[host.id] = session
+        sessionObservers[host.id] = session.objectWillChange.sink { [weak self] in self?.objectWillChange.send() }
         return session
     }
     func closeSession(_ id: UUID) {
         if selectedHostID == id { selectedHostID = nil }
         sessions[id]?.disconnect()
         sessions.removeValue(forKey: id)
+        sessionObservers.removeValue(forKey: id)
     }
     #endif
 }

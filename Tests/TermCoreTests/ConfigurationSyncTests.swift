@@ -48,6 +48,37 @@ final class ConfigurationSyncTests: XCTestCase {
         let payload = String(decoding: data, as: UTF8.self)
         for secretField in ["privateKey", "secretAccessKey", "sessionToken", "passphrase", "trustedFingerprint"] { XCTAssertFalse(payload.contains(secretField)) }
     }
+    func testRemovalSurvivesOfflineEditsAndEitherMergeOrder() throws {
+        let h = host("remove")
+        var removed = SyncedConfiguration(); try removed.save(h, modified: Date(timeIntervalSince1970: 10))
+        var offline = removed
+        removed.removeHost(id: h.id, modified: Date(timeIntervalSince1970: 20))
+        var staleEdit = h; staleEdit.name = "offline edit"
+        try offline.save(staleEdit, modified: Date(timeIntervalSince1970: 100))
+        let a = try merged(removed, offline), b = try merged(offline, removed)
+        XCTAssertEqual(a, b); XCTAssertTrue(a.sortedHosts.isEmpty)
+        XCTAssertThrowsError(try removed.save(h))
+    }
+    func testRemovalPersistsWithoutRemovingOtherHostsOrPreferences() throws {
+        let deleted = host("remove"), kept = host("keep")
+        var state = SyncedConfiguration(); try state.save(deleted); try state.save(kept)
+        try state.save(TerminalPreferences())
+        state.removeHost(id: deleted.id)
+        let restored = try JSONDecoder().decode(SyncedConfiguration.self, from: JSONEncoder().encode(state))
+        XCTAssertEqual(restored.sortedHosts, [kept]); XCTAssertNotNil(restored.preferences)
+        XCTAssertEqual(try merged(SyncedConfiguration(), restored).sortedHosts, [kept])
+        let before = state; state.removeHost(id: deleted.id); state.removeHost(id: UUID())
+        XCTAssertEqual(state, before)
+    }
+    func testPreRemovalSchemaRemainsReadable() throws {
+        let h = host("existing")
+        let record = ConfigurationRecord(h)
+        let data = try JSONEncoder().encode(record)
+        XCTAssertFalse(String(decoding: data, as: UTF8.self).contains("deleted"))
+        var state = SyncedConfiguration()
+        try state.merge(key: SyncedConfiguration.hostPrefix + h.id.uuidString, data: data)
+        XCTAssertEqual(state.sortedHosts, [h])
+    }
     func testInvalidCloudDataDoesNotReplaceLocalSettings() throws {
         var state = SyncedConfiguration(); let h = host("keep")
         try state.save(h); let before = state

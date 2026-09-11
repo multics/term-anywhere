@@ -54,6 +54,12 @@ import TermCore
         try persist(next); state = next; onChange?(next)
         start()
     }
+    func removeHost(_ id: UUID) throws {
+        guard loaded else { throw ConnectionError.message(status) }
+        var next = state; next.removeHost(id: id)
+        try persist(next); state = next; onChange?(next)
+        start()
+    }
     func save(preferences: TerminalPreferences) throws {
         guard loaded else { throw ConnectionError.message(status) }
         var next = state; try next.save(preferences)

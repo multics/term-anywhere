@@ -53,6 +53,7 @@ targets:
       - path: MacApp
       - path: App/TermAnywhereApp.swift
       - path: App/ConfigurationSync.swift
+      - path: App/HostRowActions.swift
       - path: App/CredentialsView.swift
       - path: App/SettingsView.swift
       - path: App/ThirdPartyNotices.txt
