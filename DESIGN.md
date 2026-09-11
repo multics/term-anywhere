@@ -134,7 +134,7 @@ The Mac editor can reset the mobile selection. An external Mac terminal opens a 
 
 ## Connected terminal layout
 
-After host selection, show the terminal detail at full width. The native sidebar control returns to the host list. Explicit disconnect shows Hosts again. Keep the host and session in one navigation bar, with one tools menu. Hide the separate status strip while connected. Show connection errors and recovery controls when needed. Keep Esc, Ctrl, Tab, arrows, and More above the software keyboard. The tools menu also exposes tmux shortcuts for hardware keyboard users. Do not cover terminal output with floating controls.
+After host selection, show the terminal detail at full width. The native sidebar control returns to the host list. Explicit disconnect shows Hosts again. Keep the host and session in one navigation bar, with a keyboard show/hide button and one tools menu. Hide the separate status strip while connected. Show connection errors and recovery controls when needed. Keep Esc, Ctrl, Tab, arrows, and More above the software keyboard. The tools menu also exposes tmux shortcuts for hardware keyboard users. Do not cover terminal output with floating controls.
 
 ## iPhone orientation
 
@@ -147,3 +147,7 @@ Apple can deliver key-value store notifications on a background queue. The Objec
 ## Appearance
 
 Settings offers System, Light, and Dark. System is the default for new and older configuration files. Store the choice in the existing synced preferences record. Apply it to the Mac main window and Settings, and to the mobile interface and terminal. System follows each device's current appearance. Resolve native terminal foreground, background, cursor, and keyboard colors when the preference or system appearance changes. Keep the terminal buffer and connection. External Mac terminals retain their own appearance settings.
+
+## Keyboard dismissal
+
+Keep a visible keyboard button beside the terminal tools menu. It hides the software keyboard while keeping the terminal and connection. When hidden, the button restores keyboard input. Follow UIKit keyboard visibility notifications so the label also updates after system dismissal. Keep Hide keyboard in More as a second route. Clear one-shot modifiers and stop arrow repeat when hiding the keyboard. The keyboard layout guide returns the freed space to terminal output.

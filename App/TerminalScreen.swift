@@ -39,6 +39,13 @@ struct TerminalScreen: View {
                 }.accessibilityElement(children: .combine)
             }
             ToolbarItem(placement: .topBarTrailing) {
+                Button(session.keyboardVisible ? "Hide keyboard" : "Show keyboard",
+                       systemImage: session.keyboardVisible ? "keyboard.chevron.compact.down" : "keyboard") {
+                    session.toggleKeyboard()
+                }
+                .accessibilityIdentifier("terminal.keyboard.toggle")
+            }
+            ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Section("Connection") {
                         Text(session.status)
@@ -46,7 +53,7 @@ struct TerminalScreen: View {
                         Button("Disconnect", systemImage: "xmark.circle") { onDisconnect() }
                     }
                     Section("Terminal") {
-                        Button("Show keyboard", systemImage: "keyboard") { _ = session.terminal.becomeFirstResponder() }
+                        Button(session.keyboardVisible ? "Hide keyboard" : "Show keyboard", systemImage: "keyboard") { session.toggleKeyboard() }
                         Button("Larger text", systemImage: "textformat.size.larger") { session.changeFontSize(by: 1) }
                         Button("Smaller text", systemImage: "textformat.size.smaller") { session.changeFontSize(by: -1) }
                         Toggle("Option as Meta", isOn: Binding(get: { session.optionAsMeta }, set: { session.setOptionAsMeta($0) }))
@@ -112,6 +119,8 @@ struct TerminalContainer: UIViewControllerRepresentable {
         makeAccessory()
         session?.updateTerminalColors()
         NotificationCenter.default.addObserver(self, selector: #selector(resetControl), name: .terminalViewControlModifierReset, object: terminal)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
     }
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
@@ -162,7 +171,11 @@ struct TerminalContainer: UIViewControllerRepresentable {
         dismiss(animated: false)
         (terminal as? SafeTerminalView)?.approvePaste = nil
     }
-    private func stopRepeat() { repeatTimer?.invalidate(); repeatTimer = nil }
+    @objc private func keyboardWillShow() {
+        if terminal.isFirstResponder { session?.keyboardVisible = true }
+    }
+    @objc private func keyboardWillHide() { session?.keyboardVisible = false }
+    func stopRepeat() { repeatTimer?.invalidate(); repeatTimer = nil }
     @objc private func resetControl() { controlButton?.tintColor = terminal.controlModifier ? .systemOrange : .label; controlButton?.accessibilityValue = terminal.controlModifier ? "On" : "Off" }
     func refreshMenu() {
         guard let session else { return }
@@ -176,7 +189,7 @@ struct TerminalContainer: UIViewControllerRepresentable {
         items.append(UIAction(title: "Refresh tmux shortcuts", attributes: session.isLive ? [] : .disabled) { [weak session] _ in Task { await session?.refreshBindings() } })
         let tmux = UIMenu(title: "tmux", options: .displayInline, children: items)
         let symbols = ["/", "~", "|", "-", "_", "$"].map { symbol in UIAction(title: symbol) { [weak self] _ in self?.terminal.insertText(symbol) } }
-        moreButton?.menu = UIMenu(children: [tmux, UIMenu(title: "Symbols", children: symbols), UIAction(title: "Alt / Meta", state: terminal.metaModifier ? .on : .off) { [weak self] _ in self?.terminal.metaModifier.toggle() }, UIAction(title: "Hide keyboard") { [weak self] _ in _ = self?.terminal.resignFirstResponder() }])
+        moreButton?.menu = UIMenu(children: [tmux, UIMenu(title: "Symbols", children: symbols), UIAction(title: "Alt / Meta", state: terminal.metaModifier ? .on : .off) { [weak self] _ in self?.terminal.metaModifier.toggle() }, UIAction(title: "Hide keyboard") { [weak session] _ in session?.hideKeyboard() }])
     }
     func sizeChanged(source: TerminalView, newCols: Int, newRows: Int) { session?.connection?.resize(columns: newCols, rows: newRows) }
     func send(source: TerminalView, data: ArraySlice<UInt8>) { session?.send(Data(data)) }

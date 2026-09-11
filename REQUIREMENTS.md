@@ -13,8 +13,9 @@ Provide a native Mac configuration app to manage hosts, SSH keys, and static AWS
 - Support Light, Dark, and System appearance for the app UI and terminal. Default to System. Save and sync this preference through iCloud.
 - Follow Apple Human Interface Guidelines. Use native controls, adaptive iPhone/iPad layouts, readable terminal text, and accessible labels.
 - Support SSH keys, including encrypted private keys. Store credentials in the device Keychain. Verify server host keys before authentication.
-- Add Azure managed SSH access with imported application credentials for the tunnel and SSH keys for server login. Keep the existing terminal and tmux workflow. GCP support is deferred at the user’s request because no host is available.
+- Azure managed access and GCP support are deferred at the user’s request. Existing direct SSH to Azure VMs remains supported.
 - Support the current AIxC and NR SSM connection pattern: AWS authorization, an AWS-StartSSHSession tunnel, then SSH authentication.
+- Provide a visible terminal toolbar control to hide and restore the keyboard on iPhone and iPad without closing the connection or clearing output.
 - Provide a system keyboard with Esc, Ctrl, Tab, arrows, and a More menu. Support hardware keyboards, Chinese composition, copy/paste, and terminal resizing.
 - Support an optional named tmux session per saved connection. Reconnect to the same session after a connection failure. Never replay buffered input into a new connection.
 - The running app must query each connected server for its effective tmux prefix and bindings after attachment and reconnection. Keep mappings separate per connection. Provide manual refresh. This is not a development-time import of tmux settings.

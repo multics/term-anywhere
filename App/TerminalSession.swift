@@ -18,6 +18,7 @@ import TermCore
     @Published var passphrase = ""
     @Published var showingPassphrase = false
     @Published var optionAsMeta = true
+    @Published var keyboardVisible = false
     @Published var selectingTmux = false
     @Published private(set) var availableTmuxSessions: [String] = []
     @Published private(set) var tmuxAvailable = false
@@ -103,6 +104,19 @@ import TermCore
             NSLog("Terminal orientation restore: %@", error.localizedDescription)
         }
     }
+    func showKeyboard() {
+        // iPad can hide its floating keyboard while keeping input focus.
+        if terminal.isFirstResponder { terminal.resignFirstResponder() }
+        terminal.becomeFirstResponder()
+    }
+    func hideKeyboard() {
+        terminal.resignFirstResponder()
+        keyboardVisible = false
+        resetModifiers()
+        coordinator?.stopRepeat()
+        coordinator?.refreshMenu()
+    }
+    func toggleKeyboard() { if keyboardVisible { hideKeyboard() } else { showKeyboard() } }
     func setOptionAsMeta(_ enabled: Bool) {
         guard var value = store?.preferences else { return }
         value.optionAsMeta = enabled; store?.savePreferences(value)
@@ -240,6 +254,7 @@ import TermCore
         error = nil; pendingFingerprint = nil; changedFingerprint = false; showingPassphrase = false
         bindingsStatus = "Connect to read this server’s shortcuts."
         if closeUI {
+            keyboardVisible = false
             restoreOrientation()
             terminal.resignFirstResponder()
             coordinator?.closeUI(); coordinator = nil

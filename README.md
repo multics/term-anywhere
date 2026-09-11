@@ -4,6 +4,8 @@ A personal SSH terminal for iPhone and iPad, with a Mac configuration companion.
 
 The app supports direct SSH and SSH through AWS Systems Manager. It uses private keys, device Keychain storage, and server fingerprint checks. It can attach to a named tmux session and read that server's active prefix and bindings on each connection. The keyboard adds Esc, one-shot Ctrl, Tab, arrows, symbols, and detected tmux actions.
 
+On iPhone and iPad, tap the keyboard button beside the terminal's tools menu to hide the keyboard and see more output. Tap it again to resume typing. The connection and terminal output stay available.
+
 Host settings and terminal preferences also sync through iCloud. SSH keys and AWS profiles use iCloud Keychain by default. An explicit device-only choice remains available.
 
 Read [REQUIREMENTS.md](REQUIREMENTS.md) for scope, [DESIGN.md](DESIGN.md) for implementation decisions, and [PROPOSAL.md](PROPOSAL.md) for the original investigation and references. See [APP_ICON.md](APP_ICON.md) for the logo design.
@@ -103,7 +105,8 @@ Validation date: 2026-09-10 (America/Los_Angeles). Toolchain: Xcode 26.6, Swift 
 | Simulator launch | App launched on iPhone 17 Pro and iPad Pro 11-inch; native host layouts inspected |
 | Device build | arm64 iOS development signing passed with the Yong Tian team; profile covers both test devices |
 | Appearance | Light, Dark, and System terminal checks pass on iPhone, iPad, and Simulator without losing output. The Mac picker was inspected; Dark and restored System transferred from Mac to iPad |
-| Physical installation | Current tmux-selection build installed and launched on iPhone 17 Pro Max and iPad mini 6. The updated iPad passed 20 active hosted tests. Both devices received the cleared mobile session values |
+| Keyboard dismissal | All 12 Simulator terminal tests pass. Hide and restore tests pass on both physical devices, with the session and output retained. The iPad render with the keyboard hidden was inspected |
+| Physical installation | Current keyboard-control build installed and launched on iPhone 17 Pro Max and iPad mini 6. Both devices received the cleared mobile session values |
 
 Run the core tests:
 

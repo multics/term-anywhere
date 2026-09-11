@@ -5,6 +5,34 @@ import TermCore
 @testable import TermAnywhere
 
 @MainActor final class TerminalInputTests: XCTestCase {
+    func testKeyboardCanHideAndReturnWithoutClosingTheSession() async throws {
+        let store = AppStore(); store.configuration.onChange = nil
+        let host = Host(name: "Keyboard fixture", address: "example.invalid", username: "fixture", keyID: "missing-fixture")
+        store.hosts = [host]; store.selectHost(host.id)
+        let session = try XCTUnwrap(store.sessions[host.id]); session.hasStarted = true
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let window = UIWindow(windowScene: scene)
+        let controller = UIHostingController(rootView: NavigationStack {
+            TerminalScreen(session: session, onDisconnect: { store.closeSession(host.id) })
+        })
+        window.rootViewController = controller; window.makeKeyAndVisible()
+        defer { store.closeSession(host.id); window.isHidden = true; window.rootViewController = nil }
+        try await Task.sleep(for: .milliseconds(300))
+        session.terminal.feed(text: "Read this output with the keyboard hidden\r\n$ ")
+        session.showKeyboard()
+        try await Task.sleep(for: .milliseconds(500))
+        XCTAssertTrue(session.terminal.isFirstResponder)
+        session.hideKeyboard()
+        try await Task.sleep(for: .milliseconds(500))
+        XCTAssertFalse(session.terminal.isFirstResponder); XCTAssertFalse(session.keyboardVisible)
+        XCTAssertEqual(store.selectedHostID, host.id); XCTAssertTrue(store.sessions[host.id] === session)
+        XCTAssertTrue(String(decoding: session.terminal.getTerminal().getBufferAsData(), as: UTF8.self).contains("Read this output"))
+        let image = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in window.drawHierarchy(in: window.bounds, afterScreenUpdates: true) }
+        let attachment = XCTAttachment(image: image); attachment.name = "Terminal with keyboard hidden"; attachment.lifetime = .keepAlways; add(attachment)
+        session.showKeyboard()
+        try await Task.sleep(for: .milliseconds(300))
+        XCTAssertTrue(session.terminal.isFirstResponder)
+    }
     func testTerminalAppearanceChangesWithoutLosingOutput() async throws {
         let store = AppStore()
         // This fixture applies preferences directly; live iCloud delivery must not replace them.

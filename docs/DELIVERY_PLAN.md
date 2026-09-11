@@ -25,9 +25,11 @@ Updated: 2026-09-11. This file tracks the user's active requests. Each feature f
 | 8 | Compact terminal layout | One compact navigation bar; terminal uses the remaining space; connection tools in a menu; frequent input controls near the keyboard; no buttons over terminal output | Delivered: 10 terminal input and lifecycle tests pass. The rendered connected iPhone layout was inspected. The native sidebar hides on host selection and returns after disconnect. Signed update installed and launched on iPhone and iPad |
 | 9 | iPhone landscape | Request landscape after connection; leave iPad orientation under user control | Implemented and installed on both devices. Physical iPhone rotation and disconnect pass after the terminal wrapper observes session changes. Physical iPad confirms no forced rotation. The final navigation-transition refinement passes all 10 Simulator terminal tests and the physical iPhone lifecycle test in the appearance validation run |
 | 10 | Appearance | Light, Dark, and System modes for app and terminal; default to System; save and sync the preference | Delivered: 33 core tests and 12 active Mac tests pass. Appearance and terminal lifecycle tests pass on both physical devices. The native Mac theme picker and light/dark terminal renders were inspected. Dark and restored System preferences transferred from Mac to iPad. Signed apps installed and launched on all three devices |
-
 | 11 | Google Cloud managed SSH access | Deferred by the user: no GCP host is available | Removed from the active queue on 2026-09-11 |
-| 12 | Azure managed SSH access | Use imported application credentials to authorize the tunnel, then the existing SSH key and terminal/tmux workflow | Active; inspect configured Azure subscriptions and existing Bastion resources |
+| 12 | Azure managed SSH access | Deferred by the user on 2026-09-11 | Removed from the active queue; the unshipped draft is outside Git |
+| 13 | Visible keyboard dismissal | A terminal toolbar button hides the keyboard and brings it back on iPhone and iPad | Delivered: all 12 Simulator terminal tests pass. The hide/restore lifecycle test passes on both physical devices and retains the session and output. The iPad render with the keyboard hidden was inspected. The signed update is installed and launched on iPhone and iPad |
+
+No requested feature remains in the active queue. Broader validation limits remain in README.md.
 
 Network interruptions must keep the terminal screen for recovery. Explicit disconnect closes the local terminal. Removing or duplicating a host must not remove or copy its credential values. Existing credentials are referenced by name.
 
