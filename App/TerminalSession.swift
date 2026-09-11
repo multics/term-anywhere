@@ -33,31 +33,45 @@ import TermCore
     var canDisconnect: Bool { isLive || isConnecting || wantsConnection }
     private var retryCount = 0
     private var generation = UUID()
+    private var terminalStyle: UIUserInterfaceStyle?
     private var requestedLandscape = false
     private var previousOrientation: UIInterfaceOrientation?
     private weak var orientationScene: UIWindowScene?
 
     init(host: TermCore.Host, store: AppStore) {
         self.host = host; self.store = store
-        #if os(macOS)
-        terminal = SafeTerminalView(frame: .zero, font: nil)
-        terminal.nativeBackgroundColor = NSColor(red: 0.025, green: 0.04, blue: 0.065, alpha: 1)
-        terminal.nativeForegroundColor = NSColor(white: 0.92, alpha: 1)
-        terminal.setAccessibilityLabel("Terminal for \(host.name)")
-        #else
         terminal = SafeTerminalView(frame: .zero)
         terminal.font = .monospacedSystemFont(ofSize: 14, weight: .regular)
-        terminal.nativeBackgroundColor = UIColor(red: 0.025, green: 0.04, blue: 0.065, alpha: 1)
-        terminal.nativeForegroundColor = UIColor(white: 0.92, alpha: 1)
         terminal.accessibilityLabel = "Terminal for \(host.name)"
-        #endif
-        terminal.caretColor = .systemMint
         terminal.allowMouseReporting = false
+        terminal.registerForTraitChanges([UITraitUserInterfaceStyle.self]) { [weak self] (_: TerminalView, _: UITraitCollection) in
+            self?.updateTerminalColors()
+        }
         applyPreferences(store.preferences)
     }
     func applyPreferences(_ value: TerminalPreferences) {
         optionAsMeta = value.optionAsMeta; terminal.optionAsMetaKey = value.optionAsMeta
+        switch value.appearance {
+        case .system: terminal.overrideUserInterfaceStyle = .unspecified
+        case .light: terminal.overrideUserInterfaceStyle = .light
+        case .dark: terminal.overrideUserInterfaceStyle = .dark
+        }
+        updateTerminalColors()
         if terminal.font.pointSize != value.fontSize { terminal.font = .monospacedSystemFont(ofSize: value.fontSize, weight: .regular) }
+    }
+    func updateTerminalColors() {
+        let style: UIUserInterfaceStyle = terminal.traitCollection.userInterfaceStyle == .dark ? .dark : .light
+        guard terminalStyle != style else { return }
+        terminalStyle = style
+        let traits = UITraitCollection(userInterfaceStyle: style)
+        terminal.nativeBackgroundColor = UIColor.systemBackground.resolvedColor(with: traits)
+        terminal.nativeForegroundColor = UIColor.label.resolvedColor(with: traits)
+        terminal.caretColor = UIColor.systemTeal.resolvedColor(with: traits)
+        terminal.caretTextColor = terminal.nativeBackgroundColor
+        coordinator?.viewIfLoaded?.backgroundColor = terminal.nativeBackgroundColor
+        terminal.keyboardAppearance = style == .dark ? .dark : .light
+        if terminal.isFirstResponder { terminal.reloadInputViews() }
+        terminal.setNeedsDisplay()
     }
     func requestInitialLandscape(in window: UIWindow) {
         guard !requestedLandscape, isLive, let scene = window.windowScene,

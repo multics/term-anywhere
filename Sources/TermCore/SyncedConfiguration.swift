@@ -1,9 +1,24 @@
 import Foundation
 
+public enum AppAppearance: String, Codable, CaseIterable, Sendable {
+    case system, light, dark
+    public var title: String {
+        switch self { case .system: "System"; case .light: "Light"; case .dark: "Dark" }
+    }
+}
+
 public struct TerminalPreferences: Codable, Equatable, Sendable {
     public var fontSize: Double = 14
     public var optionAsMeta = true
+    public var appearance: AppAppearance = .system
     public init() {}
+    private enum CodingKeys: String, CodingKey { case fontSize, optionAsMeta, appearance }
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        fontSize = try values.decode(Double.self, forKey: .fontSize)
+        optionAsMeta = try values.decode(Bool.self, forKey: .optionAsMeta)
+        appearance = try values.decodeIfPresent(AppAppearance.self, forKey: .appearance) ?? .system
+    }
     public func validate() throws {
         guard fontSize.isFinite, (10...28).contains(fontSize) else {
             throw ConnectionError.message("Terminal text size must be between 10 and 28 points.")

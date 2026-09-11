@@ -13,6 +13,7 @@ Provide a native Mac configuration app to manage hosts, SSH keys, and static AWS
 - Support Light, Dark, and System appearance for the app UI and terminal. Default to System. Save and sync this preference through iCloud.
 - Follow Apple Human Interface Guidelines. Use native controls, adaptive iPhone/iPad layouts, readable terminal text, and accessible labels.
 - Support SSH keys, including encrypted private keys. Store credentials in the device Keychain. Verify server host keys before authentication.
+- Add Azure managed SSH access with imported application credentials for the tunnel and SSH keys for server login. Keep the existing terminal and tmux workflow. GCP support is deferred at the user’s request because no host is available.
 - Support the current AIxC and NR SSM connection pattern: AWS authorization, an AWS-StartSSHSession tunnel, then SSH authentication.
 - Provide a system keyboard with Esc, Ctrl, Tab, arrows, and a More menu. Support hardware keyboards, Chinese composition, copy/paste, and terminal resizing.
 - Support an optional named tmux session per saved connection. Reconnect to the same session after a connection failure. Never replay buffered input into a new connection.
@@ -35,7 +36,7 @@ Provide a native Mac configuration app to manage hosts, SSH keys, and static AWS
 
 ## Scope limits
 
-Avoid overengineering. Reuse terminal and SSH libraries. Use two concrete transports, local storage, and Apple's iCloud key-value store for the small configuration set. Do not add a custom keyboard, offline command editor, full SSH-config parser on iOS, full tmux window/pane management UI, Mosh, SFTP, a custom sync service, gateway, or credential-provider framework.
+Avoid overengineering. Reuse terminal and SSH libraries. Use concrete transports for the approved cloud providers, local storage, and Apple's iCloud key-value store for the small configuration set. Do not add a custom keyboard, offline command editor, full SSH-config parser on iOS, full tmux window/pane management UI, Mosh, SFTP, a custom sync service, gateway, or credential-provider framework.
 
 Use macOS OpenSSH to resolve selected host settings for initial import. Do not ship the user's private hosts or credentials in the application bundle or source control. Do not modify remote shell or tmux configuration as part of connecting.
 

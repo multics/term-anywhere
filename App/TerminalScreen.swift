@@ -79,6 +79,7 @@ struct TerminalContainer: UIViewControllerRepresentable {
     }
     func updateUIViewController(_ controller: TerminalCoordinator, context: Context) {
         controller.refreshMenu()
+        session.updateTerminalColors()
         controller.requestInitialLandscape()
     }
 }
@@ -109,10 +110,12 @@ struct TerminalContainer: UIViewControllerRepresentable {
             self.present(alert, animated: true)
         }
         makeAccessory()
+        session?.updateTerminalColors()
         NotificationCenter.default.addObserver(self, selector: #selector(resetControl), name: .terminalViewControlModifierReset, object: terminal)
     }
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        session?.updateTerminalColors()
         requestInitialLandscape()
     }
     func requestInitialLandscape() {

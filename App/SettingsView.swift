@@ -1,4 +1,5 @@
 import SwiftUI
+import TermCore
 
 struct SettingsView: View {
     @EnvironmentObject private var store: AppStore
@@ -18,6 +19,14 @@ struct SettingsView: View {
                 #if os(macOS)
                 MacTerminalSettings(launcher: store.externalTerminal)
                 #endif
+                Section("Appearance") {
+                    Picker("Theme", selection: Binding(get: { store.preferences.appearance }, set: { appearance in
+                        var value = store.preferences; value.appearance = appearance; store.savePreferences(value)
+                    })) {
+                        ForEach(AppAppearance.allCases, id: \.self) { Text($0.title).tag($0) }
+                    }
+                    Text("System follows each device’s appearance. This choice syncs with iCloud.")
+                }
                 Section("iCloud") {
                     Label(sync.status, systemImage: "icloud")
                     Text("Hosts, SSH key names, AWS profile names, tmux settings, and terminal preferences sync between your devices.")

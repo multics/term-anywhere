@@ -143,3 +143,7 @@ When a connected terminal is visible on iPhone, request landscape once through U
 ## iCloud notification delivery
 
 Apple can deliver key-value store notifications on a background queue. The Objective-C notification entry point extracts only the change reason, then schedules handling on MainActor. All configuration merges and published state changes use that actor. This prevents a lock cycle between Combine and SwiftUI when a cloud update arrives during a window update. A hosted regression test posts a synthetic notification from a background task and checks the publication thread.
+
+## Appearance
+
+Settings offers System, Light, and Dark. System is the default for new and older configuration files. Store the choice in the existing synced preferences record. Apply it to the Mac main window and Settings, and to the mobile interface and terminal. System follows each device's current appearance. Resolve native terminal foreground, background, cursor, and keyboard colors when the preference or system appearance changes. Keep the terminal buffer and connection. External Mac terminals retain their own appearance settings.

@@ -7,11 +7,11 @@ import TermCore
     var body: some Scene {
         #if os(macOS)
         Window("Term Anywhere", id: "main") {
-            MacHostListView().environmentObject(store).frame(minWidth: 850, minHeight: 560)
+            MacHostListView().environmentObject(store).preferredColorScheme(store.colorScheme).frame(minWidth: 850, minHeight: 560)
         }.defaultSize(width: 1080, height: 720)
-        Settings { SettingsView(sync: store.configuration).environmentObject(store).frame(width: 560, height: 550) }
+        Settings { SettingsView(sync: store.configuration).environmentObject(store).preferredColorScheme(store.colorScheme).frame(width: 560, height: 550) }
         #else
-        WindowGroup { HostListView().environmentObject(store) }
+        WindowGroup { HostListView().environmentObject(store).preferredColorScheme(store.colorScheme) }
         #endif
     }
 }
@@ -30,6 +30,9 @@ import TermCore
     @Published var awsNames: [String] = []
     @Published var error: String?
     @Published private(set) var preferences = TerminalPreferences()
+    var colorScheme: ColorScheme? {
+        switch preferences.appearance { case .system: nil; case .light: .light; case .dark: .dark }
+    }
     @Published var credentialSyncIssues: [String] = []
     @Published var credentialStorage: [String: CredentialStorage] = [:]
     let vault = KeychainStore(

@@ -2,6 +2,22 @@ import XCTest
 @testable import TermCore
 
 final class TermCoreTests: XCTestCase {
+    func testOlderPreferencesDefaultToSystemAppearance() throws {
+        let old = Data(#"{"fontSize":16,"optionAsMeta":false}"#.utf8)
+        let value = try JSONDecoder().decode(TerminalPreferences.self, from: old)
+        XCTAssertEqual(value.appearance, .system)
+        XCTAssertEqual(value.fontSize, 16); XCTAssertFalse(value.optionAsMeta)
+    }
+    func testAppearanceRoundTripsThroughCloudRecords() throws {
+        for appearance in AppAppearance.allCases {
+            var value = TerminalPreferences(); value.appearance = appearance
+            var sender = SyncedConfiguration(); try sender.save(value)
+            var receiver = SyncedConfiguration()
+            let records = try sender.encodedRecords()
+            try receiver.merge(key: SyncedConfiguration.preferencesKey, data: XCTUnwrap(records[SyncedConfiguration.preferencesKey]))
+            XCTAssertEqual(receiver.preferences?.value, value)
+        }
+    }
     func testCustomPrefixAndSplitBinding() {
         let listing = """
         bind-key -T prefix v split-window -h -c "#{pane_current_path}"

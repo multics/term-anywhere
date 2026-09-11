@@ -5,6 +5,46 @@ import TermCore
 @testable import TermAnywhere
 
 @MainActor final class TerminalInputTests: XCTestCase {
+    func testTerminalAppearanceChangesWithoutLosingOutput() async throws {
+        let store = AppStore()
+        // This fixture applies preferences directly; live iCloud delivery must not replace them.
+        store.configuration.onChange = nil
+        let host = Host(name: "Appearance fixture", address: "example.invalid", username: "fixture", keyID: "missing-fixture")
+        let session = store.session(for: host)
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let window = UIWindow(windowScene: scene)
+        let controller = TerminalCoordinator(session: session); session.coordinator = controller
+        window.rootViewController = controller; window.makeKeyAndVisible()
+        defer { store.closeSession(host.id); window.isHidden = true; window.rootViewController = nil }
+        try await Task.sleep(for: .milliseconds(200))
+        window.layoutIfNeeded()
+        session.terminal.feed(text: "Appearance keeps terminal output\r\n$ ")
+        func output() -> String {
+            String(decoding: session.terminal.getTerminal().getBufferAsData(), as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        let before = output()
+        var value = TerminalPreferences()
+        for appearance in [AppAppearance.dark, .light] {
+            value.appearance = appearance; session.applyPreferences(value)
+            let traits = UITraitCollection(userInterfaceStyle: appearance == .dark ? .dark : .light)
+            for _ in 0..<20 {
+                if session.terminal.nativeBackgroundColor == UIColor.systemBackground.resolvedColor(with: traits) { break }
+                try await Task.sleep(for: .milliseconds(50))
+            }
+            XCTAssertEqual(session.terminal.nativeBackgroundColor, UIColor.systemBackground.resolvedColor(with: traits))
+            XCTAssertEqual(session.terminal.nativeForegroundColor, UIColor.label.resolvedColor(with: traits))
+            XCTAssertEqual(output(), before)
+            let image = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in window.drawHierarchy(in: window.bounds, afterScreenUpdates: true) }
+            let attachment = XCTAttachment(image: image); attachment.name = appearance.title + " terminal"; attachment.lifetime = .keepAlways; add(attachment)
+        }
+        value.appearance = .system; session.applyPreferences(value)
+        for style in [UIUserInterfaceStyle.dark, .light] {
+            window.overrideUserInterfaceStyle = style
+            try await Task.sleep(for: .milliseconds(100))
+            XCTAssertEqual(session.terminal.nativeBackgroundColor, UIColor.systemBackground.resolvedColor(with: UITraitCollection(userInterfaceStyle: style)))
+        }
+        XCTAssertEqual(output(), before)
+    }
     func testDisconnectRemovesTerminalFromVisibleHierarchy() async throws {
         let store = AppStore()
         let host = Host(name: "UI fixture", address: "example.invalid", username: "fixture", keyID: "missing-" + UUID().uuidString)
