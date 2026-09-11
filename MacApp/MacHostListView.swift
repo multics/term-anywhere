@@ -31,6 +31,8 @@ struct MacHostListView: View {
                             do { try store.removeHost(host.id) } catch { store.error = error.localizedDescription }
                         }, duplicate: { editing = host.duplicate() }))
                     }
+                    .onMove { offsets, destination in store.moveHosts(from: offsets, to: destination) }
+                    .moveDisabled(!search.isEmpty)
                 }
             }.searchable(text: $search, prompt: "Find a host")
             .navigationSplitViewColumnWidth(min: 200, ideal: 250)

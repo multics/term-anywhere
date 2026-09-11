@@ -54,6 +54,12 @@ import TermCore
         try persist(next); state = next; onChange?(next)
         start()
     }
+    func saveHostOrder(_ ids: [UUID]) throws {
+        guard loaded else { throw ConnectionError.message(status) }
+        var next = state; try next.saveHostOrder(ids)
+        try persist(next); state = next; onChange?(next)
+        start()
+    }
     func removeHost(_ id: UUID) throws {
         guard loaded else { throw ConnectionError.message(status) }
         var next = state; next.removeHost(id: id)
@@ -80,7 +86,7 @@ import TermCore
         do {
             let remote = cloud.dictionaryRepresentation
             var next = state
-            for (key, value) in remote where key.hasPrefix(SyncedConfiguration.hostPrefix) || key == SyncedConfiguration.preferencesKey {
+            for (key, value) in remote where key.hasPrefix(SyncedConfiguration.hostPrefix) || key == SyncedConfiguration.preferencesKey || key == SyncedConfiguration.hostOrderKey {
                 guard let data = value as? Data else { throw ConnectionError.message("iCloud settings have an unsupported format.") }
                 try next.merge(key: key, data: data)
             }

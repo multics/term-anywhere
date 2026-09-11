@@ -28,8 +28,10 @@ public struct ConfigurationRecord<Value: Codable & Equatable & Sendable>: Codabl
 public struct SyncedConfiguration: Codable, Equatable, Sendable {
     public static let hostPrefix = "v1.host."
     public static let preferencesKey = "v1.preferences"
+    public static let hostOrderKey = "v1.hostOrder"
     public var hosts: [String: ConfigurationRecord<Host>] = [:]
     public var preferences: ConfigurationRecord<TerminalPreferences>?
+    public var hostOrder: ConfigurationRecord<[UUID]>?
     public init() {}
     public var sortedHosts: [Host] {
         let visible: [Host] = hosts.values.compactMap { record in record.deleted == true ? nil : record.value }
@@ -37,7 +39,16 @@ public struct SyncedConfiguration: Codable, Equatable, Sendable {
             if a.name == b.name { return a.id.uuidString < b.id.uuidString }
             return a.name < b.name
         }
-        return alphabetical
+        guard let order = hostOrder?.value else { return alphabetical }
+        let byID: [UUID: Host] = Dictionary(uniqueKeysWithValues: alphabetical.map { ($0.id, $0) })
+        let ordered = Set(order)
+        return order.compactMap { byID[$0] } + alphabetical.filter { !ordered.contains($0.id) }
+    }
+    public mutating func saveHostOrder(_ ids: [UUID], modified: Date = Date()) throws {
+        guard ids.count <= 1000, Set(ids).count == ids.count else { throw ConnectionError.message("The host order is invalid.") }
+        guard hostOrder?.value != ids else { return }
+        let next = max(modified, (hostOrder?.modified ?? .distantPast).addingTimeInterval(0.001))
+        hostOrder = ConfigurationRecord(ids, modified: next)
     }
     public mutating func save(_ host: Host, modified: Date = Date()) throws {
         try host.validate()
@@ -70,6 +81,10 @@ public struct SyncedConfiguration: Codable, Equatable, Sendable {
                 if record.deleted == true && current.deleted != true { hosts[key] = record; return }
             }
             if hosts[key].map({ record.isNewer(than: $0) }) ?? true { hosts[key] = record }
+        } else if key == Self.hostOrderKey {
+            let record = try JSONDecoder().decode(ConfigurationRecord<[UUID]>.self, from: data)
+            guard record.value.count <= 1000, Set(record.value).count == record.value.count else { throw ConnectionError.message("The iCloud host order is invalid.") }
+            if hostOrder.map({ record.isNewer(than: $0) }) ?? true { hostOrder = record }
         } else if key == Self.preferencesKey {
             let record = try JSONDecoder().decode(ConfigurationRecord<TerminalPreferences>.self, from: data)
             try record.value.validate()
@@ -80,6 +95,7 @@ public struct SyncedConfiguration: Codable, Equatable, Sendable {
         let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
         var result = try hosts.mapValues { try encoder.encode($0) }
         if let preferences { result[Self.preferencesKey] = try encoder.encode(preferences) }
+        if let hostOrder { result[Self.hostOrderKey] = try encoder.encode(hostOrder) }
         return result
     }
 }

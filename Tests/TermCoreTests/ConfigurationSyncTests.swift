@@ -79,6 +79,24 @@ final class ConfigurationSyncTests: XCTestCase {
         try state.merge(key: SyncedConfiguration.hostPrefix + h.id.uuidString, data: data)
         XCTAssertEqual(state.sortedHosts, [h])
     }
+    func testHostOrderSyncsAndNewHostsAppendWithoutRestoringRemovedHosts() throws {
+        let a = host("a"), b = host("b"), c = host("c")
+        var state = SyncedConfiguration(); try state.save(a); try state.save(b)
+        try state.saveHostOrder([b.id, a.id])
+        XCTAssertEqual(try merged(SyncedConfiguration(), state).sortedHosts.map(\.id), [b.id, a.id])
+        try state.save(c); state.removeHost(id: b.id)
+        XCTAssertEqual(state.sortedHosts.map(\.id), [a.id, c.id])
+        XCTAssertEqual(try JSONDecoder().decode(SyncedConfiguration.self, from: JSONEncoder().encode(state)).sortedHosts, state.sortedHosts)
+    }
+    func testConcurrentHostOrdersConvergeAndDuplicateIDsAreRejected() throws {
+        let a = UUID(), b = UUID()
+        var phone = SyncedConfiguration(), pad = SyncedConfiguration()
+        try phone.saveHostOrder([a, b], modified: Date(timeIntervalSince1970: 10))
+        try pad.saveHostOrder([b, a], modified: Date(timeIntervalSince1970: 20))
+        XCTAssertEqual(try merged(phone, pad).hostOrder?.value, [b, a])
+        XCTAssertEqual(try merged(phone, pad), try merged(pad, phone))
+        XCTAssertThrowsError(try phone.saveHostOrder([a, a]))
+    }
     func testInvalidCloudDataDoesNotReplaceLocalSettings() throws {
         var state = SyncedConfiguration(); let h = host("keep")
         try state.save(h); let before = state

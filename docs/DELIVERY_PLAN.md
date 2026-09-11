@@ -20,7 +20,7 @@ Updated: 2026-09-11. This file tracks the user's active requests. Each feature f
 | 3 | Mac external terminal connection | Detect installed Terminal and Ghostty at launch; choose a device-local default in Settings; Connect opens the selected app using the saved host and credential settings; support hosts without a local SSH alias | Delivered: 23 core tests pass. Terminal and Ghostty execute synthetic commands. Read-only direct SSH and AWS SSM checks pass with saved Keychain credentials. Signed Mac app installed and running; Connect and both default-terminal choices inspected |
 | 4 | Host row actions | Right swipe Edit; left swipe Disconnect and Remove; no trailing full-swipe action; confirmation before synced removal; context-menu equivalents; prevent removed hosts from returning after offline sync | Delivered: 26 core tests, iOS Simulator tests, and Mac tests pass. Signed apps installed and launched on Mac, iPhone, and iPad |
 | 5 | Duplicate hosts and session labels | Add Duplicate beside Edit; copy connection and credential references into a new ID; use an independent session choice; show session names | Delivered: 27 core tests and iOS/Mac tests pass. Installed on all three devices; Mac row actions and distinct session labels inspected |
-| 6 | Order hosts | Drag rows to reorder; save and sync the order | Preserved draft; not deployed |
+| 6 | Order hosts | Drag rows to reorder; save and sync the order | 29 core tests and iOS/Mac tests pass. Installed on Mac and iPhone. iPad installation and testing deferred during its OS update |
 | 7 | Discover and remember tmux sessions | Empty default instead of mobile; query the connected server; show session choices and a plain-shell option; remember each entry's choice; prompt when a saved session is missing; keep runtime shortcut detection | Draft built and tested; live selection flow not yet verified or deployed |
 | 8 | Compact terminal layout | One compact navigation bar; terminal uses the remaining space; connection tools in a menu; frequent input controls near the keyboard; no buttons over terminal output | Draft built; not deployed |
 | 9 | iPhone landscape | Request landscape after connection; leave iPad orientation under user control | Required; not deployed |
@@ -37,3 +37,11 @@ At the start of the audit, the installed Mac app was still the terminal version 
 The requirements and design previously contained two stale rules: a Mac terminal and retention of the screen after every disconnect. The current requirements remove the Mac terminal and distinguish explicit disconnect from network loss. The session chooser is in scope; a full tmux window and pane manager remains out of scope.
 
 The external-terminal request adds a Mac Connect action. It replaces the earlier restriction on all Mac connection controls, while retaining the restriction on an embedded Mac terminal. Terminal selection is local because installed applications differ between Macs.
+
+## Current device availability
+
+The user deferred iPad installation and tests during its OS update and restart. Continue Mac, iPhone, and Simulator checks. Record iPad checks as pending until it is ready.
+
+## Configuration cleanup
+
+Cleared the exact tmux session value mobile from 15 saved host records on Mac. Other named sessions remain. Updated record revisions and reopened the signed app to reconcile iCloud. Cross-device receipt remains to be checked. Private host data and the backup stay outside Git.

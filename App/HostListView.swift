@@ -10,6 +10,7 @@ struct HostListView: View {
     @State private var credentials = false
     @State private var importing = false
     @State private var settings = false
+    @State private var editMode: EditMode = .inactive
     @Environment(\.scenePhase) private var scenePhase
     var body: some View {
         NavigationSplitView(preferredCompactColumn: $compactColumn) {
@@ -37,15 +38,20 @@ struct HostListView: View {
                         do { try store.removeHost(host.id) } catch { store.error = error.localizedDescription }
                     }, duplicate: { editing = host.duplicate() }, disconnect: store.sessions[host.id]?.canDisconnect == true ? { store.closeSession(host.id) } : nil))
                 }
+                .onMove { offsets, destination in store.moveHosts(from: offsets, to: destination) }
+                .moveDisabled(!search.isEmpty)
             }
+            .environment(\.editMode, $editMode)
             .navigationTitle("Hosts")
             .searchable(text: $search, prompt: "Find a server")
             .toolbar {
+                if editMode.isEditing { ToolbarItem(placement: .confirmationAction) { Button("Done") { editMode = .inactive } } }
                 ToolbarItem(placement: .topBarLeading) { Button("Keys and AWS", systemImage: "key") { credentials = true } }
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
                         Button("Add host", systemImage: "plus") { editing = Host() }
                         Button("Import connections", systemImage: "square.and.arrow.down") { importing = true }
+                        Button("Reorder hosts", systemImage: "arrow.up.arrow.down") { search = ""; editMode = .active }.disabled(store.hosts.count < 2)
                         Divider()
                         Button("Settings and iCloud", systemImage: "gear") { settings = true }
                     } label: { Label("Add", systemImage: "plus") }

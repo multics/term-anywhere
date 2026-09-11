@@ -69,6 +69,11 @@ import TermCore
     func save(_ host: TermCore.Host) throws {
         try configuration.save(hosts: [host])
     }
+    func moveHosts(from offsets: IndexSet, to destination: Int) {
+        guard offsets.allSatisfy({ hosts.indices.contains($0) }), (0...hosts.count).contains(destination) else { return }
+        var reordered = hosts; reordered.move(fromOffsets: offsets, toOffset: destination)
+        do { try configuration.saveHostOrder(reordered.map(\.id)) } catch { self.error = error.localizedDescription }
+    }
     func removeHost(_ id: UUID) throws { try configuration.removeHost(id) }
     func importHosts(_ url: URL) throws {
         let scoped = url.startAccessingSecurityScopedResource(); defer { if scoped { url.stopAccessingSecurityScopedResource() } }

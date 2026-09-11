@@ -117,3 +117,9 @@ Remove opens a confirmation dialog. Store a removal marker in the host's existin
 ## Duplicate hosts
 
 Place Duplicate after Edit on the leading swipe edge and in the context menu. Open a new editor with a fresh host ID and a Copy name suffix. Keep endpoint, SSH key name, AWS profile name, socket, and prefix settings. Clear the tmux session so the user can choose it independently. Cancel makes no saved change. Save creates a separate synced record. Show the session name in each host row on Mac, iPhone, and iPad.
+
+## Saved host order
+
+Use native list dragging. On iPhone and iPad, Reorder hosts in the Hosts menu shows drag handles; Done exits reorder mode. On Mac, drag within the Hosts section. Disable moving while search filters the list.
+
+Store the ordered host IDs in a separate iCloud record. Merge this record by revision and timestamp. Ignore IDs for removed hosts and append newly received hosts after the saved order. Changing order does not change a host's connection settings or interrupt its terminal.
