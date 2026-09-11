@@ -10,6 +10,7 @@
 		04B137B74C673F6043680ECB /* SSMMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F1ACD30831169FB1298DC6C /* SSMMessage.swift */; };
 		0C0DBF301BD839D14621074B /* ConfigurationSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = F95E071FF0A5BB5E041CC047 /* ConfigurationSync.swift */; };
 		0FC608BFFE16CAFD3C0B8029 /* ThirdPartyNotices.txt in Resources */ = {isa = PBXBuildFile; fileRef = E9EF21EA2EB966A7E7F6FAA9 /* ThirdPartyNotices.txt */; };
+		10A9A20E5E1E0178DD0FD8C6 /* ExternalTerminalLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B74224BAD281C8C0D264A34 /* ExternalTerminalLaunchTests.swift */; };
 		10B5CA1735B2C21046416E4B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 72F6D4379F251CF492710EAB /* Assets.xcassets */; };
 		1B3D08C7DB4E0F2705F86D15 /* ConfigurationSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = F95E071FF0A5BB5E041CC047 /* ConfigurationSync.swift */; };
 		1E37C6292B12DD241460628F /* SSMMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F1ACD30831169FB1298DC6C /* SSMMessage.swift */; };
@@ -41,11 +42,14 @@
 		644D84373325991267439144 /* TermCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 52671139DC68A13939FB7476 /* TermCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		653B53C79A61D48BA83561A1 /* HostEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 485E2420C5CAD0E555FE32D7 /* HostEditor.swift */; };
 		6B43F96A42D92A5BF02CA1F8 /* Host.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57D92F2A783A08E27D9B43C7 /* Host.swift */; };
+		6FA8D8D36DA9FEFD211BEF72 /* MacTerminalLauncher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 825EEF947A97C7D0FED40D64 /* MacTerminalLauncher.swift */; };
 		7580E9EB64C55AA668A2EDF4 /* SyncedConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23578D1D5C45DD4D80FF452D /* SyncedConfiguration.swift */; };
 		78296273498FAAB6372DC4E6 /* TerminalSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = E260444A780A9616953992ED /* TerminalSession.swift */; };
 		7D760DB567C2E77D316D69B6 /* CSSH.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 70C483CC1D0BE3BACC12BE9F /* CSSH.h */; };
 		8838924BA73129BD7D75DEBF /* CSSH.c in Sources */ = {isa = PBXBuildFile; fileRef = 075A5C113BAAA48AEFB4561D /* CSSH.c */; };
+		8C673CBE61C858383FFD6614 /* ExternalTerminalLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B74224BAD281C8C0D264A34 /* ExternalTerminalLaunchTests.swift */; };
 		90A70A8990DFB64D0734F1CD /* AWSSigning.swift in Sources */ = {isa = PBXBuildFile; fileRef = E74AD3422CA2F6BA1880F5A6 /* AWSSigning.swift */; };
+		9100F771E62EB59DFABA5010 /* MacTerminalSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 896A42B294957079C431E322 /* MacTerminalSettings.swift */; };
 		981F3E74DED42D81F8B74000 /* TmuxBindings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B553F1A06FF7F06B01A8EAE /* TmuxBindings.swift */; };
 		99279BDFC1F390FB0B5DCB8C /* module.modulemap in CopyFiles */ = {isa = PBXBuildFile; fileRef = D2D782176811BCC4187E4D84 /* module.modulemap */; };
 		9BBD26CFFBC0A5A86C3C94A0 /* CredentialsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEC4435E05FB8B4F13FF3093 /* CredentialsView.swift */; };
@@ -67,12 +71,14 @@
 		D36B9896EEC18488998118F8 /* TerminalInputTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F340E52E0D0111F8A1DBF295 /* TerminalInputTests.swift */; };
 		D5550F4B7D6AA8A03E51F190 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 87E209B7B94DD050DBE71C47 /* Assets.xcassets */; };
 		D7C796197B0FA265EBA48D2A /* TermCoreMac.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0C92E02B110F68623ACBB779 /* TermCoreMac.framework */; };
+		DF118EC49D4AB8E674B36335 /* ExternalSSHSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8B9E09F19190D0B16DC87F9 /* ExternalSSHSession.swift */; };
 		E66DE979BD37720E71BC746C /* CSSH.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 70C483CC1D0BE3BACC12BE9F /* CSSH.h */; };
 		E7598ECE691592B7891822D8 /* SSMTunnel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F08F0988DBAC3BE6671CA51 /* SSMTunnel.swift */; };
 		EBE0BAA5B5A0D8D91C966DE6 /* ThirdPartyNotices.txt in Resources */ = {isa = PBXBuildFile; fileRef = E9EF21EA2EB966A7E7F6FAA9 /* ThirdPartyNotices.txt */; };
 		ECAAC86BE09E4E1D58B39B86 /* HostListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AE5D0544E9F4F81025CEFC7 /* HostListView.swift */; };
 		EDC50CAAC9CFF7717DC3725B /* MacConfigurationImport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C14B232BF03474FBD75FDFA2 /* MacConfigurationImport.swift */; };
 		EED623208A5538998DA810FF /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DDCA7CB2E722CB905E65133 /* SettingsView.swift */; };
+		F7D8F6FC9876B1957D1E81A0 /* ExternalSSHSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8B9E09F19190D0B16DC87F9 /* ExternalSSHSession.swift */; };
 		FE29F36C9B08B01AF99FB628 /* libCSSHMac.a in Frameworks */ = {isa = PBXBuildFile; fileRef = C47D3923DA57DDC93649ECA7 /* libCSSHMac.a */; };
 /* End PBXBuildFile section */
 
@@ -244,7 +250,10 @@
 		5AE5D0544E9F4F81025CEFC7 /* HostListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostListView.swift; sourceTree = "<group>"; };
 		70C483CC1D0BE3BACC12BE9F /* CSSH.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CSSH.h; sourceTree = "<group>"; };
 		72F6D4379F251CF492710EAB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		7B74224BAD281C8C0D264A34 /* ExternalTerminalLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalTerminalLaunchTests.swift; sourceTree = "<group>"; };
+		825EEF947A97C7D0FED40D64 /* MacTerminalLauncher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacTerminalLauncher.swift; sourceTree = "<group>"; };
 		87E209B7B94DD050DBE71C47 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		896A42B294957079C431E322 /* MacTerminalSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacTerminalSettings.swift; sourceTree = "<group>"; };
 		8DDCA7CB2E722CB905E65133 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		9712191D15665A55F4FF253E /* libssh2.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = libssh2.h; sourceTree = "<group>"; };
 		9E3CE15AD05EC342137C5604 /* ConnectionIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionIntegrationTests.swift; sourceTree = "<group>"; };
@@ -254,6 +263,7 @@
 		C47D3923DA57DDC93649ECA7 /* libCSSHMac.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libCSSHMac.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		D2D782176811BCC4187E4D84 /* module.modulemap */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.module-map"; path = module.modulemap; sourceTree = "<group>"; };
 		D3FF3D783F627B1D46EAE767 /* MacImportViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacImportViews.swift; sourceTree = "<group>"; };
+		D8B9E09F19190D0B16DC87F9 /* ExternalSSHSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalSSHSession.swift; sourceTree = "<group>"; };
 		DFEE8DFA113E47D9BF83387A /* MacHostListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacHostListView.swift; sourceTree = "<group>"; };
 		E260444A780A9616953992ED /* TerminalSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalSession.swift; sourceTree = "<group>"; };
 		E29EA05109ED0B03B1A30C29 /* TermAnywhere.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TermAnywhere.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -349,6 +359,7 @@
 			isa = PBXGroup;
 			children = (
 				E74AD3422CA2F6BA1880F5A6 /* AWSSigning.swift */,
+				D8B9E09F19190D0B16DC87F9 /* ExternalSSHSession.swift */,
 				57D92F2A783A08E27D9B43C7 /* Host.swift */,
 				225A9D04BBE0D1FEF61BB42B /* KeychainStore.swift */,
 				C14B232BF03474FBD75FDFA2 /* MacConfigurationImport.swift */,
@@ -385,6 +396,7 @@
 		2F91C52D1DB6DA851508B936 /* SharedAppTests */ = {
 			isa = PBXGroup;
 			children = (
+				7B74224BAD281C8C0D264A34 /* ExternalTerminalLaunchTests.swift */,
 				43BFD99C72D668007F131D25 /* KeychainSyncTests.swift */,
 				29E2DAB4E08A3E4127F740B0 /* KeychainTransferTests.swift */,
 			);
@@ -444,6 +456,8 @@
 				53C4085E50C888D2712B656B /* Info.plist */,
 				DFEE8DFA113E47D9BF83387A /* MacHostListView.swift */,
 				D3FF3D783F627B1D46EAE767 /* MacImportViews.swift */,
+				825EEF947A97C7D0FED40D64 /* MacTerminalLauncher.swift */,
+				896A42B294957079C431E322 /* MacTerminalSettings.swift */,
 				40C1CF8ECED60499037D9EFD /* TermAnywhereMac.entitlements */,
 			);
 			path = MacApp;
@@ -713,6 +727,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				33BB86C67C4236BC57060F80 /* ConnectionIntegrationTests.swift in Sources */,
+				10A9A20E5E1E0178DD0FD8C6 /* ExternalTerminalLaunchTests.swift in Sources */,
 				564CDE55BCF8283882DC74CB /* KeychainSyncTests.swift in Sources */,
 				2D9164257BB82B31542B4A34 /* KeychainTransferTests.swift in Sources */,
 				D36B9896EEC18488998118F8 /* TerminalInputTests.swift in Sources */,
@@ -724,6 +739,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				61B9C549193C283F6F6AE4F2 /* AWSSigning.swift in Sources */,
+				F7D8F6FC9876B1957D1E81A0 /* ExternalSSHSession.swift in Sources */,
 				6B43F96A42D92A5BF02CA1F8 /* Host.swift in Sources */,
 				3C523905473FCAC122224DDC /* KeychainStore.swift in Sources */,
 				A0BE3EB1FDE5447CAFB33C37 /* MacConfigurationImport.swift in Sources */,
@@ -748,6 +764,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				90A70A8990DFB64D0734F1CD /* AWSSigning.swift in Sources */,
+				DF118EC49D4AB8E674B36335 /* ExternalSSHSession.swift in Sources */,
 				2AFC83658DF618E6E430334C /* Host.swift in Sources */,
 				4192A4191370F46702255DAB /* KeychainStore.swift in Sources */,
 				EDC50CAAC9CFF7717DC3725B /* MacConfigurationImport.swift in Sources */,
@@ -775,6 +792,8 @@
 				9BBD26CFFBC0A5A86C3C94A0 /* CredentialsView.swift in Sources */,
 				61DC3F56745C7571D6A5B88E /* MacHostListView.swift in Sources */,
 				D1846C4E004D9F81E34F1B86 /* MacImportViews.swift in Sources */,
+				6FA8D8D36DA9FEFD211BEF72 /* MacTerminalLauncher.swift in Sources */,
+				9100F771E62EB59DFABA5010 /* MacTerminalSettings.swift in Sources */,
 				EED623208A5538998DA810FF /* SettingsView.swift in Sources */,
 				3F82813CE7152753CF45EA7C /* TermAnywhereApp.swift in Sources */,
 			);
@@ -800,6 +819,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8C673CBE61C858383FFD6614 /* ExternalTerminalLaunchTests.swift in Sources */,
 				598259418D32EA74FC54255B /* KeychainSyncTests.swift in Sources */,
 				3279143D45C16A78D12A06E5 /* KeychainTransferTests.swift in Sources */,
 			);

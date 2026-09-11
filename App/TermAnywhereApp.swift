@@ -8,7 +8,7 @@ import TermCore
         Window("Term Anywhere", id: "main") {
             MacHostListView().environmentObject(store).frame(minWidth: 850, minHeight: 560)
         }.defaultSize(width: 1080, height: 720)
-        Settings { SettingsView(sync: store.configuration).environmentObject(store).frame(width: 520, height: 390) }
+        Settings { SettingsView(sync: store.configuration).environmentObject(store).frame(width: 560, height: 550) }
         #else
         WindowGroup { HostListView().environmentObject(store) }
         #endif
@@ -17,6 +17,9 @@ import TermCore
 
 @MainActor final class AppStore: ObservableObject {
     @Published var hosts: [TermCore.Host] = []
+    #if os(macOS)
+    let externalTerminal = MacTerminalLauncher()
+    #endif
     #if os(iOS)
     @Published var sessions: [UUID: TerminalSession] = [:]
     @Published private(set) var selectedHostID: UUID?

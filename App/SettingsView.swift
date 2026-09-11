@@ -15,6 +15,9 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
+                #if os(macOS)
+                MacTerminalSettings(launcher: store.externalTerminal)
+                #endif
                 Section("iCloud") {
                     Label(sync.status, systemImage: "icloud")
                     Text("Hosts, SSH key names, AWS profile names, tmux settings, and terminal preferences sync between your devices.")

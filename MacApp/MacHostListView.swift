@@ -101,11 +101,23 @@ struct MacHostEditor: View {
     let onSaved: (TermCore.Host) -> Void
     var showsCancel = false
     @State private var error: String?
+    @State private var openingTerminal = false
     var body: some View {
         VStack(spacing: 0) {
             HStack {
                 Text(host.name.isEmpty ? "New host" : host.name).font(.title2.bold())
                 Spacer()
+                Button("Connect", systemImage: "terminal") {
+                    openingTerminal = true
+                    Task {
+                        defer { openingTerminal = false }
+                        do {
+                            try store.save(host)
+                            try await store.externalTerminal.connect(host, vault: store.vault)
+                            onSaved(host)
+                        } catch { store.error = error.localizedDescription }
+                    }
+                }.disabled(openingTerminal).buttonStyle(.borderedProminent)
                 Button("Save") { save() }.keyboardShortcut("s")
                 if showsCancel { Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction) }
             }.padding()

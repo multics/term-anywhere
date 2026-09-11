@@ -37,10 +37,11 @@ Open `~/Applications/Term Anywhere.app`.
 1. Select **Import → Read SSH config**. Review the aliases and select **Preview hosts**. Select the hosts to import. You can type additional aliases from Include files. OpenSSH resolves their effective settings.
 2. Select **SSH Keys** in the sidebar. Select **Import private key**; the picker opens `.ssh` and shows hidden files. Use the key name from the host settings, or leave the name empty to use the filename.
 3. Select **AWS Profiles** in the sidebar, then **Import AWS profiles from this Mac** and choose the static profiles to save. New profiles use iCloud Keychain unless you turn off their import switch. You can also enter a profile manually.
-4. Select a host to edit it. **Save** writes the settings locally and to the shared iCloud store. Use **SSH Keys** and **AWS Profiles** in the sidebar to manage credentials. The Mac app has no embedded terminal.
-5. Use **Settings → Mobile Terminal** to configure the iPhone and iPad terminal. The sidebar shows the configuration sync status.
+4. Select a host to edit it. **Save** writes the settings locally and to the shared iCloud store. Use **SSH Keys** and **AWS Profiles** in the sidebar to manage credentials. The Mac app has no embedded terminal. **Connect** saves the host and opens the default local terminal.
+5. In **Settings → Mac connections**, choose Terminal or Ghostty. The app detects installed applications at launch. The default stays on this Mac.
+6. Use **Settings → Mobile Terminal** to configure the iPhone and iPad terminal. The sidebar shows the configuration sync status.
 
-The Mac uses the same iCloud settings store as iPhone and iPad. SSH keys and AWS profiles use the shared iCloud Keychain group by default. Trust decisions still need separate setup on each device. The Mac import does not modify `.ssh/config` or `.aws/credentials`. Use trusted SSH config files: OpenSSH can evaluate local `Match exec` directives while resolving them.
+The Mac uses the same iCloud settings store as iPhone and iPad. SSH keys and AWS profiles use the shared iCloud Keychain group by default. Trust decisions still need separate setup on each device. The Mac import does not modify `.ssh/config` or `.aws/credentials`. External connections use saved host fields and Keychain credentials through private temporary launch files. Files are removed when the SSH session ends; an uncatchable process kill can leave them in the system temporary directory. SSM connections require AWS CLI and Session Manager Plugin in a standard Homebrew location. OpenSSH handles fingerprint and passphrase prompts in the terminal. Use trusted SSH config files: OpenSSH can evaluate local `Match exec` directives while resolving them.
 
 Build the signed Mac app after preparing the native dependencies:
 
@@ -92,8 +93,8 @@ Validation date: 2026-09-10 (America/Los_Angeles). Toolchain: Xcode 26.6, Swift 
 
 | Check | Result |
 | --- | --- |
-| macOS core tests | 19 passed: includes configuration merges and native SSH/AWS import checks |
-| Native Mac app | Signed configuration companion installed and launched. Host editor, separate SSH Keys and AWS Profiles pages, sidebar sync status, and Mobile Terminal settings inspected. Three SSH keys and four AWS profiles retained their iCloud Keychain labels. Mac Keychain retest: 10 passed |
+| macOS core tests | 23 passed: includes configuration merges and native SSH/AWS import checks |
+| Native Mac app | Signed configuration companion installed and launched. Host editor, separate SSH Keys and AWS Profiles pages, sidebar sync status, and Mobile Terminal settings inspected. Three SSH keys and four AWS profiles retained their iCloud Keychain labels. Mac Keychain retest: 10 passed. External-terminal checks: detection and actual command execution in Terminal and Ghostty passed. Read-only direct SSH and AWS SSM checks passed with saved Keychain credentials |
 | Hosted iOS tests | Ten Keychain tests passed on each physical device. Four input/Keychain tests also passed in Simulator. Earlier live run passed direct SSH and both AWS profile paths |
 | Hosted Mac Keychain tests | Ten passed: includes default sync, legacy migration, persistent local choices, updates, collisions, migration failure, and local trust |
 | Actual iCloud transfer | Synthetic SSH key and AWS profile, including session token, transferred from Mac to both iPhone and iPad. Exact key bytes and decoded AWS fields matched. Synthetic items removed after testing |
