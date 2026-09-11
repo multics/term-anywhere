@@ -19,6 +19,7 @@ import TermCore
     @Published var hosts: [TermCore.Host] = []
     #if os(iOS)
     @Published var sessions: [UUID: TerminalSession] = [:]
+    @Published private(set) var selectedHostID: UUID?
     #endif
     @Published var keyNames: [String] = []
     @Published var awsNames: [String] = []
@@ -70,6 +71,14 @@ import TermCore
         try configuration.save(hosts: imported)
     }
     #if os(iOS)
+    func selectHost(_ id: UUID?) {
+        guard let id, let host = hosts.first(where: { $0.id == id }) else {
+            selectedHostID = nil
+            return
+        }
+        _ = session(for: host)
+        selectedHostID = id
+    }
     func session(for host: TermCore.Host) -> TerminalSession {
         if let existing = sessions[host.id] {
             // A cloud edit must not interrupt a running terminal.
@@ -79,6 +88,10 @@ import TermCore
         let session = TerminalSession(host: host, store: self); sessions[host.id] = session
         return session
     }
-    func closeSession(_ id: UUID) { sessions[id]?.disconnect(); sessions.removeValue(forKey: id) }
+    func closeSession(_ id: UUID) {
+        if selectedHostID == id { selectedHostID = nil }
+        sessions[id]?.disconnect()
+        sessions.removeValue(forKey: id)
+    }
     #endif
 }

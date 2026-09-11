@@ -4,7 +4,7 @@ import TermCore
 
 struct HostListView: View {
     @EnvironmentObject private var store: AppStore
-    @State private var selected: UUID?
+    @State private var compactColumn: NavigationSplitViewColumn = .sidebar
     @State private var search = ""
     @State private var editing: Host?
     @State private var credentials = false
@@ -12,8 +12,8 @@ struct HostListView: View {
     @State private var settings = false
     @Environment(\.scenePhase) private var scenePhase
     var body: some View {
-        NavigationSplitView {
-            List(selection: $selected) {
+        NavigationSplitView(preferredCompactColumn: $compactColumn) {
+            List(selection: Binding(get: { store.selectedHostID }, set: { store.selectHost($0) })) {
                 if store.hosts.isEmpty {
                     ContentUnavailableView("No hosts yet", systemImage: "terminal", description: Text("Add a host or import selected connections from your Mac."))
                         .listRowBackground(Color.clear)
@@ -52,12 +52,14 @@ struct HostListView: View {
                 }
             }
         } detail: {
-            if let selected, let host = store.hosts.first(where: { $0.id == selected }) {
-                let session = store.session(for: host)
-                TerminalScreen(session: session).id(ObjectIdentifier(session))
+            if let selected = store.selectedHostID, let session = store.sessions[selected] {
+                TerminalScreen(session: session, onDisconnect: { store.closeSession(selected) }).id(ObjectIdentifier(session))
             } else {
                 ContentUnavailableView("Term Anywhere", systemImage: "terminal", description: Text("Choose a server to open a terminal."))
             }
+        }
+        .onChange(of: store.selectedHostID) { _, id in
+            compactColumn = id == nil ? .sidebar : .detail
         }
         .sheet(item: $editing) { host in HostEditor(host: host) }
         .sheet(isPresented: $credentials) { CredentialsView() }

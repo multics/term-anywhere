@@ -6,7 +6,7 @@ Status: approved scope for implementation. Minimum OS: iOS/iPadOS 26 and macOS 2
 
 Provide a personal remote terminal on iPhone and iPad. Support the user's selected hosts from the Mac SSH configuration, including direct SSH and SSH through AWS Systems Manager. The app must connect independently of the Mac after setup.
 
-Provide a native Mac configuration app to manage hosts, SSH keys, and static AWS profiles. Give each type a sidebar destination. Provide import tools and a visible sync status. Keep mobile terminal preferences editable. Do not include an embedded terminal or connection controls on Mac. Use the same iCloud settings store as the phone and tablet. Use iCloud Keychain for SSH keys and AWS profiles by default. Permit an explicit device-only choice.
+Provide a native Mac configuration app to manage hosts, SSH keys, and static AWS profiles. Give each type a sidebar destination. Provide import tools and a visible sync status. Keep mobile terminal preferences editable. Do not include an embedded terminal on Mac. Detect installed terminal applications, including Terminal and Ghostty, at launch. Let the user choose a local default in Settings. Connect opens that application with the saved host settings. A host does not need an existing local SSH alias. Use the same iCloud settings store as the phone and tablet. Use iCloud Keychain for SSH keys and AWS profiles by default. Permit an explicit device-only choice.
 
 ## Required behavior
 
@@ -19,7 +19,7 @@ Provide a native Mac configuration app to manage hosts, SSH keys, and static AWS
 - Map only understood, unambiguous tmux bindings. Keep ordinary terminal keys and a manual prefix fallback when detection fails.
 - Retain the terminal screen after a network interruption, with an accurate status. After an explicit Disconnect, return to Hosts, hide the keyboard, dismiss session tools, and discard the closed terminal UI. Do not reconnect until the user selects the host again. Do not promise continuous execution while iOS suspends the app or survival of remote processes after server restart.
 - Support host editing, selected-host settings import, private-key import, AWS credential entry/import, and basic session switching.
-- On iPhone and iPad, a right swipe exposes Edit and Duplicate. A left swipe exposes Disconnect for an active connection and Remove. Disable full-swipe actions on the left-swipe edge. Confirm removal. Provide context-menu actions on all platforms; omit Disconnect on Mac.
+- On iPhone and iPad, a right swipe exposes Edit and Duplicate. A left swipe exposes Disconnect for an active connection and Remove. Disable full-swipe actions on the left-swipe edge. Confirm removal. Provide context-menu actions on all platforms; omit in-app Disconnect on Mac.
 - Duplicate a host with a new ID and independent tmux selection. Retain credential references. Show the session name in each host row. Save and sync the host order after a drag. Keep removal records so an offline device cannot restore a removed host.
 - Start new hosts with an empty tmux session field. After SSH authentication, query that server and offer its existing sessions, a plain shell, and explicit session creation. Remember the choice per host entry. Attach directly when the saved session exists; prompt when it is missing. Permit changing or resetting the choice.
 - After connection, give the terminal the available space below one compact navigation bar. Put connection tools in a menu and frequent input controls near the keyboard.

@@ -1,9 +1,78 @@
 import XCTest
+import SwiftUI
 import SwiftTerm
 import TermCore
 @testable import TermAnywhere
 
 @MainActor final class TerminalInputTests: XCTestCase {
+    func testDisconnectRemovesTerminalFromVisibleHierarchy() async throws {
+        let store = AppStore()
+        let host = Host(name: "UI fixture", address: "example.invalid", username: "fixture", keyID: "missing-" + UUID().uuidString)
+        store.hosts = [host]
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let window = UIWindow(windowScene: scene)
+        let controller = UIHostingController(rootView: HostListView().environmentObject(store))
+        window.rootViewController = controller
+        window.makeKeyAndVisible()
+        defer { window.isHidden = true; window.rootViewController = nil }
+        try await Task.sleep(for: .milliseconds(200))
+        store.selectHost(host.id)
+        let session = try XCTUnwrap(store.sessions[host.id])
+        try await Task.sleep(for: .milliseconds(600))
+        XCTAssertNotNil(session.terminal.window)
+        store.closeSession(host.id)
+        try await Task.sleep(for: .milliseconds(600))
+        XCTAssertNil(store.selectedHostID)
+        XCTAssertNil(session.terminal.window, "Disconnect must remove the terminal from the displayed hierarchy")
+        XCTAssertNil(session.coordinator)
+        XCTAssertTrue(store.sessions.isEmpty, "Rendering the empty detail must not recreate a session")
+    }
+    func testExplicitDisconnectClearsSelectionAndNeedsNewUserSelection() {
+        let store = AppStore()
+        let host = Host(name: "Disconnect fixture", address: "example.invalid", username: "fixture", keyID: "missing-fixture")
+        store.hosts = [host]
+        store.selectHost(host.id)
+        let session = store.sessions[host.id]!
+        session.isLive = true
+        session.error = "Old error"
+        session.pendingFingerprint = "Old fingerprint"
+        session.changedFingerprint = true
+        session.showingPassphrase = true
+        session.passphrase = "synthetic"
+        session.terminal.controlModifier = true
+        session.terminal.metaModifier = true
+        session.terminal.feed(text: "Old output")
+        store.closeSession(host.id)
+        XCTAssertNil(store.selectedHostID)
+        XCTAssertNil(store.sessions[host.id])
+        XCTAssertFalse(session.isLive)
+        XCTAssertFalse(session.isConnecting)
+        XCTAssertNil(session.error)
+        XCTAssertNil(session.pendingFingerprint)
+        XCTAssertFalse(session.showingPassphrase)
+        XCTAssertTrue(session.passphrase.isEmpty)
+        XCTAssertFalse(session.terminal.controlModifier)
+        XCTAssertFalse(session.terminal.metaModifier)
+        XCTAssertTrue(session.hasStarted, "A pending view task must not start this closed session")
+        session.resume()
+        XCTAssertFalse(session.isConnecting)
+        store.selectHost(host.id)
+        XCTAssertFalse(store.sessions[host.id] === session)
+        XCTAssertFalse(store.sessions[host.id]!.hasStarted)
+        store.closeSession(host.id)
+    }
+    func testClosingAnotherSessionPreservesCurrentSelection() {
+        let store = AppStore()
+        let first = Host(name: "First", address: "example.invalid", username: "fixture", keyID: "missing-fixture")
+        let second = Host(name: "Second", address: "example.invalid", username: "fixture", keyID: "missing-fixture")
+        store.hosts = [first, second]
+        store.selectHost(first.id)
+        store.selectHost(second.id)
+        store.closeSession(first.id)
+        XCTAssertEqual(store.selectedHostID, second.id)
+        XCTAssertNotNil(store.sessions[second.id])
+        store.closeSession(second.id)
+    }
     func testChineseCompositionSendsOnlyCommittedText() {
         let terminal = SafeTerminalView(frame: CGRect(x: 0, y: 0, width: 393, height: 500))
         let output = InputRecorder(); terminal.terminalDelegate = output

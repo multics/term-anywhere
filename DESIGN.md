@@ -35,7 +35,7 @@ Re-query on every connection and reconnection, and on manual Refresh. Do not par
 
 ## Recovery
 
-Initial connection can create or attach to a named session. Recovery must attach to the existing session; it must not silently create a replacement. Keep the last terminal screen after a network interruption. Explicit Disconnect closes the local terminal view, dismisses its input and tools, and returns to Hosts. Create a fresh local session only after a new host selection. Discard unsent keystrokes on connection loss. Retry transient failures with bounded delays while active. Stop for trust or credential decisions and explicit disconnects.
+Initial connection can create or attach to a named session. Recovery must attach to the existing session; it must not silently create a replacement. Keep the last terminal screen after a network interruption. Explicit Disconnect closes the local terminal view, dismisses its input and tools, and returns to Hosts. Create a fresh local session only after a new host selection. AppStore owns the selected host ID. The detail view only reads cached sessions. Closing a selected session clears navigation first, then stops its connection and input UI and removes it from the cache. Closing a different session preserves the current selection. Discard unsent keystrokes on connection loss. Retry transient failures with bounded delays while active. Stop for trust or credential decisions and explicit disconnects.
 
 App state is independent of transient SwiftUI view creation. On return to the foreground, check the connection and reconnect if needed. Remote tmux retains remote programs; the app retains only local connection references. Closing the app's session does not kill the remote tmux session.
 

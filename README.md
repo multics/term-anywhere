@@ -98,7 +98,7 @@ Validation date: 2026-09-10 (America/Los_Angeles). Toolchain: Xcode 26.6, Swift 
 | Hosted Mac Keychain tests | Ten passed: includes default sync, legacy migration, persistent local choices, updates, collisions, migration failure, and local trust |
 | Actual iCloud transfer | Synthetic SSH key and AWS profile, including session token, transferred from Mac to both iPhone and iPad. Exact key bytes and decoded AWS fields matched. Synthetic items removed after testing |
 | Actual remote tmux checks | Direct SSH and both SSM paths passed with tmux 3.4; custom prefix/binding detection, separate query channel, and retained state after reconnect |
-| Input checks | Chinese marked text stays local until commit; Ctrl is one-shot; cursor mode and terminal dimensions pass |
+| Input and disconnect checks | Chinese composition, one-shot Ctrl, cursor mode, and terminal dimensions pass. Explicit disconnect clears navigation, input state, and cached terminal. A hosted UI test confirms the terminal leaves the visible hierarchy without reconnecting. 17 Simulator tests passed; 2 opt-in tests skipped. Update installed and launched on iPhone and iPad |
 | Simulator launch | App launched on iPhone 17 Pro and iPad Pro 11-inch; native host layouts inspected |
 | Device build | arm64 iOS development signing passed with the Yong Tian team; profile covers both test devices |
 | Physical installation | Final default-sync build installed and launched on iPhone 17 Pro Max and iPad mini 6; ten Keychain behavior tests passed on each |

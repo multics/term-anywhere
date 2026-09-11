@@ -4,6 +4,7 @@ import TermCore
 
 struct TerminalScreen: View {
     @ObservedObject var session: TerminalSession
+    let onDisconnect: () -> Void
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 8) {
@@ -44,7 +45,7 @@ struct TerminalScreen: View {
                     Toggle("Option as Meta", isOn: Binding(get: { session.optionAsMeta }, set: { session.setOptionAsMeta($0) }))
                     Button("Larger text", systemImage: "textformat.size.larger") { session.changeFontSize(by: 1) }
                     Button("Smaller text", systemImage: "textformat.size.smaller") { session.changeFontSize(by: -1) }
-                    Button("Disconnect", systemImage: "xmark.circle") { session.disconnect() }
+                    Button("Disconnect", systemImage: "xmark.circle") { onDisconnect() }
                 } label: { Label("Session actions", systemImage: "ellipsis.circle") }
             }
         }
@@ -122,6 +123,13 @@ struct TerminalContainer: UIViewControllerRepresentable {
         guard session?.isLive == true else { return }
         let suffix = ["↑": "A", "↓": "B", "→": "C", "←": "D"][key]!
         terminal.send(txt: "\u{1b}" + (terminal.getTerminal().applicationCursor ? "O" : "[") + suffix)
+    }
+    func closeUI() {
+        stopRepeat()
+        terminal.resignFirstResponder()
+        viewIfLoaded?.endEditing(true)
+        dismiss(animated: false)
+        (terminal as? SafeTerminalView)?.approvePaste = nil
     }
     private func stopRepeat() { repeatTimer?.invalidate(); repeatTimer = nil }
     @objc private func resetControl() { controlButton?.tintColor = terminal.controlModifier ? .systemOrange : .label; controlButton?.accessibilityValue = terminal.controlModifier ? "On" : "Off" }

@@ -120,11 +120,14 @@ import TermCore
     var prefixBytes: Data? { TmuxBindings.keyBytes(bindings?.prefix ?? host.manualPrefix) }
     func send(_ data: Data) { guard isLive else { return }; connection?.send(data) }
     func disconnect() {
-        wantsConnection = false; generation = UUID(); connectTask?.cancel(); connectTask = nil
+        hasStarted = true; wantsConnection = false; generation = UUID(); connectTask?.cancel(); connectTask = nil
         connection?.close(); connection = nil
         isLive = false; isConnecting = false; status = "Disconnected"; passphrase = ""
         resetModifiers(); bindings = nil
-        coordinator?.refreshMenu()
+        error = nil; pendingFingerprint = nil; changedFingerprint = false; showingPassphrase = false
+        bindingsStatus = "Connect to read this server’s shortcuts."
+        terminal.resignFirstResponder()
+        coordinator?.closeUI(); coordinator = nil
     }
     private func didClose(_ reason: String?) {
         connection = nil; isLive = false; isConnecting = false; bindings = nil
