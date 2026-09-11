@@ -113,3 +113,7 @@ Terminal opens an executable command file through NSWorkspace. Ghostty uses its 
 Use native leading-edge swipe actions for Edit and trailing-edge actions for Disconnect and Remove. The trailing edge does not allow a full-swipe action. Disconnect appears while the app has a live, connecting, or retrying session. The same actions are available in a context menu. Mac omits Disconnect because external terminal windows own their sessions.
 
 Remove opens a confirmation dialog. Store a removal marker in the host's existing iCloud record and omit that host from the visible list. A removal marker takes priority over edits to the same ID, including edits made offline with a later timestamp. Keep the marker so delayed records cannot restore the host. Close matching in-app sessions when a removal arrives. Credentials and remote tmux sessions remain. All devices must use a version that understands removal markers.
+
+## Duplicate hosts
+
+Place Duplicate after Edit on the leading swipe edge and in the context menu. Open a new editor with a fresh host ID and a Copy name suffix. Keep endpoint, SSH key name, AWS profile name, socket, and prefix settings. Clear the tmux session so the user can choose it independently. Cancel makes no saved change. Save creates a separate synced record. Show the session name in each host row on Mac, iPhone, and iPad.

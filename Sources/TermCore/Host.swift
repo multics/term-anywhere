@@ -13,6 +13,12 @@ public struct Host: Codable, Identifiable, Hashable, Sendable {
     public var region: String
     public var manualPrefix: String
     public var isSSM: Bool { !awsProfile.isEmpty }
+    public var sessionLabel: String { tmuxSession.isEmpty ? "Plain shell" : "tmux · " + tmuxSession }
+    public func duplicate() -> Host {
+        var copy = self
+        copy.id = UUID(); copy.name += " Copy"; copy.tmuxSession = ""
+        return copy
+    }
     public var trustID: String { "\(isSSM ? awsProfile + ":" + region : "ssh"):\(address):\(port)" }
     public init(id: UUID = UUID(), name: String = "", address: String = "", port: Int = 22, username: String = "", keyID: String = "", tmuxSession: String = "mobile", tmuxSocket: String = "", awsProfile: String = "", region: String = "us-west-2", manualPrefix: String = "") {
         self.id = id; self.name = name; self.address = address; self.port = port

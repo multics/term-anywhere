@@ -6,6 +6,7 @@ struct HostRowActions: ViewModifier {
     let host: TermCore.Host
     let edit: () -> Void
     let remove: () -> Void
+    let duplicate: () -> Void
     var disconnect: (() -> Void)? = nil
     @State private var confirmingRemoval = false
 
@@ -13,6 +14,7 @@ struct HostRowActions: ViewModifier {
         content
             .swipeActions(edge: .leading, allowsFullSwipe: true) {
                 Button("Edit", systemImage: "pencil", action: edit).tint(.blue)
+                Button("Duplicate", systemImage: "plus.square.on.square", action: duplicate).tint(.indigo)
             }
             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                 if let disconnect {
@@ -23,6 +25,7 @@ struct HostRowActions: ViewModifier {
             }
             .contextMenu {
                 Button("Edit host", systemImage: "pencil", action: edit)
+                Button("Duplicate host", systemImage: "plus.square.on.square", action: duplicate)
                 if let disconnect { Button("Disconnect", systemImage: "xmark.circle", action: disconnect) }
                 Button("Remove host", systemImage: "trash", role: .destructive) { confirmingRemoval = true }
             }

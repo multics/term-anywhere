@@ -26,6 +26,7 @@ struct HostListView: View {
                             Image(systemName: host.isSSM ? "cloud" : "terminal").foregroundStyle(.tint).frame(width: 24)
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(host.name).font(.headline)
+                                Text(host.sessionLabel).font(.caption).foregroundStyle(.secondary)
                                 Text("\(host.username) · \(host.isSSM ? "AWS SSM" : "SSH")").font(.caption).foregroundStyle(.secondary)
                             }
                             Spacer()
@@ -34,7 +35,7 @@ struct HostListView: View {
                     }
                     .modifier(HostRowActions(host: host, edit: { editing = host }, remove: {
                         do { try store.removeHost(host.id) } catch { store.error = error.localizedDescription }
-                    }, disconnect: store.sessions[host.id]?.canDisconnect == true ? { store.closeSession(host.id) } : nil))
+                    }, duplicate: { editing = host.duplicate() }, disconnect: store.sessions[host.id]?.canDisconnect == true ? { store.closeSession(host.id) } : nil))
                 }
             }
             .navigationTitle("Hosts")

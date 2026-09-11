@@ -24,11 +24,12 @@ struct MacHostListView: View {
                     ForEach(store.hosts.filter { search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) }) { host in
                         Label { VStack(alignment: .leading) {
                             Text(host.name)
+                            Text(host.sessionLabel).font(.caption).foregroundStyle(.secondary)
                             Text(host.isSSM ? "AWS SSM" : "\(host.username)@\(host.address)").font(.caption).foregroundStyle(.secondary)
                         } } icon: { Image(systemName: host.isSSM ? "cloud" : "server.rack") }.tag(MacSelection.host(host.id))
                         .modifier(HostRowActions(host: host, edit: { editing = host }, remove: {
                             do { try store.removeHost(host.id) } catch { store.error = error.localizedDescription }
-                        }))
+                        }, duplicate: { editing = host.duplicate() }))
                     }
                 }
             }.searchable(text: $search, prompt: "Find a host")
