@@ -29,6 +29,9 @@ Updated: 2026-09-11. This file tracks the user's active requests. Each feature f
 | 12 | Azure managed SSH access | Deferred by the user on 2026-09-11 | Removed from the active queue; the unshipped draft is outside Git |
 | 13 | Visible keyboard dismissal | A terminal toolbar button hides the keyboard and brings it back on iPhone and iPad | Delivered: all 12 Simulator terminal tests pass. The hide/restore lifecycle test passes on both physical devices and retains the session and output. The iPad render with the keyboard hidden was inspected. The signed update is installed and launched on iPhone and iPad |
 
+| 14 | Multiple session tabs per host | Keep independent tabs; show an on-demand panel; preserve keyboard state; close local tabs without deleting remote sessions | Delivered: 16 input and tab tests pass in Simulator and on iPad; all 5 tab tests pass on iPhone. Live SSM checks confirm independent output and remote session retention after closing a tab. Signed update installed and launched on both devices |
+| 15 | Terminal touch scrolling | Diagnose gesture routing, scrollback, full-screen applications, and tmux copy mode before fixing the input path | Investigation active; keep this separate from the session-panel feature |
+
 Repository history cleanup is published and verified. Remaining privacy task: request GitHub removal of retained old objects and verify that old file URLs are inaccessible. A local support draft is prepared but has not been sent. Broader app validation limits remain in README.md.
 
 Network interruptions must keep the terminal screen for recovery. Explicit disconnect closes the local terminal. Removing or duplicating a host must not remove or copy its credential values. Existing credentials are referenced by name.

@@ -59,6 +59,20 @@ import TermCore
             print("TMUX_CHECK_QUERY_ISOLATION")
             let query = try await active.execute("printf QUERY_CHANNEL_OK")
             guard query == "QUERY_CHANNEL_OK", !captured.text.contains("QUERY_CHANNEL_OK") else { throw ConnectionError.message("Command output leaked into the interactive channel.") }
+            var otherHost = target; otherHost.tmuxSession = "other"
+            let other = try await SSHConnection.open(host: otherHost, privateKey: key, trustedFingerprint: trusted, aws: aws)
+            defer { other.close() }
+            let otherOutput = OutputCapture(); other.onData = { otherOutput.append($0) }
+            try await other.startTerminal(host: otherHost, reconnecting: false)
+            other.send(Data("printf 'SECOND_TAB_%s\\n' OK\n".utf8))
+            try await waitFor("SECOND_TAB_OK", capture: otherOutput)
+            guard !captured.text.contains("SECOND_TAB_OK") else { throw ConnectionError.message("Output crossed between tabs.") }
+            other.close()
+            let afterClose = try await active.tmuxSessions(for: target)
+            guard Set(afterClose.names) == Set(["check", "other"]) else { throw ConnectionError.message("Closing a tab removed a remote session.") }
+            active.send(Data("printf 'FIRST_TAB_%s\\n' ACTIVE\n".utf8))
+            try await waitFor("FIRST_TAB_ACTIVE", capture: captured)
+            print("TMUX_MULTIPLE_TABS_OK OUTPUT_ISOLATED CLOSE_RETAINS_REMOTE_SESSION")
             active.close()
             try await Task.sleep(nanoseconds: 500_000_000)
             print("TMUX_CHECK_RECONNECT")

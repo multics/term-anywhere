@@ -153,3 +153,11 @@ Settings offers System, Light, and Dark. System is the default for new and older
 ## Keyboard dismissal
 
 Keep a visible keyboard button beside the terminal tools menu. It hides the software keyboard while keeping the terminal and connection. When hidden, the button restores keyboard input. Follow UIKit keyboard visibility notifications so the label also updates after system dismissal. Keep Hide keyboard in More as a second route. Clear one-shot modifiers and stop arrow repeat when hiding the keyboard. The keyboard layout guide returns the freed space to terminal output.
+
+## Multiple terminal tabs
+
+Keep one host configuration and a local list of open tabs. Each tab owns its SSH connection, terminal buffer, input state, and tmux selection. The header shows the current session and tab count. Tap it to open the session panel. Use a trailing overlay on a landscape iPhone, a sheet on a portrait iPhone, and a popover on iPad. The panel does not add a permanent tab strip or change the terminal width. Rows show the session name, status, current selection, and Close control.
+
+Open session reads the connected server through its separate query channel. Select an existing tab when that session is already open. New session creates a tab after name validation. New tabs use the endpoint that supplied the list; a cloud edit must not redirect that operation. Save the last selected connected session through the existing host record. Open tabs, connections, and output stay local and do not survive app termination.
+
+Switch tabs without closing their connections. Restore the keyboard's visible or hidden state. Command-Option-Left and Command-Option-Right select adjacent tabs. Closing one tab selects a remaining tab; closing the last tab returns to Hosts. The host-row Disconnect action closes all local tabs for that host. No Close action kills a remote tmux session. Tab operations do not change tmux windows or panes.

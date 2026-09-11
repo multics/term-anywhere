@@ -6,6 +6,8 @@ The app supports direct SSH and SSH through AWS Systems Manager. It uses private
 
 On iPhone and iPad, tap the keyboard button beside the terminal's tools menu to hide the keyboard and see more output. Tap it again to resume typing. The connection and terminal output stay available.
 
+Tap the session title in the terminal header to switch between open tabs for the same host. The panel offers **Open session…** and **New session…**. Selecting an already-open session returns to its tab. Each tab keeps its connection and output. Closing a tab leaves the remote tmux session running; the host-row Disconnect action closes all local tabs for that host. Use Command-Option-Left or Command-Option-Right with a hardware keyboard to switch tabs.
+
 Host settings and terminal preferences also sync through iCloud. SSH keys and AWS profiles use iCloud Keychain by default. An explicit device-only choice remains available.
 
 Read [REQUIREMENTS.md](REQUIREMENTS.md) for scope and [DESIGN.md](DESIGN.md) for implementation decisions. See [APP_ICON.md](APP_ICON.md) for the logo design.

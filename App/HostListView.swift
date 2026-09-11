@@ -32,12 +32,12 @@ struct HostListView: View {
                                 Text("\(host.username) · \(host.isSSM ? "AWS SSM" : "SSH")").font(.caption).foregroundStyle(.secondary)
                             }
                             Spacer()
-                            if store.sessions[host.id]?.isLive == true { Image(systemName: "circle.fill").font(.system(size: 7)).foregroundStyle(.green).accessibilityLabel("Connected") }
+                            if store.tabs[host.id]?.contains(where: { $0.isLive }) == true { Image(systemName: "circle.fill").font(.system(size: 7)).foregroundStyle(.green).accessibilityLabel("Connected") }
                         }.padding(.vertical, 5)
                     }
                     .modifier(HostRowActions(host: host, edit: { editing = host }, remove: {
                         do { try store.removeHost(host.id) } catch { store.error = error.localizedDescription }
-                    }, duplicate: { editing = host.duplicate() }, disconnect: store.sessions[host.id]?.canDisconnect == true ? { store.closeSession(host.id) } : nil))
+                    }, duplicate: { editing = host.duplicate() }, disconnect: store.tabs[host.id]?.contains(where: { $0.canDisconnect }) == true ? { store.closeSession(host.id) } : nil))
                 }
                 .onMove { offsets, destination in store.moveHosts(from: offsets, to: destination) }
                 .moveDisabled(!search.isEmpty)
@@ -59,8 +59,8 @@ struct HostListView: View {
                 }
             }
         } detail: {
-            if let selected = store.selectedHostID, let session = store.sessions[selected] {
-                TerminalScreen(session: session, onDisconnect: { store.closeSession(selected) }).id(ObjectIdentifier(session))
+            if let selected = store.selectedHostID, store.sessions[selected] != nil {
+                TerminalWorkspaceScreen(store: store, hostID: selected).id(selected)
             } else {
                 ContentUnavailableView("Term Anywhere", systemImage: "terminal", description: Text("Choose a server to open a terminal."))
             }
@@ -80,7 +80,7 @@ struct HostListView: View {
             if phase == .active {
                 store.configuration.start()
                 do { try store.refreshCredentials() } catch { store.error = error.localizedDescription }
-                for session in store.sessions.values { session.resume() }
+                for session in store.allSessions { session.resume() }
             }
         }
         .overlay { if scenePhase == .background { Color(.systemBackground).ignoresSafeArea().overlay { Image(systemName: "terminal").font(.largeTitle) } } }

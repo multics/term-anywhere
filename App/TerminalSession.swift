@@ -4,7 +4,9 @@ import TermCore
 
 @MainActor final class TerminalSession: ObservableObject {
     @Published private(set) var host: TermCore.Host
-    var id: UUID { host.id }
+    let id = UUID()
+    var createTmuxOnConnect = false
+    var restoreKeyboardOnAppear: Bool?
     let terminal: TerminalView
     weak var store: AppStore?
     @Published var status = "Disconnected"
@@ -95,6 +97,13 @@ import TermCore
            transition.animate(alongsideTransition: nil, completion: { _ in request() }) { return }
         request()
     }
+    func inheritPresentation(from previous: TerminalSession) {
+        restoreKeyboardOnAppear = previous.keyboardVisible || previous.restoreKeyboardOnAppear == true
+        requestedLandscape = previous.requestedLandscape
+        previousOrientation = previous.previousOrientation
+        orientationScene = previous.orientationScene
+        previous.previousOrientation = nil; previous.orientationScene = nil
+    }
     private func restoreOrientation() {
         guard let scene = orientationScene, let previousOrientation else { return }
         orientationScene = nil; self.previousOrientation = nil
@@ -115,6 +124,11 @@ import TermCore
         resetModifiers()
         coordinator?.stopRepeat()
         coordinator?.refreshMenu()
+    }
+    func restoreKeyboardIfNeeded() {
+        guard terminal.window != nil, let restore = restoreKeyboardOnAppear else { return }
+        restoreKeyboardOnAppear = nil
+        if restore { showKeyboard() } else { hideKeyboard() }
     }
     func toggleKeyboard() { if keyboardVisible { hideKeyboard() } else { showKeyboard() } }
     func setOptionAsMeta(_ enabled: Bool) {
@@ -152,7 +166,9 @@ import TermCore
                 let t = terminal.getTerminal()
                 try await c.startTerminal(host: host, reconnecting: attachOnly, columns: t.cols, rows: t.rows)
                 guard generation == attempt, !Task.isCancelled else { c.close(); return }
+                createTmuxOnConnect = false
                 retryCount = 0; isConnecting = false; isLive = true; status = "Connected"
+                store.rememberSession(self)
                 await refreshBindings()
             } catch {
                 guard generation == attempt, !Task.isCancelled else { return }
@@ -181,16 +197,15 @@ import TermCore
         }
         guard self.connection === connection, wantsConnection else { throw ConnectionError.message("The connection ended while reading tmux sessions.") }
         if !forceSelection, !host.tmuxSession.isEmpty, availableTmuxSessions.contains(host.tmuxSession) { return true }
+        if !forceSelection, createTmuxOnConnect, tmuxAvailable, !host.tmuxSession.isEmpty { return false }
         if tmuxAvailable, !host.tmuxSession.isEmpty, !availableTmuxSessions.contains(host.tmuxSession) {
             tmuxDiscoveryMessage = "The saved session was not listed. Choose another session, create one, or open a plain shell."
         }
         let choice = try await requestTmuxSelection()
         try Task.checkCancellation()
-        guard let store, var saved = store.hosts.first(where: { $0.id == host.id }) else {
+        guard let store, store.hosts.contains(where: { $0.id == host.id }) else {
             throw ConnectionError.message("This host was removed while choosing a session.")
         }
-        saved.tmuxSession = choice.name; saved.tmuxSelectionMade = true
-        try store.save(saved)
         // Keep the connected endpoint even if another device edited the host during selection.
         host.tmuxSession = choice.name; host.tmuxSelectionMade = true
         return !choice.create && !choice.name.isEmpty
@@ -207,17 +222,18 @@ import TermCore
         do {
             var candidate = host; candidate.tmuxSession = name; try candidate.validate()
             if create && !tmuxAvailable { throw ConnectionError.message("tmux is not available for session creation.") }
+            if let store, let existing = store.tabs[host.id]?.first(where: {
+                $0 !== self && $0.host.tmuxSession == name && $0.host.tmuxSelectionMade == true
+            }) {
+                store.selectTab(existing); store.closeTab(self); return
+            }
             tmuxSelectionContinuation = nil; selectingTmux = false
             pending.resume(returning: TmuxSelection(name: name, create: create))
         } catch { tmuxSelectionError = error.localizedDescription }
     }
     func cancelTmuxSelection() {
         guard tmuxSelectionContinuation != nil else { return }
-        if let store { store.closeSession(id) } else { disconnect() }
-    }
-    func chooseAnotherTmuxSession() {
-        disconnect(closeUI: false)
-        connect(forceSessionSelection: true)
+        if let store { store.closeTab(self) } else { disconnect() }
     }
     func trustAndConnect() {
         guard let fingerprint = pendingFingerprint, let store else { return }

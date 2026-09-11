@@ -5,6 +5,8 @@ import TermCore
 struct TerminalScreen: View {
     @ObservedObject var session: TerminalSession
     let onDisconnect: () -> Void
+    var tabCount = 1
+    var showSessions: (() -> Void)?
     var body: some View {
         VStack(spacing: 0) {
             if !session.isLive {
@@ -33,10 +35,22 @@ struct TerminalScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .principal) {
-                VStack(spacing: 1) {
-                    Text(session.host.name).font(.headline).lineLimit(1)
-                    Text(session.host.sessionLabel).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
-                }.accessibilityElement(children: .combine)
+                Button { showSessions?() } label: {
+                    VStack(spacing: 1) {
+                        Text(session.host.name).font(.headline).lineLimit(1)
+                        HStack(spacing: 4) {
+                            Text(session.host.sessionLabel).lineLimit(1)
+                            if showSessions != nil {
+                                Image(systemName: "chevron.down")
+                                Text("\(tabCount)").monospacedDigit()
+                            }
+                        }.font(.caption2).foregroundStyle(.secondary)
+                    }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Sessions, \(session.host.sessionLabel), \(tabCount) open")
+                .accessibilityIdentifier("terminal.sessions")
+                .disabled(showSessions == nil)
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Button(session.keyboardVisible ? "Hide keyboard" : "Show keyboard",
@@ -49,8 +63,10 @@ struct TerminalScreen: View {
                 Menu {
                     Section("Connection") {
                         Text(session.status)
-                        Button("Choose tmux session…", systemImage: "list.bullet") { session.chooseAnotherTmuxSession() }.disabled(!session.isLive)
-                        Button("Disconnect", systemImage: "xmark.circle") { onDisconnect() }
+                        Button("Sessions…", systemImage: "rectangle.on.rectangle") { showSessions?() }.disabled(showSessions == nil)
+                        Button("Previous tab", systemImage: "chevron.left") { session.store?.stepTab(for: session.host.id, by: -1) }.keyboardShortcut(.leftArrow, modifiers: [.command, .option])
+                        Button("Next tab", systemImage: "chevron.right") { session.store?.stepTab(for: session.host.id, by: 1) }.keyboardShortcut(.rightArrow, modifiers: [.command, .option])
+                        Button("Close tab", systemImage: "xmark.circle") { onDisconnect() }
                     }
                     Section("Terminal") {
                         Button(session.keyboardVisible ? "Hide keyboard" : "Show keyboard", systemImage: "keyboard") { session.toggleKeyboard() }
@@ -126,6 +142,7 @@ struct TerminalContainer: UIViewControllerRepresentable {
         super.viewDidAppear(animated)
         session?.updateTerminalColors()
         requestInitialLandscape()
+        session?.restoreKeyboardIfNeeded()
     }
     func requestInitialLandscape() {
         guard let window = viewIfLoaded?.window else { return }

@@ -22,7 +22,12 @@ import TermCore
     let externalTerminal = MacTerminalLauncher()
     #endif
     #if os(iOS)
-    @Published var sessions: [UUID: TerminalSession] = [:]
+    @Published private(set) var tabs: [UUID: [TerminalSession]] = [:]
+    @Published private var activeTabIDs: [UUID: UUID] = [:]
+    var sessions: [UUID: TerminalSession] {
+        tabs.compactMapValues { group in group.first { activeTabIDs[$0.host.id] == $0.id } ?? group.first }
+    }
+    var allSessions: [TerminalSession] { tabs.values.flatMap { $0 } }
     @Published private(set) var selectedHostID: UUID?
     private var sessionObservers: [UUID: AnyCancellable] = [:]
     #endif
@@ -53,7 +58,7 @@ import TermCore
         preferences = state.preferences?.value ?? TerminalPreferences()
         #if os(iOS)
         for id in Array(sessions.keys) where state.hosts[SyncedConfiguration.hostPrefix + id.uuidString]?.deleted == true { closeSession(id) }
-        for session in sessions.values { session.applyPreferences(preferences) }
+        for session in allSessions { session.applyPreferences(preferences) }
         #endif
     }
     func savePreferences(_ value: TerminalPreferences) {
@@ -95,20 +100,67 @@ import TermCore
         selectedHostID = id
     }
     func session(for host: TermCore.Host) -> TerminalSession {
-        if let existing = sessions[host.id] {
-            // A cloud edit must not interrupt a running terminal.
-            if existing.host == host || existing.isLive || existing.isConnecting { return existing }
-            existing.disconnect()
-        }
-        let session = TerminalSession(host: host, store: self); sessions[host.id] = session
-        sessionObservers[host.id] = session.objectWillChange.sink { [weak self] in self?.objectWillChange.send() }
+        if let existing = sessions[host.id] { return existing }
+        return addTab(host: host)
+    }
+    private func addTab(host: TermCore.Host, create: Bool = false) -> TerminalSession {
+        let session = TerminalSession(host: host, store: self)
+        session.createTmuxOnConnect = create
+        tabs[host.id, default: []].append(session)
+        sessionObservers[session.id] = session.objectWillChange.sink { [weak self] in self?.objectWillChange.send() }
+        selectTab(session)
         return session
+    }
+    @discardableResult func openTab(from source: TerminalSession, name: String, create: Bool = false) throws -> TerminalSession {
+        guard tabs[source.host.id]?.contains(where: { $0 === source }) == true,
+              hosts.contains(where: { $0.id == source.host.id }) else { throw ConnectionError.message("This host is no longer open.") }
+        // Keep the endpoint that supplied the session list, even during a cloud edit.
+        var host = source.host; host.tmuxSession = name; host.tmuxSelectionMade = true
+        try host.validate()
+        if let existing = tabs[host.id]?.first(where: { $0.host.tmuxSession == name && $0.host.tmuxSelectionMade == true }) {
+            selectTab(existing); return existing
+        }
+        return addTab(host: host, create: create)
+    }
+    func selectTab(_ session: TerminalSession) {
+        guard tabs[session.host.id]?.contains(where: { $0 === session }) == true else { return }
+        if let previous = sessions[session.host.id], previous !== session {
+            session.inheritPresentation(from: previous)
+            previous.hideKeyboard()
+        }
+        activeTabIDs[session.host.id] = session.id
+        if session.isLive { rememberSession(session) }
+    }
+    func stepTab(for hostID: UUID, by offset: Int) {
+        guard let group = tabs[hostID], group.count > 1,
+              let index = group.firstIndex(where: { $0.id == activeTabIDs[hostID] }) else { return }
+        selectTab(group[(index + offset + group.count) % group.count])
+    }
+    func rememberSession(_ session: TerminalSession) {
+        guard sessions[session.host.id] === session,
+              var saved = hosts.first(where: { $0.id == session.host.id }) else { return }
+        guard saved.tmuxSession != session.host.tmuxSession || saved.tmuxSelectionMade != true else { return }
+        saved.tmuxSession = session.host.tmuxSession; saved.tmuxSelectionMade = true
+        do { try save(saved) } catch { self.error = error.localizedDescription }
+    }
+    func closeTab(_ session: TerminalSession) {
+        let hostID = session.host.id
+        guard let group = tabs[hostID], let index = group.firstIndex(where: { $0 === session }) else { return }
+        if group.count == 1 { closeSession(hostID); return }
+        if sessions[hostID] === session {
+            selectTab(group[index == group.count - 1 ? index - 1 : index + 1])
+        }
+        session.disconnect()
+        tabs[hostID]?.removeAll { $0 === session }
+        sessionObservers.removeValue(forKey: session.id)
     }
     func closeSession(_ id: UUID) {
         if selectedHostID == id { selectedHostID = nil }
-        sessions[id]?.disconnect()
-        sessions.removeValue(forKey: id)
-        sessionObservers.removeValue(forKey: id)
+        for session in tabs[id] ?? [] {
+            session.disconnect()
+            sessionObservers.removeValue(forKey: session.id)
+        }
+        tabs.removeValue(forKey: id); activeTabIDs.removeValue(forKey: id)
     }
     #endif
 }

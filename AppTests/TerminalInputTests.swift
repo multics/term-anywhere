@@ -192,16 +192,6 @@ import TermCore
         XCTAssertFalse(session.selectingTmux)
         store.closeSession(host.id)
     }
-    func testSessionSwitchKeepsTheVisibleTerminalCoordinator() {
-        let store = AppStore()
-        let host = Host(name: "Switch fixture", address: "example.invalid", username: "fixture", keyID: "missing-fixture")
-        let session = store.session(for: host)
-        let coordinator = TerminalCoordinator(session: session)
-        session.coordinator = coordinator
-        session.chooseAnotherTmuxSession()
-        XCTAssertTrue(session.coordinator === coordinator)
-        store.closeSession(host.id)
-    }
     func testChineseCompositionSendsOnlyCommittedText() {
         let terminal = SafeTerminalView(frame: CGRect(x: 0, y: 0, width: 393, height: 500))
         let output = InputRecorder(); terminal.terminalDelegate = output
