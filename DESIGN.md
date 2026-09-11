@@ -135,3 +135,7 @@ The Mac editor can reset the mobile selection. An external Mac terminal opens a 
 ## Connected terminal layout
 
 After host selection, show the terminal detail at full width. The native sidebar control returns to the host list. Explicit disconnect shows Hosts again. Keep the host and session in one navigation bar, with one tools menu. Hide the separate status strip while connected. Show connection errors and recovery controls when needed. Keep Esc, Ctrl, Tab, arrows, and More above the software keyboard. The tools menu also exposes tmux shortcuts for hardware keyboard users. Do not cover terminal output with floating controls.
+
+## iPhone orientation
+
+When a connected terminal is visible on iPhone, request landscape once through UIWindowScene.requestGeometryUpdate. Defer the request until SwiftUI completes its view update. A request made during that update can fail with a temporary portrait-only restriction. Do not lock orientation. Return to the previous orientation when the terminal closes or leaves navigation. Do not request an orientation change on iPad. Use Apple's [window geometry API](https://developer.apple.com/documentation/uikit/uiwindowscene/requestgeometryupdate(_:errorhandler:)); the system decides whether it can apply the request.

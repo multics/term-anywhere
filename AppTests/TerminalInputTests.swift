@@ -14,6 +14,7 @@ import TermCore
         let controller = UIHostingController(rootView: HostListView().environmentObject(store).environment(\.scenePhase, .active))
         window.rootViewController = controller
         window.makeKeyAndVisible()
+        let initialOrientation = scene.effectiveGeometry.interfaceOrientation
         defer { window.isHidden = true; window.rootViewController = nil }
         try await Task.sleep(for: .milliseconds(200))
         store.selectHost(host.id)
@@ -22,7 +23,12 @@ import TermCore
         XCTAssertNotNil(session.terminal.window)
         session.isLive = true; session.status = "Connected"
         session.terminal.feed(text: "Welcome to the terminal\r\n$ ")
-        try await Task.sleep(for: .milliseconds(300))
+        try await Task.sleep(for: .seconds(1))
+        if scene.traitCollection.userInterfaceIdiom == .phone {
+            XCTAssertTrue(scene.effectiveGeometry.interfaceOrientation.isLandscape, "A connected iPhone terminal must request landscape")
+        } else {
+            XCTAssertEqual(scene.effectiveGeometry.interfaceOrientation, initialOrientation, "iPad orientation must remain under user control")
+        }
         let image = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in
             window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
         }
@@ -31,6 +37,7 @@ import TermCore
         add(attachment)
         store.closeSession(host.id)
         try await Task.sleep(for: .milliseconds(600))
+        XCTAssertEqual(scene.effectiveGeometry.interfaceOrientation, initialOrientation)
         XCTAssertNil(store.selectedHostID)
         XCTAssertNil(session.terminal.window, "Disconnect must remove the terminal from the displayed hierarchy")
         XCTAssertNil(session.coordinator)
