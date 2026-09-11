@@ -61,7 +61,11 @@ struct MacHostListView: View {
         }
         .alert("Cannot complete the action", isPresented: Binding(get: { store.error != nil }, set: { if !$0 { store.error = nil } })) { Button("OK") { store.error = nil } } message: { Text(store.error ?? "") }
         .onChange(of: phase) { _, value in
-            if value == .active { store.configuration.start(); for session in store.sessions.values { session.resume() } }
+            if value == .active {
+                store.configuration.start()
+                do { try store.refreshCredentials() } catch { store.error = error.localizedDescription }
+                for session in store.sessions.values { session.resume() }
+            }
         }
     }
 }
@@ -101,7 +105,7 @@ struct MacHostEditor: View {
                         ForEach(store.awsNames.filter { $0 != host.awsProfile }, id: \.self) { Text($0).tag($0) }
                     } }
                     TextField("Region", text: $host.region)
-                    Text("Use the same credential name on each device. Credential values remain local.").font(.caption).foregroundStyle(.secondary)
+                    Text("Use the same credential name on each device. Credentials use iCloud Keychain by default; manage storage in Keys and AWS profiles.").font(.caption).foregroundStyle(.secondary)
                 }
                 Section("tmux") {
                     TextField("Session (empty for plain shell)", text: $host.tmuxSession)

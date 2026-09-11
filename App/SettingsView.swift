@@ -11,7 +11,7 @@ struct SettingsView: View {
                 Section("iCloud") {
                     Label(sync.status, systemImage: "icloud")
                     Text("Hosts, SSH key names, AWS profile names, tmux settings, and terminal preferences sync between your devices.")
-                    Text("Private keys, AWS credentials, fingerprint trust, and terminal output stay on this device.")
+                    Text("SSH keys and AWS profiles use iCloud Keychain by default. Choose device-only storage in Keys and AWS. Server fingerprint trust and terminal output stay on this device.")
                     if sync.accountChanged {
                         Button("Resume with this iCloud account") { confirmingAccount = true }
                     } else {
@@ -37,7 +37,7 @@ struct SettingsView: View {
             .alert("Merge with this iCloud account?", isPresented: $confirmingAccount) {
                 Button("Cancel", role: .cancel) {}
                 Button("Merge settings") { sync.resumeForCurrentAccount() }
-            } message: { Text("Local hosts and settings will merge with the current account. For edits to the same host, the newer edit wins. Credentials stay on this device.") }
+            } message: { Text("Local hosts and settings will merge with the current account. For edits to the same host, the newer edit wins. Credential sync is managed separately by iCloud Keychain.") }
         }
     }
 }

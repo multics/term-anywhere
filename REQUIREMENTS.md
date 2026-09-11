@@ -6,7 +6,7 @@ Status: approved scope for implementation. Minimum OS: iOS/iPadOS 26 and macOS 2
 
 Provide a personal remote terminal on iPhone and iPad. Support the user's selected hosts from the Mac SSH configuration, including direct SSH and SSH through AWS Systems Manager. The app must connect independently of the Mac after setup.
 
-Provide a native Mac app to configure hosts, import SSH keys and static AWS profiles, and open remote terminals. Use the same iCloud settings store as the phone and tablet. Credential values remain on each device, including the Mac.
+Provide a native Mac app to configure hosts, import SSH keys and static AWS profiles, and open remote terminals. Use the same iCloud settings store as the phone and tablet. Use iCloud Keychain for SSH keys and AWS profiles by default. Permit an explicit device-only choice.
 
 ## Required behavior
 
@@ -20,7 +20,10 @@ Provide a native Mac app to configure hosts, import SSH keys and static AWS prof
 - Retain a disconnected screen with an accurate status. Do not promise continuous execution while iOS suspends the app or survival of remote processes after server restart.
 - Support host editing, selected-host settings import, private-key import, AWS credential entry/import, and basic session switching.
 - Sync saved host definitions and terminal preferences through iCloud. Include tmux session/socket settings, manual prefix, SSH key names, and AWS profile names. Keep local copies for offline use.
-- Keep private keys, AWS credentials, passphrases, server fingerprint trust, terminal output, and active connections on each device. The user explicitly selected this credential policy.
+- Sync imported SSH private keys and AWS profiles through iCloud Keychain by default. Migrate existing local credentials unless the user has explicitly selected device-only storage. This replaces the earlier local-only and opt-in policies. Permit device-only storage before import and for existing credentials.
+- Keep passphrases, server fingerprint trust, terminal output, and active connections on each device. Do not put secret values in iCloud configuration records.
+- Preserve local credentials during migration failures and name conflicts. Show each credential’s storage location. Keep a local copy before removing a shared copy. Explain that removal can affect other devices.
+- Refresh available credentials when the app becomes active, when the credential view opens, and on manual refresh. Do not claim that a successful Keychain write confirms delivery to another device.
 - Merge edits to different hosts. For competing edits to one host, use the newer record. Pause further sync writes when Apple reports an iCloud account change until the user selects how to continue. Do not interrupt an active terminal when cloud settings arrive.
 - On the Mac, preview selected aliases with system OpenSSH before importing them. Read the user's chosen SSH configuration without changing it. Import selected AWS profiles into the Mac Keychain; do not execute SSO, role-assumption, or credential-process flows during import.
 
@@ -34,6 +37,6 @@ Use macOS OpenSSH to resolve selected host settings for initial import. Do not s
 
 Build for iPhone and iPad. Run protocol and parsing tests. Test an actual direct SSH connection and both AWS profile paths where credentials and access permit. Test tmux remapping and reconnection, including no input replay. Run the app in an iOS Simulator and inspect the visible UI. Record any physical-device, signing, network, or compatibility checks that remain incomplete.
 
-Test offline configuration merges, competing host edits, settings persistence, and invalid cloud data. Verify actual iCloud transfer between two signed-in devices when an iCloud-enabled provisioning profile is available. Unit tests do not prove that transfer.
+Test offline configuration merges, competing host edits, settings persistence, and invalid cloud data. Verify actual iCloud transfer between two signed-in devices when an iCloud-enabled provisioning profile is available. Unit tests do not prove that transfer. Test selected-credential migration, same-name conflicts, shared updates, removal from iCloud, and local fingerprint trust in signed app hosts. Use synthetic data for cross-device credential tests.
 
 The original investigation, alternatives, and sources are in [PROPOSAL.md](PROPOSAL.md). Implementation decisions are in [DESIGN.md](DESIGN.md).

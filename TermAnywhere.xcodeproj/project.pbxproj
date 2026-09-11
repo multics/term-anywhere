@@ -16,6 +16,8 @@
 		1E37C6292B12DD241460628F /* SSMMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F1ACD30831169FB1298DC6C /* SSMMessage.swift */; };
 		276CDD00736720A26502F6B8 /* SSHConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A542E0E4DB3FE3C3C16E33 /* SSHConnection.swift */; };
 		2AFC83658DF618E6E430334C /* Host.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57D92F2A783A08E27D9B43C7 /* Host.swift */; };
+		2D9164257BB82B31542B4A34 /* KeychainTransferTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29E2DAB4E08A3E4127F740B0 /* KeychainTransferTests.swift */; };
+		3279143D45C16A78D12A06E5 /* KeychainTransferTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29E2DAB4E08A3E4127F740B0 /* KeychainTransferTests.swift */; };
 		33BB86C67C4236BC57060F80 /* ConnectionIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E3CE15AD05EC342137C5604 /* ConnectionIntegrationTests.swift */; };
 		37C5060F464070D13999A5D5 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DDCA7CB2E722CB905E65133 /* SettingsView.swift */; };
 		3C523905473FCAC122224DDC /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 225A9D04BBE0D1FEF61BB42B /* KeychainStore.swift */; };
@@ -27,9 +29,12 @@
 		52F47CB2E7D71D536B5C019D /* OpenSSL.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 02FB853CEB4CEF98DD4067A8 /* OpenSSL.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		53C8855857D6DCF06E5B9AC2 /* SSMTunnel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F08F0988DBAC3BE6671CA51 /* SSMTunnel.swift */; };
 		543914770EF545E7AB43039C /* SSHConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A542E0E4DB3FE3C3C16E33 /* SSHConnection.swift */; };
+		564CDE55BCF8283882DC74CB /* KeychainSyncTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43BFD99C72D668007F131D25 /* KeychainSyncTests.swift */; };
 		56C481B5756CE003B5A5FB27 /* OpenSSL.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 02FB853CEB4CEF98DD4067A8 /* OpenSSL.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		58A330458C3C6C92DA89B9C1 /* libssh2.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 9712191D15665A55F4FF253E /* libssh2.h */; };
 		58DD6C8C9B7FF1F9C59D52FC /* TermCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52671139DC68A13939FB7476 /* TermCore.framework */; };
+		598259418D32EA74FC54255B /* KeychainSyncTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43BFD99C72D668007F131D25 /* KeychainSyncTests.swift */; };
+		5B1753F39E03B852617B48EC /* TermCoreMac.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0C92E02B110F68623ACBB779 /* TermCoreMac.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		6152696DB81C9FBB810C1888 /* TmuxBindings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B553F1A06FF7F06B01A8EAE /* TmuxBindings.swift */; };
 		61A47651921D7F0B35E3EA16 /* SyncedConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23578D1D5C45DD4D80FF452D /* SyncedConfiguration.swift */; };
 		61B9C549193C283F6F6AE4F2 /* AWSSigning.swift in Sources */ = {isa = PBXBuildFile; fileRef = E74AD3422CA2F6BA1880F5A6 /* AWSSigning.swift */; };
@@ -53,6 +58,7 @@
 		A839562E06DE41465B8109AE /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = E66C083D2CC6C59633FF75C0 /* SwiftTerm */; };
 		ADB4A4D3DC0839BE36B23360 /* libssh2.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 9712191D15665A55F4FF253E /* libssh2.h */; };
 		AE6C48712ED8A1FD741743CB /* libCSSH.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 40C9F395AA8CF5B9391C699A /* libCSSH.a */; };
+		B0096274F71E0984E8821AE9 /* TermCoreMac.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0C92E02B110F68623ACBB779 /* TermCoreMac.framework */; };
 		B08EDEB88FC48872B39CA4CE /* OpenSSL.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 02FB853CEB4CEF98DD4067A8 /* OpenSSL.xcframework */; };
 		B9DE0412D81D46D477DB4F9A /* CSSH.c in Sources */ = {isa = PBXBuildFile; fileRef = 075A5C113BAAA48AEFB4561D /* CSSH.c */; };
 		BF7A4D2BFC21109290B6AAEE /* OpenSSL.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 02FB853CEB4CEF98DD4067A8 /* OpenSSL.xcframework */; };
@@ -74,6 +80,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		005E9C983E74D678D9893A5D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 536F069C4B53292FE87543B4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B40C41031B4C6AEA92C11926;
+			remoteInfo = TermCoreMac;
+		};
 		10CC8E8C47C48D218C2F81C2 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 536F069C4B53292FE87543B4 /* Project object */;
@@ -87,6 +100,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 4B61BB7AA81F0DB7B2CDBFE7;
 			remoteInfo = TermCore;
+		};
+		454B481EFA5DBD1EDC3EEEE6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 536F069C4B53292FE87543B4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 170F723E396E814F2E773A39;
+			remoteInfo = TermAnywhereMac;
 		};
 		45E5C5E3333E188A5B1C7EAC /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -179,6 +199,17 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A63763908D59B6E762CCFF4A /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				5B1753F39E03B852617B48EC /* TermCoreMac.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F92D1466DFAAB13F42D9E6D1 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -198,10 +229,12 @@
 		0C92E02B110F68623ACBB779 /* TermCoreMac.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = TermCoreMac.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		225A9D04BBE0D1FEF61BB42B /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		23578D1D5C45DD4D80FF452D /* SyncedConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncedConfiguration.swift; sourceTree = "<group>"; };
+		29E2DAB4E08A3E4127F740B0 /* KeychainTransferTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainTransferTests.swift; sourceTree = "<group>"; };
 		2F1ACD30831169FB1298DC6C /* SSMMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSMMessage.swift; sourceTree = "<group>"; };
 		3B553F1A06FF7F06B01A8EAE /* TmuxBindings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TmuxBindings.swift; sourceTree = "<group>"; };
 		40C1CF8ECED60499037D9EFD /* TermAnywhereMac.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TermAnywhereMac.entitlements; sourceTree = "<group>"; };
 		40C9F395AA8CF5B9391C699A /* libCSSH.a */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = archive.ar; path = libCSSH.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		43BFD99C72D668007F131D25 /* KeychainSyncTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainSyncTests.swift; sourceTree = "<group>"; };
 		485E2420C5CAD0E555FE32D7 /* HostEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostEditor.swift; sourceTree = "<group>"; };
 		4963A7064BB158E7633E001C /* TermAnywhereTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = TermAnywhereTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		49AD73D46D1D914A562901A8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -228,6 +261,7 @@
 		DFEE8DFA113E47D9BF83387A /* MacHostListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacHostListView.swift; sourceTree = "<group>"; };
 		E260444A780A9616953992ED /* TerminalSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalSession.swift; sourceTree = "<group>"; };
 		E29EA05109ED0B03B1A30C29 /* TermAnywhere.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TermAnywhere.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E30A2C523DA22B128ED2B6C8 /* TermAnywhereMacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TermAnywhereMacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E4A542E0E4DB3FE3C3C16E33 /* SSHConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSHConnection.swift; sourceTree = "<group>"; };
 		E74AD3422CA2F6BA1880F5A6 /* AWSSigning.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AWSSigning.swift; sourceTree = "<group>"; };
 		E9EF21EA2EB966A7E7F6FAA9 /* ThirdPartyNotices.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = ThirdPartyNotices.txt; sourceTree = "<group>"; };
@@ -265,6 +299,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				D0CB76187BE2FCD8046B74B6 /* OpenSSL.xcframework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		72D33B18D44E9E56DEDD39BB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B0096274F71E0984E8821AE9 /* TermCoreMac.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -345,6 +387,15 @@
 			path = Sources/CSSH;
 			sourceTree = "<group>";
 		};
+		2F91C52D1DB6DA851508B936 /* SharedAppTests */ = {
+			isa = PBXGroup;
+			children = (
+				43BFD99C72D668007F131D25 /* KeychainSyncTests.swift */,
+				29E2DAB4E08A3E4127F740B0 /* KeychainTransferTests.swift */,
+			);
+			path = SharedAppTests;
+			sourceTree = "<group>";
+		};
 		390F91569CAD490EBAA8BACC /* AppTests */ = {
 			isa = PBXGroup;
 			children = (
@@ -369,6 +420,7 @@
 				C47D3923DA57DDC93649ECA7 /* libCSSHMac.a */,
 				E29EA05109ED0B03B1A30C29 /* TermAnywhere.app */,
 				F5781F10B371317551A62AAB /* TermAnywhereMac.app */,
+				E30A2C523DA22B128ED2B6C8 /* TermAnywhereMacTests.xctest */,
 				4963A7064BB158E7633E001C /* TermAnywhereTests.xctest */,
 				52671139DC68A13939FB7476 /* TermCore.framework */,
 				0C92E02B110F68623ACBB779 /* TermCoreMac.framework */,
@@ -383,6 +435,7 @@
 				390F91569CAD490EBAA8BACC /* AppTests */,
 				1BA5CD133B2C23C9CAF3526E /* CSSH */,
 				8C85FAF201D80E27878B3122 /* MacApp */,
+				2F91C52D1DB6DA851508B936 /* SharedAppTests */,
 				08FF89FC3D11CB7C77861CA9 /* TermCore */,
 				69A389F318DE00ED8C71A1D9 /* Frameworks */,
 				6ED7EEBD1E093760C02E73B6 /* Products */,
@@ -529,6 +582,27 @@
 			productReference = 0C92E02B110F68623ACBB779 /* TermCoreMac.framework */;
 			productType = "com.apple.product-type.framework";
 		};
+		BB046ACE49977F82A74FA5D5 /* TermAnywhereMacTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B8F46FFD28DEB71922E898B5 /* Build configuration list for PBXNativeTarget "TermAnywhereMacTests" */;
+			buildPhases = (
+				DA7FEA19BFE728C65FF6A5F6 /* Sources */,
+				72D33B18D44E9E56DEDD39BB /* Frameworks */,
+				A63763908D59B6E762CCFF4A /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				C8429289B388E01E3BF2A8F0 /* PBXTargetDependency */,
+				E4536DD217B694A2B9CE275A /* PBXTargetDependency */,
+			);
+			name = TermAnywhereMacTests;
+			packageProductDependencies = (
+			);
+			productName = TermAnywhereMacTests;
+			productReference = E30A2C523DA22B128ED2B6C8 /* TermAnywhereMacTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		BFA8ABE430824A535A7D3B80 /* CSSH */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = CD88FFB0F1404293B378CEA6 /* Build configuration list for PBXNativeTarget "CSSH" */;
@@ -580,6 +654,10 @@
 						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
+					BB046ACE49977F82A74FA5D5 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
 					BFA8ABE430824A535A7D3B80 = {
 						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
@@ -609,6 +687,7 @@
 				BFA8ABE430824A535A7D3B80 /* CSSH */,
 				4B61BB7AA81F0DB7B2CDBFE7 /* TermCore */,
 				83DB3556D1A0E20B4934EA16 /* TermAnywhere */,
+				BB046ACE49977F82A74FA5D5 /* TermAnywhereMacTests */,
 				7E484392F381D4C52B2E8E02 /* TermAnywhereTests */,
 			);
 		};
@@ -641,6 +720,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				33BB86C67C4236BC57060F80 /* ConnectionIntegrationTests.swift in Sources */,
+				564CDE55BCF8283882DC74CB /* KeychainSyncTests.swift in Sources */,
+				2D9164257BB82B31542B4A34 /* KeychainTransferTests.swift in Sources */,
 				D36B9896EEC18488998118F8 /* TerminalInputTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -724,6 +805,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		DA7FEA19BFE728C65FF6A5F6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				598259418D32EA74FC54255B /* KeychainSyncTests.swift in Sources */,
+				3279143D45C16A78D12A06E5 /* KeychainTransferTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -766,6 +856,16 @@
 			isa = PBXTargetDependency;
 			target = 3BDD220C79F918984FCF7B74 /* CSSHMac */;
 			targetProxy = 10CC8E8C47C48D218C2F81C2 /* PBXContainerItemProxy */;
+		};
+		C8429289B388E01E3BF2A8F0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 170F723E396E814F2E773A39 /* TermAnywhereMac */;
+			targetProxy = 454B481EFA5DBD1EDC3EEEE6 /* PBXContainerItemProxy */;
+		};
+		E4536DD217B694A2B9CE275A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B40C41031B4C6AEA92C11926 /* TermCoreMac */;
+			targetProxy = 005E9C983E74D678D9893A5D /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -985,6 +1085,23 @@
 				SDKROOT = macosx;
 			};
 			name = Release;
+		};
+		6234E4BD4F8C86F2095AA024 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = me.tianyong.TermAnywhereMacTests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Term Anywhere.app/Contents/MacOS/Term Anywhere";
+			};
+			name = Debug;
 		};
 		6D41D8BA3CAB4DDDF5F0F527 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -1228,6 +1345,23 @@
 			};
 			name = Debug;
 		};
+		DFF082F4DBA05DC783571995 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = me.tianyong.TermAnywhereMacTests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Term Anywhere.app/Contents/MacOS/Term Anywhere";
+			};
+			name = Release;
+		};
 		FB4485447BE3E3247E841E8B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1298,6 +1432,15 @@
 			buildConfigurations = (
 				8FFF14E9744D164CEAAA8A15 /* Debug */,
 				2522DC2D52DB75264704094D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		B8F46FFD28DEB71922E898B5 /* Build configuration list for PBXNativeTarget "TermAnywhereMacTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6234E4BD4F8C86F2095AA024 /* Debug */,
+				DFF082F4DBA05DC783571995 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

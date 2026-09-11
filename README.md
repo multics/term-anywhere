@@ -4,7 +4,7 @@ A personal SSH terminal for iPhone, iPad, and Mac. Minimum OS: iOS/iPadOS 26 and
 
 The app supports direct SSH and SSH through AWS Systems Manager. It uses private keys, device Keychain storage, and server fingerprint checks. It can attach to a named tmux session and read that server's active prefix and bindings on each connection. The keyboard adds Esc, one-shot Ctrl, Tab, arrows, symbols, and detected tmux actions.
 
-Host settings and terminal preferences also sync through iCloud. Credentials remain on each device.
+Host settings and terminal preferences also sync through iCloud. SSH keys and AWS profiles use iCloud Keychain by default. An explicit device-only choice remains available.
 
 Read [REQUIREMENTS.md](REQUIREMENTS.md) for scope, [DESIGN.md](DESIGN.md) for implementation decisions, and [PROPOSAL.md](PROPOSAL.md) for the original investigation and references. See [APP_ICON.md](APP_ICON.md) for the logo design.
 
@@ -26,7 +26,7 @@ Keep Simulator signing enabled. Its ad-hoc signature supplies the entitlement ne
 
 For a physical device, open `TermAnywhere.xcodeproj`, select your development team on the app target, and run it on the paired device. Xcode needs a signed-in account and a matching provisioning profile. The unsigned device artifact cannot be installed as supplied.
 
-Enable **iCloud → Key-value storage** for the app's identifier and provisioning profile. The project already contains the required entitlement. Keep the same team and bundle identifier on both devices. See [Apple's iCloud configuration instructions](https://developer.apple.com/documentation/xcode/configuring-icloud-services).
+Enable **iCloud → Key-value storage** for the app's identifier and provisioning profile. The project already contains the required entitlement and the shared Keychain access group. Keep the same team and bundle identifier on both devices. See [Apple's iCloud configuration instructions](https://developer.apple.com/documentation/xcode/configuring-icloud-services).
 
 ## Set up connections
 
@@ -36,10 +36,10 @@ Open `~/Applications/Term Anywhere.app`.
 
 1. Select **Import → Read SSH config**. Review the aliases and select **Preview hosts**. Select the hosts to import. You can type additional aliases from Include files. OpenSSH resolves their effective settings.
 2. Open **Keys and AWS profiles**. Select **Import private key**; the picker opens `.ssh` and shows hidden files. Use the key name from the host settings, or leave the name empty to use the filename.
-3. Select **Import AWS profiles from this Mac** and choose the static profiles to save. Their values stay in the Mac Keychain. You can also enter a profile manually.
+3. Select **Import AWS profiles from this Mac** and choose the static profiles to save. New profiles use iCloud Keychain unless you turn off their import switch. You can also enter a profile manually.
 4. Select a host to edit it. **Save** writes the settings locally and to the shared iCloud store. **Open terminal** saves the host and starts a connection.
 
-The Mac uses the same iCloud settings store as iPhone and iPad. SSH keys, AWS secrets, and trust decisions still need separate setup on each device. The Mac import does not modify `.ssh/config` or `.aws/credentials`. Use trusted SSH config files: OpenSSH can evaluate local `Match exec` directives while resolving them.
+The Mac uses the same iCloud settings store as iPhone and iPad. SSH keys and AWS profiles use the shared iCloud Keychain group by default. Trust decisions still need separate setup on each device. The Mac import does not modify `.ssh/config` or `.aws/credentials`. Use trusted SSH config files: OpenSSH can evaluate local `Match exec` directives while resolving them.
 
 Build the signed Mac app after preparing the native dependencies:
 
@@ -75,27 +75,32 @@ Connection recovery attaches to the saved tmux session. It does not create a rep
 
 ## iCloud behavior
 
-Open **+ → Settings and iCloud** to see the sync status and change terminal preferences. Sign in to the same iCloud account on both devices. Host addresses, users, ports, credential names, AWS regions, tmux settings, text size, and Option-as-Meta sync. SSH keys, AWS credentials, passphrases, fingerprint trust, active connections, and terminal output do not sync.
+Open **+ → Settings and iCloud** to see the sync status and change terminal preferences. Sign in to the same iCloud account on both devices. Host addresses, users, ports, credential names, AWS regions, tmux settings, text size, and Option-as-Meta sync. In **Keys and AWS**, new credentials use **iCloud Keychain** by default. Existing local credentials also migrate unless explicitly marked device-only. Turn off the import switch to keep a new credential local; use the menu beside a saved credential to change its storage. Enable **Passwords & Keychain** in system iCloud settings on each device. Passphrases, fingerprint trust, active connections, and terminal output do not sync.
 
 Local changes remain saved without a network. Different hosts merge independently. A newer edit wins when two devices change the same host; dates use the device clocks, with a stable tie-break rule. When Apple reports an iCloud account change, the app pauses further sync writes until you select **Merge settings**. Apple's service controls transfers already queued. Cloud edits do not interrupt a live terminal; close and reopen that app session to use updated connection settings.
 
-Apple schedules delivery, so **Check iCloud** does not guarantee immediate transfer. The device build now has an iCloud-enabled provisioning profile. Actual transfer between two signed-in devices is not yet verified. Local merge tests are verified separately.
+Credential labels show **This device**, **iCloud Keychain**, or **This device + iCloud**. A local copy takes precedence if the same name exists in both places. Migration only merges identical copies; it preserves both and reports a conflict if their values differ. Select **Use iCloud copy on this device** to remove the separate local copy. Replacing an existing synced credential updates its shared copy. Temporary AWS credentials still expire.
+
+**Keep on this device only** first keeps a local copy, then deletes the shared copy. Other devices can lose access when the deletion arrives. Separate local copies remain. This does not revoke access on the server. An explicit device-only choice persists across launches and credential updates.
+
+Apple schedules delivery, so **Check iCloud** and **Refresh credentials** do not guarantee immediate transfer. Storage labels do not confirm receipt on another device. The device build now has an iCloud-enabled provisioning profile. Host settings have appeared on the Mac from iCloud. Synthetic SSH-key and AWS-profile delivery from Mac to both iPhone and iPad passed. Local Keychain migration and configuration merge tests are verified separately.
 
 ## Validation results
 
-Validation date: 2026-09-11. Toolchain: Xcode 26.6, Swift 6.3.3. Simulator runtime: iOS 26.5.
+Validation date: 2026-09-10 (America/Los_Angeles). Toolchain: Xcode 26.6, Swift 6.3.3. Simulator runtime: iOS 26.5.
 
 | Check | Result |
 | --- | --- |
 | macOS core tests | 19 passed: includes configuration merges and native SSH/AWS import checks |
-| Native Mac app | Signed build launched; existing iCloud host appeared without import; live SSH preview resolved direct, AIxC SSM, and NR SSM examples; AWS profile preview and SSH key picker inspected |
-| Hosted iOS tests | Latest run: four input/Keychain tests passed; live connection test skipped without its private fixture. Earlier live run passed direct SSH and both AWS profile paths |
-| Actual iCloud transfer | Not yet verified between two signed-in devices; the installed build includes the iCloud entitlement |
+| Native Mac app | Signed default-sync build launched; import switches and storage labels inspected. Three SSH keys and four AWS profiles showed iCloud Keychain with no migration issues. Earlier SSH/AWS import previews passed |
+| Hosted iOS tests | Ten Keychain tests passed on each physical device. Four input/Keychain tests also passed in Simulator. Earlier live run passed direct SSH and both AWS profile paths |
+| Hosted Mac Keychain tests | Ten passed: includes default sync, legacy migration, persistent local choices, updates, collisions, migration failure, and local trust |
+| Actual iCloud transfer | Synthetic SSH key and AWS profile, including session token, transferred from Mac to both iPhone and iPad. Exact key bytes and decoded AWS fields matched. Synthetic items removed after testing |
 | Actual remote tmux checks | Direct SSH and both SSM paths passed with tmux 3.4; custom prefix/binding detection, separate query channel, and retained state after reconnect |
 | Input checks | Chinese marked text stays local until commit; Ctrl is one-shot; cursor mode and terminal dimensions pass |
 | Simulator launch | App launched on iPhone 17 Pro and iPad Pro 11-inch; native host layouts inspected |
 | Device build | arm64 iOS development signing passed with the Yong Tian team; profile covers both test devices |
-| Physical installation | Installed and launched on iPhone 17 Pro Max (iOS 26.6.2) and iPad mini 6 (iPadOS 26.6) |
+| Physical installation | Final default-sync build installed and launched on iPhone 17 Pro Max and iPad mini 6; ten Keychain behavior tests passed on each |
 
 Run the core tests:
 
@@ -120,7 +125,7 @@ The macOS `connection-check` executable uses the same transport code. Its option
 - Physical keyboard layouts, floating keyboards, VoiceOver, window resizing, and sustained output performance still need device checks. Simulator input tests do not replace those checks.
 - Wi-Fi/cellular changes, long background suspension, expired credentials, encrypted-key failure cases, changed host keys, and remote reboot behavior need a broader device test pass.
 - AWS credentials are entered directly. SSO login, credential refresh, KMS session handshakes, and other AWS partitions are not implemented.
-- The app has host editing, iCloud configuration sync, and session switching. It has no credential sync, SFTP, Mosh, jump-host support, or general SSH-config interpreter. Saved credentials can be replaced under the same name; a deletion interface is not yet present.
+- The app has host editing, iCloud configuration sync, and session switching. It has no SFTP, Mosh, jump-host support, or general SSH-config interpreter. Saved credentials can be replaced under the same name; a deletion interface is not yet present.
 - Terminal output is not saved across app termination. Scrollback stays in the terminal view. High-volume rendering has not been load-tested.
 
 ## Local artifacts
@@ -133,3 +138,6 @@ The macOS `connection-check` executable uses the same transport code. Its option
 - `.local/hosts.json`: selected private host settings prepared on this Mac, excluded from source control.
 
 Build outputs, private setup files, and test fixtures are excluded from Git. Dependency versions and licenses are recorded in [THIRD_PARTY.md](THIRD_PARTY.md).
+
+
+When packaging an app, copy it into a fresh destination and run `codesign --verify --deep --strict` on the result. Do not overlay a normal build on a prior test bundle: stale `PlugIns` files can invalidate the signature. A normal build also removes hosted-test bundles from its build product; run `build-for-testing` or `test` before a later `test-without-building` operation.

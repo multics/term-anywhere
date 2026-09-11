@@ -69,13 +69,15 @@ struct MacAWSImportView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var file = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".aws/credentials")
     @State private var profiles: [String: AWSCredentials] = [:]
+    @State private var syncNewProfiles = true
     @State private var selected: Set<String> = []
     @State private var message: String?
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Import AWS profiles").font(.title2.bold())
             HStack { Text(file.path).font(.caption).textSelection(.enabled); Spacer(); Button("Choose file…") { if let url = chooseFile(file) { file = url; read() } } }
-            Text("Select static profiles to store in this Mac’s Keychain. Credentials stay on this Mac. SSO, role assumption, and credential_process are not imported.").font(.callout)
+            Text("Select static profiles to store in this Mac’s Keychain. New profiles use iCloud Keychain by default. Turn off the switch to keep new profiles on this Mac. Replacing a synced profile updates its shared copy. SSO, role assumption, and credential_process are not imported.").font(.callout)
+            Toggle("Sync new profiles with iCloud Keychain", isOn: $syncNewProfiles)
             List(profiles.keys.sorted(), id: \.self) { name in
                 Toggle(name, isOn: Binding(get: { selected.contains(name) }, set: { if $0 { selected.insert(name) } else { selected.remove(name) } })).toggleStyle(.checkbox)
             }
@@ -85,7 +87,7 @@ struct MacAWSImportView: View {
                 Spacer()
                 Button("Import selected profiles") {
                     do {
-                        for name in selected.sorted() { try store.vault.save(JSONEncoder().encode(profiles[name]!), account: "aws:" + name) }
+                        for name in selected.sorted() { try store.vault.save(JSONEncoder().encode(profiles[name]!), account: "aws:" + name, syncNewItem: syncNewProfiles) }
                         try store.refreshCredentials(); dismiss()
                     } catch { message = error.localizedDescription }
                 }.buttonStyle(.borderedProminent).disabled(selected.isEmpty)

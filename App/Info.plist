@@ -20,6 +20,10 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>KeychainLocalAccessGroup</key>
+	<string>$(AppIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>KeychainSyncAccessGroup</key>
+	<string>$(AppIdentifierPrefix)me.tianyong.term-anywhere.shared</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Connect to SSH servers on your local network.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>

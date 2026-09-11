@@ -22,7 +22,12 @@ import TermCore
     @Published var awsNames: [String] = []
     @Published var error: String?
     @Published private(set) var preferences = TerminalPreferences()
-    let vault = KeychainStore()
+    @Published var credentialSyncIssues: [String] = []
+    @Published var credentialStorage: [String: CredentialStorage] = [:]
+    let vault = KeychainStore(
+        localAccessGroup: Bundle.main.object(forInfoDictionaryKey: "KeychainLocalAccessGroup") as? String,
+        syncAccessGroup: Bundle.main.object(forInfoDictionaryKey: "KeychainSyncAccessGroup") as? String
+    )
     let configuration = ConfigurationSync()
     init() {
         apply(configuration.state)
@@ -41,8 +46,14 @@ import TermCore
         do { try configuration.save(preferences: value) } catch { self.error = error.localizedDescription }
     }
     func refreshCredentials() throws {
-        keyNames = try vault.accounts(prefix: "key:")
-        awsNames = try vault.accounts(prefix: "aws:")
+        credentialSyncIssues = try vault.migrateLocalCredentialsToICloud()
+        let keys = try vault.accounts(prefix: "key:")
+        let profiles = try vault.accounts(prefix: "aws:")
+        var locations: [String: CredentialStorage] = [:]
+        for account in keys.map({ "key:" + $0 }) + profiles.map({ "aws:" + $0 }) {
+            locations[account] = try vault.storage(account: account)
+        }
+        keyNames = keys; awsNames = profiles; credentialStorage = locations
     }
     func save(_ host: TermCore.Host) throws {
         try configuration.save(hosts: [host])

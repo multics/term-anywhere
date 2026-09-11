@@ -69,6 +69,7 @@ struct HostListView: View {
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 store.configuration.start()
+                do { try store.refreshCredentials() } catch { store.error = error.localizedDescription }
                 for session in store.sessions.values { session.resume() }
             }
         }

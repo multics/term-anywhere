@@ -60,6 +60,7 @@ targets:
     entitlements:
       path: MacApp/TermAnywhereMac.entitlements
       properties:
+        keychain-access-groups: ['$(AppIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)', '$(AppIdentifierPrefix)me.tianyong.term-anywhere.shared']
         com.apple.developer.ubiquity-kvstore-identifier: '$(TeamIdentifierPrefix)me.tianyong.term-anywhere'
     settings:
       base:
@@ -80,6 +81,8 @@ targets:
     info:
       path: MacApp/Info.plist
       properties:
+        KeychainLocalAccessGroup: $(AppIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)
+        KeychainSyncAccessGroup: $(AppIdentifierPrefix)me.tianyong.term-anywhere.shared
         CFBundleDisplayName: Term Anywhere
         LSApplicationCategoryType: public.app-category.developer-tools
         NSLocalNetworkUsageDescription: Connect to SSH servers on your local network.
@@ -115,6 +118,7 @@ targets:
     entitlements:
       path: App/TermAnywhere.entitlements
       properties:
+        keychain-access-groups: ['$(AppIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)', '$(AppIdentifierPrefix)me.tianyong.term-anywhere.shared']
         com.apple.developer.ubiquity-kvstore-identifier: '$(TeamIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)'
     settings:
       base:
@@ -134,16 +138,30 @@ targets:
     info:
       path: App/Info.plist
       properties:
+        KeychainLocalAccessGroup: $(AppIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)
+        KeychainSyncAccessGroup: $(AppIdentifierPrefix)me.tianyong.term-anywhere.shared
         CFBundleDisplayName: Term Anywhere
         UILaunchScreen: {}
         UIApplicationSupportsIndirectInputEvents: true
         NSLocalNetworkUsageDescription: Connect to SSH servers on your local network.
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
         UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+  TermAnywhereMacTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources: [SharedAppTests]
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: '$(BUILT_PRODUCTS_DIR)/Term Anywhere.app/Contents/MacOS/Term Anywhere'
+        BUNDLE_LOADER: '$(TEST_HOST)'
+    dependencies:
+      - target: TermAnywhereMac
+      - target: TermCoreMac
   TermAnywhereTests:
     type: bundle.unit-test
     platform: iOS
-    sources: [AppTests]
+    sources: [AppTests, SharedAppTests]
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
@@ -160,6 +178,8 @@ schemes:
         TermAnywhereMac: all
     run:
       config: Debug
+    test:
+      targets: [TermAnywhereMacTests]
   TermAnywhere:
     build:
       targets:
