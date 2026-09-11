@@ -54,7 +54,7 @@ Open **+ → Settings and iCloud** to see the sync status and change terminal pr
 
 Local changes remain saved without a network. Different hosts merge independently. A newer edit wins when two devices change the same host; dates use the device clocks, with a stable tie-break rule. When Apple reports an iCloud account change, the app pauses further sync writes until you select **Merge settings**. Apple's service controls transfers already queued. Cloud edits do not interrupt a live terminal; close and reopen that app session to use updated connection settings.
 
-Apple schedules delivery, so **Check iCloud** does not guarantee immediate transfer. Actual transfer between two devices is not yet verified: the current environment has no iCloud-enabled app provisioning profile. Local merge tests and Simulator builds are verified separately.
+Apple schedules delivery, so **Check iCloud** does not guarantee immediate transfer. The device build now has an iCloud-enabled provisioning profile. Actual transfer between two signed-in devices is not yet verified. Local merge tests are verified separately.
 
 ## Validation results
 
@@ -64,12 +64,12 @@ Validation date: 2026-09-11. Toolchain: Xcode 26.6, Swift 6.3.3. Simulator runti
 | --- | --- |
 | macOS core tests | 15 passed: includes six new configuration merge, conflict, persistence, and validation tests |
 | Hosted iOS tests | Latest run: four input/Keychain tests passed; live connection test skipped without its private fixture. Earlier live run passed direct SSH and both AWS profile paths |
-| Actual iCloud transfer | Not yet verified between two signed-in devices; requires iCloud-enabled provisioning |
+| Actual iCloud transfer | Not yet verified between two signed-in devices; the installed build includes the iCloud entitlement |
 | Actual remote tmux checks | Direct SSH and both SSM paths passed with tmux 3.4; custom prefix/binding detection, separate query channel, and retained state after reconnect |
 | Input checks | Chinese marked text stays local until commit; Ctrl is one-shot; cursor mode and terminal dimensions pass |
 | Simulator launch | App launched on iPhone 17 Pro and iPad Pro 11-inch; native host layouts inspected |
-| Device build | arm64 iOS build passed without signing |
-| Physical installation | Blocked: Xcode has no signed-in account or matching app provisioning profile |
+| Device build | arm64 iOS development signing passed with the Yong Tian team; profile covers both test devices |
+| Physical installation | Installed on iPhone 17 Pro Max (iOS 26.6.2) and iPad mini 6 (iPadOS 26.6) |
 
 Run the core tests:
 
@@ -100,6 +100,7 @@ The macOS `connection-check` executable uses the same transport code. Its option
 ## Local artifacts
 
 - `dist/TermAnywhere-Simulator.app`: runnable arm64 Simulator app.
+- `dist/TermAnywhere-iOS.app`: signed development app for the registered test devices.
 - `dist/TermAnywhere-iOS-unsigned.app`: device build, requires signing before installation.
 - `dist/design/term-anywhere-app-icon.png`: original generated logo.
 - `.local/hosts.json`: selected private host settings prepared on this Mac, excluded from source control.
