@@ -1,0 +1,99 @@
+name: TermAnywhere
+options:
+  bundleIdPrefix: me.tianyong
+  deploymentTarget:
+    iOS: '26.0'
+settings:
+  base:
+    SWIFT_VERSION: '5.0'
+    ARCHS: arm64
+    SWIFT_INCLUDE_PATHS: '$(SRCROOT)/Sources/CSSH/include'
+    IPHONEOS_DEPLOYMENT_TARGET: '26.0'
+    TARGETED_DEVICE_FAMILY: '1,2'
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: ''
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+packages:
+  SwiftTerm:
+    url: https://github.com/migueldeicaza/SwiftTerm.git
+    exactVersion: 1.20.0
+targets:
+  CSSH:
+    type: library.static
+    platform: iOS
+    sources:
+      - path: Sources/CSSH
+        headerVisibility: public
+    settings:
+      base:
+        PRODUCT_NAME: CSSH
+        DEFINES_MODULE: YES
+        PRODUCT_MODULE_NAME: CSSH
+        HEADER_SEARCH_PATHS: '$(SRCROOT)/Sources/CSSH/include'
+  TermCore:
+    type: framework
+    platform: iOS
+    sources: [Sources/TermCore]
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        MACH_O_TYPE: staticlib
+        OTHER_LDFLAGS: ['$(inherited)', '-lz', '$(SRCROOT)/.build/native/$(PLATFORM_NAME)/src/libssh2.a']
+    dependencies:
+      - target: CSSH
+      - framework: .build/references/OpenSSL/Frameworks/OpenSSL.xcframework
+        embed: false
+  TermAnywhere:
+    type: application
+    platform: iOS
+    sources: [App]
+    entitlements:
+      path: App/TermAnywhere.entitlements
+      properties:
+        com.apple.developer.ubiquity-kvstore-identifier: '$(TeamIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)'
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: me.tianyong.term-anywhere
+        PRODUCT_NAME: TermAnywhere
+        MARKETING_VERSION: '0.1.0'
+        CURRENT_PROJECT_VERSION: '1'
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        OTHER_LDFLAGS: ['$(inherited)', '-lz', '$(SRCROOT)/.build/native/$(PLATFORM_NAME)/src/libssh2.a']
+    dependencies:
+      - target: TermCore
+        embed: false
+      - target: CSSH
+      - framework: .build/references/OpenSSL/Frameworks/OpenSSL.xcframework
+        embed: true
+      - package: SwiftTerm
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: Term Anywhere
+        UILaunchScreen: {}
+        UIApplicationSupportsIndirectInputEvents: true
+        NSLocalNetworkUsageDescription: Connect to SSH servers on your local network.
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+  TermAnywhereTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [AppTests]
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: '$(BUILT_PRODUCTS_DIR)/TermAnywhere.app/TermAnywhere'
+        BUNDLE_LOADER: '$(TEST_HOST)'
+    dependencies:
+      - target: TermAnywhere
+      - target: TermCore
+      - package: SwiftTerm
+schemes:
+  TermAnywhere:
+    build:
+      targets:
+        TermAnywhere: all
+    run:
+      config: Debug
+    test:
+      targets: [TermAnywhereTests]

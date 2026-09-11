@@ -1,0 +1,155 @@
+import SwiftUI
+import SwiftTerm
+import TermCore
+
+struct TerminalScreen: View {
+    @ObservedObject var session: TerminalSession
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 8) {
+                Image(systemName: session.isLive ? "circle.fill" : "circle").font(.system(size: 8)).foregroundStyle(session.isLive ? .green : .secondary)
+                Text(session.status).font(.caption)
+                Spacer()
+                if !session.host.tmuxSession.isEmpty { Text("tmux · " + session.host.tmuxSession).font(.caption).foregroundStyle(.secondary) }
+            }.padding(.horizontal).padding(.vertical, 8)
+            if !session.isLive {
+                VStack(alignment: .leading, spacing: 10) {
+                    if let error = session.error { Text(error).font(.callout).textSelection(.enabled) }
+                    if session.pendingFingerprint != nil {
+                        Button(session.changedFingerprint ? "I verified the new fingerprint — update trust" : "Trust this fingerprint and connect") { session.trustAndConnect() }.buttonStyle(.borderedProminent)
+                    } else if !session.isConnecting {
+                        if session.showingPassphrase { SecureField("Key passphrase", text: $session.passphrase).textFieldStyle(.roundedBorder) }
+                        Button("Connect", systemImage: "bolt") { session.connect() }.buttonStyle(.borderedProminent)
+                    }
+                    if session.isConnecting { ProgressView().frame(maxWidth: .infinity, alignment: .leading) }
+                }.padding().frame(maxWidth: .infinity, alignment: .leading)
+            }
+            TerminalContainer(session: session)
+        }
+        .navigationTitle(session.host.name)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                Button("Keyboard", systemImage: "keyboard") { _ = session.terminal.becomeFirstResponder() }
+                Menu {
+                    Text(session.bindingsStatus)
+                    if let prefix = session.prefixBytes {
+                        Button("Prefix · " + (session.bindings?.prefix ?? session.host.manualPrefix)) { session.send(prefix) }.disabled(!session.isLive)
+                    }
+                    ForEach(session.bindings?.shortcuts ?? []) { shortcut in
+                        Button(shortcut.title + " · " + shortcut.keys) { session.send(shortcut.bytes) }.disabled(!session.isLive)
+                    }
+                    Button("Refresh tmux shortcuts", systemImage: "arrow.clockwise") { Task { await session.refreshBindings() } }.disabled(!session.isLive)
+                    Divider()
+                    Toggle("Option as Meta", isOn: Binding(get: { session.optionAsMeta }, set: { session.setOptionAsMeta($0) }))
+                    Button("Larger text", systemImage: "textformat.size.larger") { session.changeFontSize(by: 1) }
+                    Button("Smaller text", systemImage: "textformat.size.smaller") { session.changeFontSize(by: -1) }
+                    Button("Disconnect", systemImage: "xmark.circle") { session.disconnect() }
+                } label: { Label("Session actions", systemImage: "ellipsis.circle") }
+            }
+        }
+        .task { if !session.hasStarted { session.connect() } }
+        .onChange(of: session.optionAsMeta) { _, value in session.terminal.optionAsMetaKey = value }
+        .onDisappear { session.terminal.controlModifier = false; session.terminal.metaModifier = false }
+    }
+}
+
+struct TerminalContainer: UIViewControllerRepresentable {
+    let session: TerminalSession
+    func makeUIViewController(context: Context) -> TerminalCoordinator {
+        let controller = TerminalCoordinator(session: session); session.coordinator = controller; return controller
+    }
+    func updateUIViewController(_ controller: TerminalCoordinator, context: Context) { controller.refreshMenu() }
+}
+
+@MainActor final class TerminalCoordinator: UIViewController, @preconcurrency TerminalViewDelegate {
+    weak var session: TerminalSession?
+    let terminal: TerminalView
+    private var controlButton: UIButton?
+    private var moreButton: UIButton?
+    private var repeatTimer: Timer?
+    init(session: TerminalSession) { self.session = session; self.terminal = session.terminal; super.init(nibName: nil, bundle: nil) }
+    required init?(coder: NSCoder) { fatalError("init(coder:) is unavailable") }
+    override func loadView() {
+        view = UIView(); view.backgroundColor = terminal.nativeBackgroundColor
+        terminal.removeFromSuperview(); terminal.terminalDelegate = self
+        terminal.translatesAutoresizingMaskIntoConstraints = false; view.addSubview(terminal)
+        view.keyboardLayoutGuide.followsUndockedKeyboard = false
+        NSLayoutConstraint.activate([
+            terminal.topAnchor.constraint(equalTo: view.topAnchor), terminal.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            terminal.trailingAnchor.constraint(equalTo: view.trailingAnchor), terminal.bottomAnchor.constraint(equalTo: view.keyboardLayoutGuide.topAnchor)
+        ])
+        (terminal as? SafeTerminalView)?.approvePaste = { [weak self] text, insert in
+            guard let self, let session = self.session, session.isLive else { return }
+            let preview = String(text.prefix(300)).replacingOccurrences(of: "\n", with: "↵\n").replacingOccurrences(of: "\r", with: "⏎").replacingOccurrences(of: "\u{1b}", with: "␛")
+            let alert = UIAlertController(title: "Paste into " + session.host.name + "?", message: "This text includes line breaks or control characters.\n\n" + preview, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+            alert.addAction(UIAlertAction(title: "Paste", style: .default) { [weak session] _ in if session?.isLive == true { insert() } })
+            self.present(alert, animated: true)
+        }
+        makeAccessory()
+        NotificationCenter.default.addObserver(self, selector: #selector(resetControl), name: .terminalViewControlModifierReset, object: terminal)
+    }
+    override func viewWillDisappear(_ animated: Bool) { super.viewWillDisappear(animated); stopRepeat(); terminal.controlModifier = false; resetControl() }
+    private func makeAccessory() {
+        let bar = UIInputView(frame: CGRect(x: 0, y: 0, width: 393, height: 48), inputViewStyle: .keyboard)
+        let stack = UIStackView(); stack.axis = .horizontal; stack.distribution = .fillEqually; stack.spacing = 2
+        stack.translatesAutoresizingMaskIntoConstraints = false; bar.addSubview(stack)
+        NSLayoutConstraint.activate([stack.leadingAnchor.constraint(equalTo: bar.leadingAnchor, constant: 4), stack.trailingAnchor.constraint(equalTo: bar.trailingAnchor, constant: -4), stack.topAnchor.constraint(equalTo: bar.topAnchor, constant: 2), stack.bottomAnchor.constraint(equalTo: bar.bottomAnchor, constant: -2)])
+        for title in ["Esc", "Ctrl", "Tab", "←", "↓", "↑", "→", "More"] {
+            let button = UIButton(type: .system); button.setTitle(title, for: .normal); button.titleLabel?.font = .systemFont(ofSize: 14, weight: .medium)
+            button.accessibilityLabel = ["←": "Left arrow", "↓": "Down arrow", "↑": "Up arrow", "→": "Right arrow" ][title] ?? title
+            if title == "More" { moreButton = button; button.showsMenuAsPrimaryAction = true }
+            else if title == "Ctrl" {
+                controlButton = button
+                button.addAction(UIAction { [weak self] _ in guard let self, self.session?.isLive == true else { return }; self.terminal.controlModifier.toggle(); self.resetControl() }, for: .touchUpInside)
+            } else if ["←", "↓", "↑", "→"].contains(title) {
+                button.addAction(UIAction { [weak self] _ in
+                    guard let self else { return }; self.stopRepeat(); self.arrow(title)
+                    self.repeatTimer = Timer.scheduledTimer(withTimeInterval: 0.45, repeats: false) { [weak self] _ in
+                        MainActor.assumeIsolated {
+                            self?.repeatTimer = Timer.scheduledTimer(withTimeInterval: 0.08, repeats: true) { [weak self] _ in MainActor.assumeIsolated { self?.arrow(title) } }
+                        }
+                    }
+                }, for: .touchDown)
+                button.addAction(UIAction { [weak self] _ in self?.stopRepeat() }, for: [.touchUpInside, .touchUpOutside, .touchCancel, .touchDragExit])
+            } else { button.addAction(UIAction { [weak self] _ in self?.terminal.send(title == "Esc" ? [27] : [9]) }, for: .touchUpInside) }
+            stack.addArrangedSubview(button)
+        }
+        terminal.inputAccessoryView = bar; refreshMenu()
+    }
+    private func arrow(_ key: String) {
+        guard session?.isLive == true else { return }
+        let suffix = ["↑": "A", "↓": "B", "→": "C", "←": "D"][key]!
+        terminal.send(txt: "\u{1b}" + (terminal.getTerminal().applicationCursor ? "O" : "[") + suffix)
+    }
+    private func stopRepeat() { repeatTimer?.invalidate(); repeatTimer = nil }
+    @objc private func resetControl() { controlButton?.tintColor = terminal.controlModifier ? .systemOrange : .label; controlButton?.accessibilityValue = terminal.controlModifier ? "On" : "Off" }
+    func refreshMenu() {
+        guard let session else { return }
+        var items: [UIMenuElement] = []
+        if let bytes = session.prefixBytes {
+            items.append(UIAction(title: "Prefix · " + (session.bindings?.prefix ?? session.host.manualPrefix), attributes: session.isLive ? [] : .disabled) { [weak session] _ in session?.send(bytes) })
+        }
+        for shortcut in session.bindings?.shortcuts ?? [] {
+            items.append(UIAction(title: shortcut.title, subtitle: shortcut.keys, attributes: session.isLive ? [] : .disabled) { [weak session] _ in session?.send(shortcut.bytes) })
+        }
+        items.append(UIAction(title: "Refresh tmux shortcuts", attributes: session.isLive ? [] : .disabled) { [weak session] _ in Task { await session?.refreshBindings() } })
+        let tmux = UIMenu(title: "tmux", options: .displayInline, children: items)
+        let symbols = ["/", "~", "|", "-", "_", "$"].map { symbol in UIAction(title: symbol) { [weak self] _ in self?.terminal.insertText(symbol) } }
+        moreButton?.menu = UIMenu(children: [tmux, UIMenu(title: "Symbols", children: symbols), UIAction(title: "Alt / Meta", state: terminal.metaModifier ? .on : .off) { [weak self] _ in self?.terminal.metaModifier.toggle() }, UIAction(title: "Hide keyboard") { [weak self] _ in _ = self?.terminal.resignFirstResponder() }])
+    }
+    func sizeChanged(source: TerminalView, newCols: Int, newRows: Int) { session?.connection?.resize(columns: newCols, rows: newRows) }
+    func send(source: TerminalView, data: ArraySlice<UInt8>) { session?.send(Data(data)) }
+    func setTerminalTitle(source: TerminalView, title: String) {}
+    func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {}
+    func scrolled(source: TerminalView, position: Double) {}
+    func requestOpenLink(source: TerminalView, link: String, params: [String: String]) {
+        guard let url = URL(string: link), ["https", "http"].contains(url.scheme?.lowercased() ?? "") else { return }
+        let alert = UIAlertController(title: "Open link?", message: link, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel)); alert.addAction(UIAlertAction(title: "Open", style: .default) { _ in UIApplication.shared.open(url) }); present(alert, animated: true)
+    }
+    func bell(source: TerminalView) {}
+    func rangeChanged(source: TerminalView, startY: Int, endY: Int) {}
+    deinit { NotificationCenter.default.removeObserver(self) }
+}

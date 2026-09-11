@@ -1,0 +1,4 @@
+# Xcode uses tabs in generated property lists and project files.
+*.plist whitespace=-tab-in-indent
+*.entitlements whitespace=-tab-in-indent
+*.pbxproj whitespace=-tab-in-indent
