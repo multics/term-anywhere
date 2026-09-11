@@ -147,3 +147,7 @@ Build outputs, private setup files, and test fixtures are excluded from Git. Dep
 
 
 When packaging an app, copy it into a fresh destination and run `codesign --verify --deep --strict` on the result. Do not overlay a normal build on a prior test bundle: stale `PlugIns` files can invalidate the signature. A normal build also removes hosted-test bundles from its build product; run `build-for-testing` or `test` before a later `test-without-building` operation.
+
+## Repository credential checks
+
+This repository is public. Keep real credentials and private host settings outside Git. GitHub secret scanning and push protection are enabled. See [the credential audit](docs/SECRET_AUDIT.md) for scan evidence and limits.

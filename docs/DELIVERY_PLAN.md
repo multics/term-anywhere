@@ -7,7 +7,7 @@ Updated: 2026-09-11. This file tracks the user's active requests. Each feature f
 - iPhone and iPad SSH terminal with direct SSH and AWS SSM transport.
 - Keyboard controls and server-specific tmux shortcut detection on connection and reconnection.
 - iCloud host and preference sync.
-- Private GitHub repository and signed development deployments.
+- Public GitHub repository with secret scanning and push protection; signed development deployments.
 - App icon from the requested logo subagent; source and design notes are in APP_ICON.md.
 - iCloud Keychain by default for SSH keys and AWS profiles, with explicit local storage and conflict protection. Commit: `4e5ad9f`. Actual synthetic credential delivery from Mac to iPhone and iPad passed.
 
@@ -54,3 +54,9 @@ Cleared the exact tmux session value mobile from 15 saved host records on Mac. O
 ## iCloud callback fix
 
 A Mac runtime sample identified a deadlock between the main thread and Apple's KVS callback queue. Cloud notification handling now moves to MainActor. The background-notification regression passes on Mac and Simulator; all 12 active Mac tests pass. The signed fix is installed on all three devices and the Mac app responds normally.
+
+## Public repository credential check
+
+On 2026-09-11, scanned the 81 tracked files and all 214 distinct file versions reachable from local Git refs. The refs included 17 published commits and two local stash commits. Gitleaks 8.30.1 found no secrets. Credential-like test literals were synthetic data or a published AWS signing test vector. Commit messages also passed. GitHub had no pull-request refs, releases, Actions runs, or Actions artifacts.
+
+Added ignore rules for credential files, signing files, and private fixtures. The exclusion checks pass. GitHub visibility is now public; secret scanning and push protection are enabled. The initial GitHub secret-alert query returned no alerts. See [SECRET_AUDIT.md](SECRET_AUDIT.md) for scope and limits. This task changes repository settings and documentation only; no app build or device deployment is required.

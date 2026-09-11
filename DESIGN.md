@@ -13,6 +13,8 @@ Status: first development build. See README.md for completed checks and remainin
 
 Use SwiftTerm for terminal rendering and input-method support. Use pinned libssh2 and OpenSSL for SSH. The native build script produces libraries for iPhone, Simulator, and macOS. Keep generated dependencies and private setup files out of version control.
 
+The public repository uses Git ignore rules to exclude common credential files and private fixtures. Ignore rules do not remove tracked files or Git history. Scan both before publication. GitHub secret scanning and push protection provide an additional check for supported secret types. Record the scope and limits in `docs/SECRET_AUDIT.md`.
+
 ## Connection paths
 
 Direct SSH opens a TCP socket. SSM signs an AWS StartSession request, opens the returned data channel, and carries SSH bytes over a local socket pair. libssh2 consumes the same ordered byte stream in either case. The SSM adapter handles message validation, sequence numbers, acknowledgements, and bounded queues. Unsupported handshake requirements fail explicitly.

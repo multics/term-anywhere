@@ -41,6 +41,8 @@ Avoid overengineering. Reuse terminal and SSH libraries. Use concrete transports
 
 Use macOS OpenSSH to resolve selected host settings for initial import. Do not ship the user's private hosts or credentials in the application bundle or source control. Do not modify remote shell or tmux configuration as part of connecting.
 
+Keep the GitHub repository public. Before publication, scan tracked files and Git history for credentials. Exclude private connection fixtures, environment files, SSH keys, AWS credentials, and signing files from Git. Enable GitHub secret scanning and push protection. Use only synthetic credentials or published test vectors in tests.
+
 ## Acceptance
 
 Build for iPhone and iPad. Run protocol and parsing tests. Test an actual direct SSH connection and both AWS profile paths where credentials and access permit. Test tmux remapping and reconnection, including no input replay. Run the app in an iOS Simulator and inspect the visible UI. Record any physical-device, signing, network, or compatibility checks that remain incomplete.

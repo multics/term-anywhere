@@ -5,3 +5,24 @@ dist/
 xcuserdata/
 .local/
 .DS_Store
+
+# Credentials, signing files, and private connection fixtures.
+.env
+.env.*
+!.env.example
+.ssh/
+.aws/
+id_rsa
+id_ecdsa
+id_ed25519
+*.pem
+*.key
+*.p12
+*.pfx
+*.mobileprovision
+*.provisionprofile
+credentials
+aws-credentials
+hosts.json
+connection-test-fixture.json
+keychain-transfer.json
