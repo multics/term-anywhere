@@ -131,3 +131,7 @@ Use a separate SSH exec channel to list sessions on the configured socket. A mar
 The picker waits before PTY attachment. Cancel resumes the waiting task with cancellation and closes the local screen. Network loss also releases the waiting picker. Switching sessions closes the connection but keeps its visible terminal coordinator. Save only the selected tmux fields onto the latest host record, so a simultaneous configuration edit is not overwritten. Refresh effective shortcut mappings after attachment and reconnection.
 
 The Mac editor can reset the mobile selection. An external Mac terminal opens a plain shell when its session field is empty; the in-app chooser is for iPhone and iPad.
+
+## Connected terminal layout
+
+After host selection, show the terminal detail at full width. The native sidebar control returns to the host list. Explicit disconnect shows Hosts again. Keep the host and session in one navigation bar, with one tools menu. Hide the separate status strip while connected. Show connection errors and recovery controls when needed. Keep Esc, Ctrl, Tab, arrows, and More above the software keyboard. The tools menu also exposes tmux shortcuts for hardware keyboard users. Do not cover terminal output with floating controls.

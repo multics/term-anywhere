@@ -4,6 +4,7 @@ import TermCore
 
 struct HostListView: View {
     @EnvironmentObject private var store: AppStore
+    @State private var columnVisibility: NavigationSplitViewVisibility = .automatic
     @State private var compactColumn: NavigationSplitViewColumn = .sidebar
     @State private var search = ""
     @State private var editing: Host?
@@ -13,7 +14,7 @@ struct HostListView: View {
     @State private var editMode: EditMode = .inactive
     @Environment(\.scenePhase) private var scenePhase
     var body: some View {
-        NavigationSplitView(preferredCompactColumn: $compactColumn) {
+        NavigationSplitView(columnVisibility: $columnVisibility, preferredCompactColumn: $compactColumn) {
             List(selection: Binding(get: { store.selectedHostID }, set: { store.selectHost($0) })) {
                 if store.hosts.isEmpty {
                     ContentUnavailableView("No hosts yet", systemImage: "terminal", description: Text("Add a host or import selected connections from your Mac."))
@@ -66,6 +67,7 @@ struct HostListView: View {
         }
         .onChange(of: store.selectedHostID) { _, id in
             compactColumn = id == nil ? .sidebar : .detail
+            columnVisibility = id == nil ? .all : .detailOnly
         }
         .sheet(item: $editing) { host in HostEditor(host: host) }
         .sheet(isPresented: $credentials) { CredentialsView() }

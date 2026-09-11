@@ -11,7 +11,7 @@ import TermCore
         store.hosts = [host]
         let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
         let window = UIWindow(windowScene: scene)
-        let controller = UIHostingController(rootView: HostListView().environmentObject(store))
+        let controller = UIHostingController(rootView: HostListView().environmentObject(store).environment(\.scenePhase, .active))
         window.rootViewController = controller
         window.makeKeyAndVisible()
         defer { window.isHidden = true; window.rootViewController = nil }
@@ -20,6 +20,15 @@ import TermCore
         let session = try XCTUnwrap(store.sessions[host.id])
         try await Task.sleep(for: .milliseconds(600))
         XCTAssertNotNil(session.terminal.window)
+        session.isLive = true; session.status = "Connected"
+        session.terminal.feed(text: "Welcome to the terminal\r\n$ ")
+        try await Task.sleep(for: .milliseconds(300))
+        let image = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in
+            window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+        }
+        let attachment = XCTAttachment(image: image)
+        attachment.name = "Connected terminal layout"; attachment.lifetime = .keepAlways
+        add(attachment)
         store.closeSession(host.id)
         try await Task.sleep(for: .milliseconds(600))
         XCTAssertNil(store.selectedHostID)

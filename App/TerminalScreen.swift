@@ -7,12 +7,14 @@ struct TerminalScreen: View {
     let onDisconnect: () -> Void
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 8) {
-                Image(systemName: session.isLive ? "circle.fill" : "circle").font(.system(size: 8)).foregroundStyle(session.isLive ? .green : .secondary)
-                Text(session.status).font(.caption)
-                Spacer()
-                if !session.host.tmuxSession.isEmpty { Text("tmux · " + session.host.tmuxSession).font(.caption).foregroundStyle(.secondary) }
-            }.padding(.horizontal).padding(.vertical, 8)
+            if !session.isLive {
+                HStack(spacing: 8) {
+                    Image(systemName: session.isLive ? "circle.fill" : "circle").font(.system(size: 8)).foregroundStyle(session.isLive ? .green : .secondary)
+                    Text(session.status).font(.caption)
+                    Spacer()
+                    if !session.host.tmuxSession.isEmpty { Text("tmux · " + session.host.tmuxSession).font(.caption).foregroundStyle(.secondary) }
+                }.padding(.horizontal).padding(.vertical, 8)
+            }
             if !session.isLive {
                 VStack(alignment: .leading, spacing: 10) {
                     if let error = session.error { Text(error).font(.callout).textSelection(.enabled) }
@@ -30,24 +32,37 @@ struct TerminalScreen: View {
         .navigationTitle(session.host.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItemGroup(placement: .topBarTrailing) {
-                Button("Keyboard", systemImage: "keyboard") { _ = session.terminal.becomeFirstResponder() }
+            ToolbarItem(placement: .principal) {
+                VStack(spacing: 1) {
+                    Text(session.host.name).font(.headline).lineLimit(1)
+                    Text(session.host.sessionLabel).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                }.accessibilityElement(children: .combine)
+            }
+            ToolbarItem(placement: .topBarTrailing) {
                 Menu {
-                    Text(session.bindingsStatus)
-                    if let prefix = session.prefixBytes {
-                        Button("Prefix · " + (session.bindings?.prefix ?? session.host.manualPrefix)) { session.send(prefix) }.disabled(!session.isLive)
+                    Section("Connection") {
+                        Text(session.status)
+                        Button("Choose tmux session…", systemImage: "list.bullet") { session.chooseAnotherTmuxSession() }.disabled(!session.isLive)
+                        Button("Disconnect", systemImage: "xmark.circle") { onDisconnect() }
                     }
-                    ForEach(session.bindings?.shortcuts ?? []) { shortcut in
-                        Button(shortcut.title + " · " + shortcut.keys) { session.send(shortcut.bytes) }.disabled(!session.isLive)
+                    Section("Terminal") {
+                        Button("Show keyboard", systemImage: "keyboard") { _ = session.terminal.becomeFirstResponder() }
+                        Button("Larger text", systemImage: "textformat.size.larger") { session.changeFontSize(by: 1) }
+                        Button("Smaller text", systemImage: "textformat.size.smaller") { session.changeFontSize(by: -1) }
+                        Toggle("Option as Meta", isOn: Binding(get: { session.optionAsMeta }, set: { session.setOptionAsMeta($0) }))
                     }
-                    Button("Refresh tmux shortcuts", systemImage: "arrow.clockwise") { Task { await session.refreshBindings() } }.disabled(!session.isLive)
-                    Divider()
-                    Toggle("Option as Meta", isOn: Binding(get: { session.optionAsMeta }, set: { session.setOptionAsMeta($0) }))
-                    Button("Larger text", systemImage: "textformat.size.larger") { session.changeFontSize(by: 1) }
-                    Button("Smaller text", systemImage: "textformat.size.smaller") { session.changeFontSize(by: -1) }
-                    Button("Choose tmux session…", systemImage: "rectangle.split.2x1") { session.chooseAnotherTmuxSession() }.disabled(!session.isLive)
-                    Button("Disconnect", systemImage: "xmark.circle") { onDisconnect() }
-                } label: { Label("Session actions", systemImage: "ellipsis.circle") }
+                    // Keep tmux actions reachable when using a hardware keyboard too.
+                    Menu("tmux shortcuts") {
+                        Text(session.bindingsStatus)
+                        if let prefix = session.prefixBytes {
+                            Button("Send prefix") { session.send(prefix) }.disabled(!session.isLive)
+                        }
+                        ForEach(session.bindings?.shortcuts ?? []) { shortcut in
+                            Button(shortcut.title + " · " + shortcut.keys) { session.send(shortcut.bytes) }.disabled(!session.isLive)
+                        }
+                        Button("Refresh shortcuts", systemImage: "arrow.clockwise") { Task { await session.refreshBindings() } }.disabled(!session.isLive)
+                    }
+                } label: { Label("Session and terminal tools", systemImage: "ellipsis.circle") }
             }
         }
         .sheet(isPresented: $session.selectingTmux) { TmuxSessionPicker(session: session).interactiveDismissDisabled() }
