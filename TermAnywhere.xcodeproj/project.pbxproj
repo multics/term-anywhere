@@ -7,43 +7,80 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		04B137B74C673F6043680ECB /* SSMMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F1ACD30831169FB1298DC6C /* SSMMessage.swift */; };
 		0C0DBF301BD839D14621074B /* ConfigurationSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = F95E071FF0A5BB5E041CC047 /* ConfigurationSync.swift */; };
+		0FC608BFFE16CAFD3C0B8029 /* ThirdPartyNotices.txt in Resources */ = {isa = PBXBuildFile; fileRef = E9EF21EA2EB966A7E7F6FAA9 /* ThirdPartyNotices.txt */; };
+		10B5CA1735B2C21046416E4B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 72F6D4379F251CF492710EAB /* Assets.xcassets */; };
+		192075C9EDE3CFABFB896F0F /* TerminalSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = E260444A780A9616953992ED /* TerminalSession.swift */; };
+		1B3D08C7DB4E0F2705F86D15 /* ConfigurationSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = F95E071FF0A5BB5E041CC047 /* ConfigurationSync.swift */; };
 		1E37C6292B12DD241460628F /* SSMMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F1ACD30831169FB1298DC6C /* SSMMessage.swift */; };
 		276CDD00736720A26502F6B8 /* SSHConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A542E0E4DB3FE3C3C16E33 /* SSHConnection.swift */; };
+		2AFC83658DF618E6E430334C /* Host.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57D92F2A783A08E27D9B43C7 /* Host.swift */; };
 		33BB86C67C4236BC57060F80 /* ConnectionIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E3CE15AD05EC342137C5604 /* ConnectionIntegrationTests.swift */; };
 		37C5060F464070D13999A5D5 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DDCA7CB2E722CB905E65133 /* SettingsView.swift */; };
 		3C523905473FCAC122224DDC /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 225A9D04BBE0D1FEF61BB42B /* KeychainStore.swift */; };
+		3C9DC946747A5A918E7E7862 /* OpenSSL.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 02FB853CEB4CEF98DD4067A8 /* OpenSSL.xcframework */; };
+		3F82813CE7152753CF45EA7C /* TermAnywhereApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C6061EAB216FF2EEA28CCBF /* TermAnywhereApp.swift */; };
+		4192A4191370F46702255DAB /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 225A9D04BBE0D1FEF61BB42B /* KeychainStore.swift */; };
 		4605A1EC1B7A1D7C9F8AA5E3 /* TerminalScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABA7C6B3406BE8A401577CD5 /* TerminalScreen.swift */; };
 		488E32CE6D2A26AC7B109718 /* TermCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52671139DC68A13939FB7476 /* TermCore.framework */; };
+		52F47CB2E7D71D536B5C019D /* OpenSSL.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 02FB853CEB4CEF98DD4067A8 /* OpenSSL.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		53C8855857D6DCF06E5B9AC2 /* SSMTunnel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F08F0988DBAC3BE6671CA51 /* SSMTunnel.swift */; };
+		543914770EF545E7AB43039C /* SSHConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A542E0E4DB3FE3C3C16E33 /* SSHConnection.swift */; };
 		56C481B5756CE003B5A5FB27 /* OpenSSL.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 02FB853CEB4CEF98DD4067A8 /* OpenSSL.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		58A330458C3C6C92DA89B9C1 /* libssh2.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 9712191D15665A55F4FF253E /* libssh2.h */; };
 		58DD6C8C9B7FF1F9C59D52FC /* TermCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52671139DC68A13939FB7476 /* TermCore.framework */; };
 		6152696DB81C9FBB810C1888 /* TmuxBindings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B553F1A06FF7F06B01A8EAE /* TmuxBindings.swift */; };
 		61A47651921D7F0B35E3EA16 /* SyncedConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23578D1D5C45DD4D80FF452D /* SyncedConfiguration.swift */; };
 		61B9C549193C283F6F6AE4F2 /* AWSSigning.swift in Sources */ = {isa = PBXBuildFile; fileRef = E74AD3422CA2F6BA1880F5A6 /* AWSSigning.swift */; };
+		61DC3F56745C7571D6A5B88E /* MacHostListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFEE8DFA113E47D9BF83387A /* MacHostListView.swift */; };
 		644D84373325991267439144 /* TermCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 52671139DC68A13939FB7476 /* TermCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		653B53C79A61D48BA83561A1 /* HostEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 485E2420C5CAD0E555FE32D7 /* HostEditor.swift */; };
 		6B43F96A42D92A5BF02CA1F8 /* Host.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57D92F2A783A08E27D9B43C7 /* Host.swift */; };
+		7580E9EB64C55AA668A2EDF4 /* SyncedConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23578D1D5C45DD4D80FF452D /* SyncedConfiguration.swift */; };
 		78296273498FAAB6372DC4E6 /* TerminalSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = E260444A780A9616953992ED /* TerminalSession.swift */; };
+		7D760DB567C2E77D316D69B6 /* CSSH.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 70C483CC1D0BE3BACC12BE9F /* CSSH.h */; };
+		8838924BA73129BD7D75DEBF /* CSSH.c in Sources */ = {isa = PBXBuildFile; fileRef = 075A5C113BAAA48AEFB4561D /* CSSH.c */; };
+		8F353DA5D620CD07B8574169 /* MacTerminalScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAA8D79B671296608465025D /* MacTerminalScreen.swift */; };
+		90A70A8990DFB64D0734F1CD /* AWSSigning.swift in Sources */ = {isa = PBXBuildFile; fileRef = E74AD3422CA2F6BA1880F5A6 /* AWSSigning.swift */; };
+		981F3E74DED42D81F8B74000 /* TmuxBindings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B553F1A06FF7F06B01A8EAE /* TmuxBindings.swift */; };
+		99279BDFC1F390FB0B5DCB8C /* module.modulemap in CopyFiles */ = {isa = PBXBuildFile; fileRef = D2D782176811BCC4187E4D84 /* module.modulemap */; };
+		9BBD26CFFBC0A5A86C3C94A0 /* CredentialsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEC4435E05FB8B4F13FF3093 /* CredentialsView.swift */; };
 		9C3E20A78E17F39DE5DB1D94 /* TermAnywhereApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C6061EAB216FF2EEA28CCBF /* TermAnywhereApp.swift */; };
+		A0BE3EB1FDE5447CAFB33C37 /* MacConfigurationImport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C14B232BF03474FBD75FDFA2 /* MacConfigurationImport.swift */; };
 		A1A8C6E53E9DE182FF702569 /* SafeTerminalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB4017206F090A236B2BF637 /* SafeTerminalView.swift */; };
 		A6B1CFEDF627D6B5EB576452 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = F5C5E2B67A4EEDAD5533E1B1 /* SwiftTerm */; };
+		A839562E06DE41465B8109AE /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = E66C083D2CC6C59633FF75C0 /* SwiftTerm */; };
+		ADB4A4D3DC0839BE36B23360 /* libssh2.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 9712191D15665A55F4FF253E /* libssh2.h */; };
 		AE6C48712ED8A1FD741743CB /* libCSSH.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 40C9F395AA8CF5B9391C699A /* libCSSH.a */; };
 		B08EDEB88FC48872B39CA4CE /* OpenSSL.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 02FB853CEB4CEF98DD4067A8 /* OpenSSL.xcframework */; };
 		B9DE0412D81D46D477DB4F9A /* CSSH.c in Sources */ = {isa = PBXBuildFile; fileRef = 075A5C113BAAA48AEFB4561D /* CSSH.c */; };
+		BF7A4D2BFC21109290B6AAEE /* OpenSSL.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 02FB853CEB4CEF98DD4067A8 /* OpenSSL.xcframework */; };
 		C4BDF7FE7073EEF39B3933A1 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = AF02E64AE255234BFEA9FC73 /* SwiftTerm */; };
 		CE1CC9627CC87DA0621CE37F /* module.modulemap in CopyFiles */ = {isa = PBXBuildFile; fileRef = D2D782176811BCC4187E4D84 /* module.modulemap */; };
 		CE2A1AED6D6A91ED1887D674 /* CredentialsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEC4435E05FB8B4F13FF3093 /* CredentialsView.swift */; };
 		D0CB76187BE2FCD8046B74B6 /* OpenSSL.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 02FB853CEB4CEF98DD4067A8 /* OpenSSL.xcframework */; };
+		D1846C4E004D9F81E34F1B86 /* MacImportViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3FF3D783F627B1D46EAE767 /* MacImportViews.swift */; };
 		D36B9896EEC18488998118F8 /* TerminalInputTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F340E52E0D0111F8A1DBF295 /* TerminalInputTests.swift */; };
 		D5550F4B7D6AA8A03E51F190 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 87E209B7B94DD050DBE71C47 /* Assets.xcassets */; };
+		D7C796197B0FA265EBA48D2A /* TermCoreMac.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0C92E02B110F68623ACBB779 /* TermCoreMac.framework */; };
 		E66DE979BD37720E71BC746C /* CSSH.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 70C483CC1D0BE3BACC12BE9F /* CSSH.h */; };
+		E7598ECE691592B7891822D8 /* SSMTunnel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F08F0988DBAC3BE6671CA51 /* SSMTunnel.swift */; };
 		EBE0BAA5B5A0D8D91C966DE6 /* ThirdPartyNotices.txt in Resources */ = {isa = PBXBuildFile; fileRef = E9EF21EA2EB966A7E7F6FAA9 /* ThirdPartyNotices.txt */; };
 		ECAAC86BE09E4E1D58B39B86 /* HostListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AE5D0544E9F4F81025CEFC7 /* HostListView.swift */; };
+		EDC50CAAC9CFF7717DC3725B /* MacConfigurationImport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C14B232BF03474FBD75FDFA2 /* MacConfigurationImport.swift */; };
+		EED623208A5538998DA810FF /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DDCA7CB2E722CB905E65133 /* SettingsView.swift */; };
+		FE29F36C9B08B01AF99FB628 /* libCSSHMac.a in Frameworks */ = {isa = PBXBuildFile; fileRef = C47D3923DA57DDC93649ECA7 /* libCSSHMac.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		10CC8E8C47C48D218C2F81C2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 536F069C4B53292FE87543B4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3BDD220C79F918984FCF7B74;
+			remoteInfo = CSSHMac;
+		};
 		20D501F006F298D9CE8A0179 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 536F069C4B53292FE87543B4 /* Project object */;
@@ -58,12 +95,26 @@
 			remoteGlobalIDString = 4B61BB7AA81F0DB7B2CDBFE7;
 			remoteInfo = TermCore;
 		};
+		5E411DDF4FF61E46A485656E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 536F069C4B53292FE87543B4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B40C41031B4C6AEA92C11926;
+			remoteInfo = TermCoreMac;
+		};
 		918A91528C75FDDFA217E617 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 536F069C4B53292FE87543B4 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = BFA8ABE430824A535A7D3B80;
 			remoteInfo = CSSH;
+		};
+		9DAF404E47742D6C86C8174C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 536F069C4B53292FE87543B4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3BDD220C79F918984FCF7B74;
+			remoteInfo = CSSHMac;
 		};
 		BA7B05F41CECF2B29AD5242B /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -116,15 +167,40 @@
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		94AD40E02A41128C79A56B25 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+				7D760DB567C2E77D316D69B6 /* CSSH.h in CopyFiles */,
+				ADB4A4D3DC0839BE36B23360 /* libssh2.h in CopyFiles */,
+				99279BDFC1F390FB0B5DCB8C /* module.modulemap in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F92D1466DFAAB13F42D9E6D1 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				52F47CB2E7D71D536B5C019D /* OpenSSL.xcframework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		02FB853CEB4CEF98DD4067A8 /* OpenSSL.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = OpenSSL.xcframework; path = .build/references/OpenSSL/Frameworks/OpenSSL.xcframework; sourceTree = "<group>"; };
 		075A5C113BAAA48AEFB4561D /* CSSH.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = CSSH.c; sourceTree = "<group>"; };
+		0C92E02B110F68623ACBB779 /* TermCoreMac.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = TermCoreMac.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		225A9D04BBE0D1FEF61BB42B /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		23578D1D5C45DD4D80FF452D /* SyncedConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncedConfiguration.swift; sourceTree = "<group>"; };
 		2F1ACD30831169FB1298DC6C /* SSMMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSMMessage.swift; sourceTree = "<group>"; };
 		3B553F1A06FF7F06B01A8EAE /* TmuxBindings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TmuxBindings.swift; sourceTree = "<group>"; };
+		40C1CF8ECED60499037D9EFD /* TermAnywhereMac.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TermAnywhereMac.entitlements; sourceTree = "<group>"; };
 		40C9F395AA8CF5B9391C699A /* libCSSH.a */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = archive.ar; path = libCSSH.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		485E2420C5CAD0E555FE32D7 /* HostEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostEditor.swift; sourceTree = "<group>"; };
 		4963A7064BB158E7633E001C /* TermAnywhereTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = TermAnywhereTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -132,17 +208,24 @@
 		4C6061EAB216FF2EEA28CCBF /* TermAnywhereApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TermAnywhereApp.swift; sourceTree = "<group>"; };
 		4F08F0988DBAC3BE6671CA51 /* SSMTunnel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSMTunnel.swift; sourceTree = "<group>"; };
 		52671139DC68A13939FB7476 /* TermCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = TermCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		53C4085E50C888D2712B656B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		54699DED67DFC1D88FA767AE /* TermAnywhere.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TermAnywhere.entitlements; sourceTree = "<group>"; };
 		57D92F2A783A08E27D9B43C7 /* Host.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Host.swift; sourceTree = "<group>"; };
 		5AE5D0544E9F4F81025CEFC7 /* HostListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostListView.swift; sourceTree = "<group>"; };
 		70C483CC1D0BE3BACC12BE9F /* CSSH.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CSSH.h; sourceTree = "<group>"; };
+		72F6D4379F251CF492710EAB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		87E209B7B94DD050DBE71C47 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		8DDCA7CB2E722CB905E65133 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		9712191D15665A55F4FF253E /* libssh2.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = libssh2.h; sourceTree = "<group>"; };
 		9E3CE15AD05EC342137C5604 /* ConnectionIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionIntegrationTests.swift; sourceTree = "<group>"; };
 		AB4017206F090A236B2BF637 /* SafeTerminalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafeTerminalView.swift; sourceTree = "<group>"; };
 		ABA7C6B3406BE8A401577CD5 /* TerminalScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalScreen.swift; sourceTree = "<group>"; };
+		C14B232BF03474FBD75FDFA2 /* MacConfigurationImport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacConfigurationImport.swift; sourceTree = "<group>"; };
+		C47D3923DA57DDC93649ECA7 /* libCSSHMac.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libCSSHMac.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		D2D782176811BCC4187E4D84 /* module.modulemap */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.module-map"; path = module.modulemap; sourceTree = "<group>"; };
+		D3FF3D783F627B1D46EAE767 /* MacImportViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacImportViews.swift; sourceTree = "<group>"; };
+		DAA8D79B671296608465025D /* MacTerminalScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacTerminalScreen.swift; sourceTree = "<group>"; };
+		DFEE8DFA113E47D9BF83387A /* MacHostListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacHostListView.swift; sourceTree = "<group>"; };
 		E260444A780A9616953992ED /* TerminalSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalSession.swift; sourceTree = "<group>"; };
 		E29EA05109ED0B03B1A30C29 /* TermAnywhere.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TermAnywhere.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E4A542E0E4DB3FE3C3C16E33 /* SSHConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSHConnection.swift; sourceTree = "<group>"; };
@@ -150,6 +233,7 @@
 		E9EF21EA2EB966A7E7F6FAA9 /* ThirdPartyNotices.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = ThirdPartyNotices.txt; sourceTree = "<group>"; };
 		EEC4435E05FB8B4F13FF3093 /* CredentialsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CredentialsView.swift; sourceTree = "<group>"; };
 		F340E52E0D0111F8A1DBF295 /* TerminalInputTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalInputTests.swift; sourceTree = "<group>"; };
+		F5781F10B371317551A62AAB /* TermAnywhereMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TermAnywhereMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F95E071FF0A5BB5E041CC047 /* ConfigurationSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigurationSync.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -165,11 +249,30 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		3659B8769050D1B3C6A26174 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D7C796197B0FA265EBA48D2A /* TermCoreMac.framework in Frameworks */,
+				FE29F36C9B08B01AF99FB628 /* libCSSHMac.a in Frameworks */,
+				3C9DC946747A5A918E7E7862 /* OpenSSL.xcframework in Frameworks */,
+				A839562E06DE41465B8109AE /* SwiftTerm in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		6DDBD7E5880569423B5D1056 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				D0CB76187BE2FCD8046B74B6 /* OpenSSL.xcframework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A7B75EEE609542B914C67323 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BF7A4D2BFC21109290B6AAEE /* OpenSSL.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -211,6 +314,7 @@
 				E74AD3422CA2F6BA1880F5A6 /* AWSSigning.swift */,
 				57D92F2A783A08E27D9B43C7 /* Host.swift */,
 				225A9D04BBE0D1FEF61BB42B /* KeychainStore.swift */,
+				C14B232BF03474FBD75FDFA2 /* MacConfigurationImport.swift */,
 				E4A542E0E4DB3FE3C3C16E33 /* SSHConnection.swift */,
 				2F1ACD30831169FB1298DC6C /* SSMMessage.swift */,
 				4F08F0988DBAC3BE6671CA51 /* SSMTunnel.swift */,
@@ -262,9 +366,12 @@
 			isa = PBXGroup;
 			children = (
 				40C9F395AA8CF5B9391C699A /* libCSSH.a */,
+				C47D3923DA57DDC93649ECA7 /* libCSSHMac.a */,
 				E29EA05109ED0B03B1A30C29 /* TermAnywhere.app */,
+				F5781F10B371317551A62AAB /* TermAnywhereMac.app */,
 				4963A7064BB158E7633E001C /* TermAnywhereTests.xctest */,
 				52671139DC68A13939FB7476 /* TermCore.framework */,
+				0C92E02B110F68623ACBB779 /* TermCoreMac.framework */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -275,15 +382,70 @@
 				03227F50BC3B5A11C1B7333F /* App */,
 				390F91569CAD490EBAA8BACC /* AppTests */,
 				1BA5CD133B2C23C9CAF3526E /* CSSH */,
+				8C85FAF201D80E27878B3122 /* MacApp */,
 				08FF89FC3D11CB7C77861CA9 /* TermCore */,
 				69A389F318DE00ED8C71A1D9 /* Frameworks */,
 				6ED7EEBD1E093760C02E73B6 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
+		8C85FAF201D80E27878B3122 /* MacApp */ = {
+			isa = PBXGroup;
+			children = (
+				72F6D4379F251CF492710EAB /* Assets.xcassets */,
+				53C4085E50C888D2712B656B /* Info.plist */,
+				DFEE8DFA113E47D9BF83387A /* MacHostListView.swift */,
+				D3FF3D783F627B1D46EAE767 /* MacImportViews.swift */,
+				DAA8D79B671296608465025D /* MacTerminalScreen.swift */,
+				40C1CF8ECED60499037D9EFD /* TermAnywhereMac.entitlements */,
+			);
+			path = MacApp;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		170F723E396E814F2E773A39 /* TermAnywhereMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FAC53893A22C61EC03C36D7D /* Build configuration list for PBXNativeTarget "TermAnywhereMac" */;
+			buildPhases = (
+				B3A31CDFCD6A62E856869411 /* Sources */,
+				CBCBE246B0FD1F9EA103BC43 /* Resources */,
+				3659B8769050D1B3C6A26174 /* Frameworks */,
+				F92D1466DFAAB13F42D9E6D1 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				6BF7ADCA541039342186C4A2 /* PBXTargetDependency */,
+				B93F40F0798FABEA79CE1E94 /* PBXTargetDependency */,
+			);
+			name = TermAnywhereMac;
+			packageProductDependencies = (
+				E66C083D2CC6C59633FF75C0 /* SwiftTerm */,
+			);
+			productName = TermAnywhereMac;
+			productReference = F5781F10B371317551A62AAB /* TermAnywhereMac.app */;
+			productType = "com.apple.product-type.application";
+		};
+		3BDD220C79F918984FCF7B74 /* CSSHMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 65FEE437E0E5598B39BF3EB8 /* Build configuration list for PBXNativeTarget "CSSHMac" */;
+			buildPhases = (
+				94AD40E02A41128C79A56B25 /* CopyFiles */,
+				66492147BD7F205861F13904 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CSSHMac;
+			packageProductDependencies = (
+			);
+			productName = CSSHMac;
+			productReference = C47D3923DA57DDC93649ECA7 /* libCSSHMac.a */;
+			productType = "com.apple.product-type.library.static";
+		};
 		4B61BB7AA81F0DB7B2CDBFE7 /* TermCore */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 80638C506DD2710A59DF46F4 /* Build configuration list for PBXNativeTarget "TermCore" */;
@@ -348,6 +510,25 @@
 			productReference = E29EA05109ED0B03B1A30C29 /* TermAnywhere.app */;
 			productType = "com.apple.product-type.application";
 		};
+		B40C41031B4C6AEA92C11926 /* TermCoreMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BFB45B913DB24197F11CC58E /* Build configuration list for PBXNativeTarget "TermCoreMac" */;
+			buildPhases = (
+				784FEDEF74EB376B2CF7F6AA /* Sources */,
+				A7B75EEE609542B914C67323 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				1324AC88ACC78D1E4D688F57 /* PBXTargetDependency */,
+			);
+			name = TermCoreMac;
+			packageProductDependencies = (
+			);
+			productName = TermCoreMac;
+			productReference = 0C92E02B110F68623ACBB779 /* TermCoreMac.framework */;
+			productType = "com.apple.product-type.framework";
+		};
 		BFA8ABE430824A535A7D3B80 /* CSSH */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = CD88FFB0F1404293B378CEA6 /* Build configuration list for PBXNativeTarget "CSSH" */;
@@ -375,6 +556,14 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					170F723E396E814F2E773A39 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+					3BDD220C79F918984FCF7B74 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
 					4B61BB7AA81F0DB7B2CDBFE7 = {
 						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
@@ -384,6 +573,10 @@
 						ProvisioningStyle = Automatic;
 					};
 					83DB3556D1A0E20B4934EA16 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+					B40C41031B4C6AEA92C11926 = {
 						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
@@ -410,6 +603,9 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
+				3BDD220C79F918984FCF7B74 /* CSSHMac */,
+				B40C41031B4C6AEA92C11926 /* TermCoreMac */,
+				170F723E396E814F2E773A39 /* TermAnywhereMac */,
 				BFA8ABE430824A535A7D3B80 /* CSSH */,
 				4B61BB7AA81F0DB7B2CDBFE7 /* TermCore */,
 				83DB3556D1A0E20B4934EA16 /* TermAnywhere */,
@@ -425,6 +621,15 @@
 			files = (
 				D5550F4B7D6AA8A03E51F190 /* Assets.xcassets in Resources */,
 				EBE0BAA5B5A0D8D91C966DE6 /* ThirdPartyNotices.txt in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CBCBE246B0FD1F9EA103BC43 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				10B5CA1735B2C21046416E4B /* Assets.xcassets in Resources */,
+				0FC608BFFE16CAFD3C0B8029 /* ThirdPartyNotices.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -447,6 +652,7 @@
 				61B9C549193C283F6F6AE4F2 /* AWSSigning.swift in Sources */,
 				6B43F96A42D92A5BF02CA1F8 /* Host.swift in Sources */,
 				3C523905473FCAC122224DDC /* KeychainStore.swift in Sources */,
+				A0BE3EB1FDE5447CAFB33C37 /* MacConfigurationImport.swift in Sources */,
 				276CDD00736720A26502F6B8 /* SSHConnection.swift in Sources */,
 				1E37C6292B12DD241460628F /* SSMMessage.swift in Sources */,
 				53C8855857D6DCF06E5B9AC2 /* SSMTunnel.swift in Sources */,
@@ -455,11 +661,50 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		66492147BD7F205861F13904 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8838924BA73129BD7D75DEBF /* CSSH.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		784FEDEF74EB376B2CF7F6AA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				90A70A8990DFB64D0734F1CD /* AWSSigning.swift in Sources */,
+				2AFC83658DF618E6E430334C /* Host.swift in Sources */,
+				4192A4191370F46702255DAB /* KeychainStore.swift in Sources */,
+				EDC50CAAC9CFF7717DC3725B /* MacConfigurationImport.swift in Sources */,
+				543914770EF545E7AB43039C /* SSHConnection.swift in Sources */,
+				04B137B74C673F6043680ECB /* SSMMessage.swift in Sources */,
+				E7598ECE691592B7891822D8 /* SSMTunnel.swift in Sources */,
+				7580E9EB64C55AA668A2EDF4 /* SyncedConfiguration.swift in Sources */,
+				981F3E74DED42D81F8B74000 /* TmuxBindings.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		80A41F0C0D12966948E33E9D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				B9DE0412D81D46D477DB4F9A /* CSSH.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B3A31CDFCD6A62E856869411 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1B3D08C7DB4E0F2705F86D15 /* ConfigurationSync.swift in Sources */,
+				9BBD26CFFBC0A5A86C3C94A0 /* CredentialsView.swift in Sources */,
+				61DC3F56745C7571D6A5B88E /* MacHostListView.swift in Sources */,
+				D1846C4E004D9F81E34F1B86 /* MacImportViews.swift in Sources */,
+				8F353DA5D620CD07B8574169 /* MacTerminalScreen.swift in Sources */,
+				EED623208A5538998DA810FF /* SettingsView.swift in Sources */,
+				3F82813CE7152753CF45EA7C /* TermAnywhereApp.swift in Sources */,
+				192075C9EDE3CFABFB896F0F /* TerminalSession.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -482,6 +727,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		1324AC88ACC78D1E4D688F57 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3BDD220C79F918984FCF7B74 /* CSSHMac */;
+			targetProxy = 9DAF404E47742D6C86C8174C /* PBXContainerItemProxy */;
+		};
 		296F420028D9A35A61FC595C /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 4B61BB7AA81F0DB7B2CDBFE7 /* TermCore */;
@@ -491,6 +741,11 @@
 			isa = PBXTargetDependency;
 			target = 83DB3556D1A0E20B4934EA16 /* TermAnywhere */;
 			targetProxy = BA7B05F41CECF2B29AD5242B /* PBXContainerItemProxy */;
+		};
+		6BF7ADCA541039342186C4A2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B40C41031B4C6AEA92C11926 /* TermCoreMac */;
+			targetProxy = 5E411DDF4FF61E46A485656E /* PBXContainerItemProxy */;
 		};
 		97F666A6C07BEE0277647669 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -507,9 +762,32 @@
 			target = BFA8ABE430824A535A7D3B80 /* CSSH */;
 			targetProxy = E979C0360E6268EEAA25CAFC /* PBXContainerItemProxy */;
 		};
+		B93F40F0798FABEA79CE1E94 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3BDD220C79F918984FCF7B74 /* CSSHMac */;
+			targetProxy = 10CC8E8C47C48D218C2F81C2 /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		005DD42EEE4B61EE98CA7FC5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				DEFINES_MODULE = YES;
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/Sources/CSSH/include";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = me.tianyong.CSSHMac;
+				PRODUCT_MODULE_NAME = CSSH;
+				PRODUCT_NAME = CSSHMac;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
 		181D59A3AA8FC12DA9F7CE72 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -566,11 +844,11 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/Sources/CSSH/include";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -660,6 +938,89 @@
 			};
 			name = Debug;
 		};
+		5CE59DC5FFED956ECEE7EF1B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				DEFINES_MODULE = YES;
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/Sources/CSSH/include";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = me.tianyong.CSSHMac;
+				PRODUCT_MODULE_NAME = CSSH;
+				PRODUCT_NAME = CSSHMac;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		60EB1AE018EDB969C09CD74E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = MacApp/TermAnywhereMac.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".build/references/OpenSSL/Frameworks\"",
+				);
+				INFOPLIST_FILE = MacApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-lz",
+					"$(SRCROOT)/.build/native/macos/src/libssh2.a",
+					"-ObjC",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "me.tianyong.term-anywhere.mac";
+				PRODUCT_NAME = "Term Anywhere";
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		6D41D8BA3CAB4DDDF5F0F527 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "";
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".build/references/OpenSSL/Frameworks\"",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACH_O_TYPE = staticlib;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-lz",
+					"$(SRCROOT)/.build/native/macos/src/libssh2.a",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = me.tianyong.TermCoreMac;
+				PRODUCT_MODULE_NAME = TermCore;
+				PRODUCT_NAME = TermCore;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Debug;
+		};
 		715F033DE04AC9FE096BE2E9 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -740,6 +1101,41 @@
 			};
 			name = Debug;
 		};
+		997F3822E1676786203A448A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "";
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".build/references/OpenSSL/Frameworks\"",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACH_O_TYPE = staticlib;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-lz",
+					"$(SRCROOT)/.build/native/macos/src/libssh2.a",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = me.tianyong.TermCoreMac;
+				PRODUCT_MODULE_NAME = TermCore;
+				PRODUCT_NAME = TermCore;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Release;
+		};
 		B6FBC889CE3C868582EB5CB9 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -790,10 +1186,10 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/Sources/CSSH/include";
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
@@ -801,6 +1197,36 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
+		};
+		C11E29ED9D2BA0FF6E32885D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = MacApp/TermAnywhereMac.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".build/references/OpenSSL/Frameworks\"",
+				);
+				INFOPLIST_FILE = MacApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-lz",
+					"$(SRCROOT)/.build/native/macos/src/libssh2.a",
+					"-ObjC",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "me.tianyong.term-anywhere.mac";
+				PRODUCT_NAME = "Term Anywhere";
+				SDKROOT = macosx;
+			};
+			name = Debug;
 		};
 		FB4485447BE3E3247E841E8B /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -858,11 +1284,29 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
+		65FEE437E0E5598B39BF3EB8 /* Build configuration list for PBXNativeTarget "CSSHMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5CE59DC5FFED956ECEE7EF1B /* Debug */,
+				005DD42EEE4B61EE98CA7FC5 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		80638C506DD2710A59DF46F4 /* Build configuration list for PBXNativeTarget "TermCore" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				8FFF14E9744D164CEAAA8A15 /* Debug */,
 				2522DC2D52DB75264704094D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		BFB45B913DB24197F11CC58E /* Build configuration list for PBXNativeTarget "TermCoreMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6D41D8BA3CAB4DDDF5F0F527 /* Debug */,
+				997F3822E1676786203A448A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
@@ -885,6 +1329,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
+		FAC53893A22C61EC03C36D7D /* Build configuration list for PBXNativeTarget "TermAnywhereMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C11E29ED9D2BA0FF6E32885D /* Debug */,
+				60EB1AE018EDB969C09CD74E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -900,6 +1353,11 @@
 
 /* Begin XCSwiftPackageProductDependency section */
 		AF02E64AE255234BFEA9FC73 /* SwiftTerm */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6C0DE53AB6FDB0A91323C462 /* XCRemoteSwiftPackageReference "SwiftTerm" */;
+			productName = SwiftTerm;
+		};
+		E66C083D2CC6C59633FF75C0 /* SwiftTerm */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 6C0DE53AB6FDB0A91323C462 /* XCRemoteSwiftPackageReference "SwiftTerm" */;
 			productName = SwiftTerm;

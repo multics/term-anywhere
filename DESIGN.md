@@ -5,6 +5,7 @@ Status: first development build. See README.md for completed checks and remainin
 ## Structure
 
 - `App`: SwiftUI host list and forms, UIKit/SwiftTerm terminal, accessory keys, and connection state shown to the user.
+- `MacApp`: native Mac host editor, SSH/AWS import previews, and AppKit/SwiftTerm terminal. The Mac target shares the app store, connection lifetime, credentials form, settings, and configuration sync with iOS.
 - `Sources/TermCore`: saved connection models, Keychain storage, SSH session lifetime, AWS signing and SSM transport, and tmux binding detection.
 - `Sources/CSSH`: a small bridge to libssh2. SSH operations run on a serial worker queue.
 - `Scripts`: reproducible native dependency builds and selected-host export. The app needs no Mac process at runtime.
@@ -55,6 +56,18 @@ Do not gate key-value storage on `ubiquityIdentityToken`; that token describes d
 Incoming host changes do not interrupt a live connection. Close that app session and reopen the host to use its new connection settings. Terminal preferences update the existing views. Host deletion remains outside the current interface, so no deletion records are required yet.
 
 The Xcode entitlement enables iCloud key-value storage. Actual transfer requires a development team and a provisioning profile that permits this capability. See [Apple's iCloud setup instructions](https://developer.apple.com/documentation/xcode/configuring-icloud-services).
+
+## Mac configuration workflow
+
+The Mac bundle ID is `me.tianyong.term-anywhere.mac`. Its key-value store entitlement explicitly uses the iOS store, `$(TeamIdentifierPrefix)me.tianyong.term-anywhere`. Local settings reside in `~/Library/Application Support/TermAnywhere/`. Use the same host IDs as the existing Python export to avoid duplicate imports.
+
+The import sheet lists explicit aliases in the selected SSH config. Users can type names from Include files. `/usr/bin/ssh -G -F <config> <alias>` resolves each preview, including its Include files. The app only recognizes the supported direct and SSM connection patterns; it never executes ProxyCommand text. As with normal OpenSSH config loading, a trusted local `Match exec` directive can run during resolution. Use only trusted SSH config files.
+
+The SSH key picker opens `.ssh` and shows hidden files. An empty destination name uses the key's filename. The AWS import sheet reads static profiles, displays only their names, and saves only selected entries to the Mac Keychain. It accepts a session token but has no credential-refresh service. Imported credential values do not enter configuration records or iCloud.
+
+Use a single native Mac window with a sidebar, host form, and terminal view. Preserve the shared SSH/SSM and tmux recovery code. Use AppKit input, selection, and copy/paste. Show a confirmation sheet for pastes with line breaks or control characters. Keep remote clipboard requests disabled through the terminal delegate defaults.
+
+This personal development build runs without App Sandbox so system OpenSSH can resolve the user's existing local configuration. It is signed with hardened runtime and the iCloud entitlement. This is not a Mac App Store or notarized distribution build.
 
 ## Validation record
 

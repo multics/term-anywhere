@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 import TermCore
 
 @MainActor final class ConfigurationSync: NSObject, ObservableObject {
@@ -8,7 +9,14 @@ import TermCore
     var onChange: ((SyncedConfiguration) -> Void)?
     private let cloud = NSUbiquitousKeyValueStore.default
     private let defaults = UserDefaults.standard
-    private let file = URL.applicationSupportDirectory.appendingPathComponent("configuration-v1.json")
+    private static var directory: URL {
+        #if os(macOS)
+        URL.applicationSupportDirectory.appendingPathComponent("TermAnywhere", isDirectory: true)
+        #else
+        URL.applicationSupportDirectory
+        #endif
+    }
+    private let file = ConfigurationSync.directory.appendingPathComponent("configuration-v1.json")
     private var loaded = false
 
     override init() {
@@ -17,9 +25,9 @@ import TermCore
             if FileManager.default.fileExists(atPath: file.path) {
                 state = try JSONDecoder().decode(SyncedConfiguration.self, from: Data(contentsOf: file))
             } else {
-                let old = URL.applicationSupportDirectory.appendingPathComponent("hosts.json")
+                let old = Self.directory.appendingPathComponent("hosts.json")
                 if FileManager.default.fileExists(atPath: old.path) {
-                    let hosts = try JSONDecoder().decode([Host].self, from: Data(contentsOf: old))
+                    let hosts = try JSONDecoder().decode([TermCore.Host].self, from: Data(contentsOf: old))
                     // Old local settings have no revision. An existing cloud revision takes priority.
                     for host in hosts { try state.save(host, modified: Date(timeIntervalSince1970: 0)) }
                 }
@@ -39,7 +47,7 @@ import TermCore
         guard cloud.synchronize() else { status = "iCloud unavailable. Saved on this device."; return }
         reconcile()
     }
-    func save(hosts: [Host]) throws {
+    func save(hosts: [TermCore.Host]) throws {
         guard loaded else { throw ConnectionError.message(status) }
         var next = state
         for host in hosts { try next.save(host) }
@@ -54,7 +62,12 @@ import TermCore
     }
     private func persist(_ value: SyncedConfiguration) throws {
         try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+        #if os(macOS)
+        try JSONEncoder().encode(value).write(to: file, options: .atomic)
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: file.path)
+        #else
         try JSONEncoder().encode(value).write(to: file, options: [.atomic, .completeFileProtection])
+        #endif
     }
     private func reconcile() {
         guard loaded, !accountChanged else { return }

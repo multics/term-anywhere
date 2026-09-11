@@ -1,6 +1,6 @@
 # Term Anywhere
 
-A personal SSH terminal for iPhone and iPad. Minimum OS: iOS/iPadOS 26. This is the first development build.
+A personal SSH terminal for iPhone, iPad, and Mac. Minimum OS: iOS/iPadOS 26 and macOS 26. The current Mac build supports Apple Silicon. This is a development build.
 
 The app supports direct SSH and SSH through AWS Systems Manager. It uses private keys, device Keychain storage, and server fingerprint checks. It can attach to a named tmux session and read that server's active prefix and bindings on each connection. The keyboard adds Esc, one-shot Ctrl, Tab, arrows, symbols, and detected tmux actions.
 
@@ -29,6 +29,31 @@ For a physical device, open `TermAnywhere.xcodeproj`, select your development te
 Enable **iCloud → Key-value storage** for the app's identifier and provisioning profile. The project already contains the required entitlement. Keep the same team and bundle identifier on both devices. See [Apple's iCloud configuration instructions](https://developer.apple.com/documentation/xcode/configuring-icloud-services).
 
 ## Set up connections
+
+### On the Mac
+
+Open `~/Applications/Term Anywhere.app`.
+
+1. Select **Import → Read SSH config**. Review the aliases and select **Preview hosts**. Select the hosts to import. You can type additional aliases from Include files. OpenSSH resolves their effective settings.
+2. Open **Keys and AWS profiles**. Select **Import private key**; the picker opens `.ssh` and shows hidden files. Use the key name from the host settings, or leave the name empty to use the filename.
+3. Select **Import AWS profiles from this Mac** and choose the static profiles to save. Their values stay in the Mac Keychain. You can also enter a profile manually.
+4. Select a host to edit it. **Save** writes the settings locally and to the shared iCloud store. **Open terminal** saves the host and starts a connection.
+
+The Mac uses the same iCloud settings store as iPhone and iPad. SSH keys, AWS secrets, and trust decisions still need separate setup on each device. The Mac import does not modify `.ssh/config` or `.aws/credentials`. Use trusted SSH config files: OpenSSH can evaluate local `Match exec` directives while resolving them.
+
+Build the signed Mac app after preparing the native dependencies:
+
+```sh
+xcodegen generate
+xcodebuild -project TermAnywhere.xcodeproj -scheme TermAnywhereMac \
+  -destination 'platform=macOS,arch=arm64' -derivedDataPath DerivedData-mac \
+  -skipPackagePluginValidation -allowProvisioningUpdates \
+  DEVELOPMENT_TEAM=YOUR_TEAM_ID build
+```
+
+The product is `DerivedData-mac/Build/Products/Debug/Term Anywhere.app`. This personal development build uses hardened runtime without App Sandbox. It is not a notarized distribution package.
+
+### On iPhone and iPad
 
 1. On the Mac, export explicit settings for selected SSH aliases:
 
@@ -62,14 +87,15 @@ Validation date: 2026-09-11. Toolchain: Xcode 26.6, Swift 6.3.3. Simulator runti
 
 | Check | Result |
 | --- | --- |
-| macOS core tests | 15 passed: includes six new configuration merge, conflict, persistence, and validation tests |
+| macOS core tests | 19 passed: includes configuration merges and native SSH/AWS import checks |
+| Native Mac app | Signed build launched; existing iCloud host appeared without import; live SSH preview resolved direct, AIxC SSM, and NR SSM examples; AWS profile preview and SSH key picker inspected |
 | Hosted iOS tests | Latest run: four input/Keychain tests passed; live connection test skipped without its private fixture. Earlier live run passed direct SSH and both AWS profile paths |
 | Actual iCloud transfer | Not yet verified between two signed-in devices; the installed build includes the iCloud entitlement |
 | Actual remote tmux checks | Direct SSH and both SSM paths passed with tmux 3.4; custom prefix/binding detection, separate query channel, and retained state after reconnect |
 | Input checks | Chinese marked text stays local until commit; Ctrl is one-shot; cursor mode and terminal dimensions pass |
 | Simulator launch | App launched on iPhone 17 Pro and iPad Pro 11-inch; native host layouts inspected |
 | Device build | arm64 iOS development signing passed with the Yong Tian team; profile covers both test devices |
-| Physical installation | Installed on iPhone 17 Pro Max (iOS 26.6.2) and iPad mini 6 (iPadOS 26.6) |
+| Physical installation | Installed and launched on iPhone 17 Pro Max (iOS 26.6.2) and iPad mini 6 (iPadOS 26.6) |
 
 Run the core tests:
 
@@ -100,6 +126,7 @@ The macOS `connection-check` executable uses the same transport code. Its option
 ## Local artifacts
 
 - `dist/TermAnywhere-Simulator.app`: runnable arm64 Simulator app.
+- `dist/Term Anywhere.app`: signed Mac app; installed at `~/Applications/Term Anywhere.app`.
 - `dist/TermAnywhere-iOS.app`: signed development app for the registered test devices.
 - `dist/TermAnywhere-iOS-unsigned.app`: device build, requires signing before installation.
 - `dist/design/term-anywhere-app-icon.png`: original generated logo.

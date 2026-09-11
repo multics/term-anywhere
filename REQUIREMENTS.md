@@ -1,10 +1,12 @@
 # Term Anywhere requirements
 
-Status: approved scope for implementation. Minimum OS: iOS/iPadOS 26.
+Status: approved scope for implementation. Minimum OS: iOS/iPadOS 26 and macOS 26. The current Mac build supports Apple Silicon.
 
 ## Purpose
 
 Provide a personal remote terminal on iPhone and iPad. Support the user's selected hosts from the Mac SSH configuration, including direct SSH and SSH through AWS Systems Manager. The app must connect independently of the Mac after setup.
+
+Provide a native Mac app to configure hosts, import SSH keys and static AWS profiles, and open remote terminals. Use the same iCloud settings store as the phone and tablet. Credential values remain on each device, including the Mac.
 
 ## Required behavior
 
@@ -20,6 +22,7 @@ Provide a personal remote terminal on iPhone and iPad. Support the user's select
 - Sync saved host definitions and terminal preferences through iCloud. Include tmux session/socket settings, manual prefix, SSH key names, and AWS profile names. Keep local copies for offline use.
 - Keep private keys, AWS credentials, passphrases, server fingerprint trust, terminal output, and active connections on each device. The user explicitly selected this credential policy.
 - Merge edits to different hosts. For competing edits to one host, use the newer record. Pause further sync writes when Apple reports an iCloud account change until the user selects how to continue. Do not interrupt an active terminal when cloud settings arrive.
+- On the Mac, preview selected aliases with system OpenSSH before importing them. Read the user's chosen SSH configuration without changing it. Import selected AWS profiles into the Mac Keychain; do not execute SSO, role-assumption, or credential-process flows during import.
 
 ## Scope limits
 

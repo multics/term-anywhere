@@ -3,7 +3,7 @@ import SwiftTerm
 import TermCore
 
 @MainActor final class TerminalSession: ObservableObject {
-    let host: Host
+    let host: TermCore.Host
     var id: UUID { host.id }
     let terminal: TerminalView
     weak var store: AppStore?
@@ -27,15 +27,22 @@ import TermCore
     private var retryCount = 0
     private var generation = UUID()
 
-    init(host: Host, store: AppStore) {
+    init(host: TermCore.Host, store: AppStore) {
         self.host = host; self.store = store
+        #if os(macOS)
+        terminal = SafeTerminalView(frame: .zero, font: nil)
+        terminal.nativeBackgroundColor = NSColor(red: 0.025, green: 0.04, blue: 0.065, alpha: 1)
+        terminal.nativeForegroundColor = NSColor(white: 0.92, alpha: 1)
+        terminal.setAccessibilityLabel("Terminal for \(host.name)")
+        #else
         terminal = SafeTerminalView(frame: .zero)
         terminal.font = .monospacedSystemFont(ofSize: 14, weight: .regular)
         terminal.nativeBackgroundColor = UIColor(red: 0.025, green: 0.04, blue: 0.065, alpha: 1)
         terminal.nativeForegroundColor = UIColor(white: 0.92, alpha: 1)
+        terminal.accessibilityLabel = "Terminal for \(host.name)"
+        #endif
         terminal.caretColor = .systemMint
         terminal.allowMouseReporting = false
-        terminal.accessibilityLabel = "Terminal for \(host.name)"
         applyPreferences(store.preferences)
     }
     func applyPreferences(_ value: TerminalPreferences) {
@@ -116,12 +123,12 @@ import TermCore
         wantsConnection = false; generation = UUID(); connectTask?.cancel(); connectTask = nil
         connection?.close(); connection = nil
         isLive = false; isConnecting = false; status = "Disconnected"; passphrase = ""
-        terminal.controlModifier = false; terminal.metaModifier = false; bindings = nil
+        resetModifiers(); bindings = nil
         coordinator?.refreshMenu()
     }
     private func didClose(_ reason: String?) {
         connection = nil; isLive = false; isConnecting = false; bindings = nil
-        terminal.controlModifier = false; terminal.metaModifier = false
+        resetModifiers()
         status = reason == nil ? "Session ended" : "Connection lost"; error = reason
         coordinator?.refreshMenu()
         guard wantsConnection, reason != nil, retryCount < 3, !host.tmuxSession.isEmpty else { return }
@@ -148,5 +155,10 @@ import TermCore
     private func disconnectForNetworkLoss() {
         generation = UUID(); connection?.close(); connection = nil
         didClose("Connection lost while the app was inactive.")
+    }
+    private func resetModifiers() {
+        #if os(iOS)
+        terminal.controlModifier = false; terminal.metaModifier = false
+        #endif
     }
 }

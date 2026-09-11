@@ -27,7 +27,12 @@ struct SettingsView: View {
                     }), in: 10...28, step: 1)
                 }
             }
-            .navigationTitle("Settings").navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Settings")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #else
+            .formStyle(.grouped)
+            #endif
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
             .alert("Merge with this iCloud account?", isPresented: $confirmingAccount) {
                 Button("Cancel", role: .cancel) {}
