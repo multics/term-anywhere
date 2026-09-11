@@ -126,6 +126,7 @@ import TermCore
         guard tabs[session.host.id]?.contains(where: { $0 === session }) == true else { return }
         if let previous = sessions[session.host.id], previous !== session {
             session.inheritPresentation(from: previous)
+            previous.stopScrolling()
             previous.hideKeyboard()
         }
         activeTabIDs[session.host.id] = session.id

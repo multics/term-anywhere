@@ -8,6 +8,8 @@ On iPhone and iPad, tap the keyboard button beside the terminal's tools menu to 
 
 Tap the session title in the terminal header to switch between open tabs for the same host. The panel offers **Open session…** and **New session…**. Selecting an already-open session returns to its tab. Each tab keeps its connection and output. Closing a tab leaves the remote tmux session running; the host-row Disconnect action closes all local tabs for that host. Use Command-Option-Left or Command-Option-Right with a hardware keyboard to switch tabs.
 
+Drag vertically in the terminal to scroll. Normal shells use local output history. Applications that request mouse input receive wheel events. Configured tmux sessions use server history even when mouse reporting is off; scrolling back to the bottom leaves copy mode. Long-press text selection remains available. The app does not change server-wide tmux settings. See [the input design and validation](docs/TERMINAL_INPUT.md).
+
 Host settings and terminal preferences also sync through iCloud. SSH keys and AWS profiles use iCloud Keychain by default. An explicit device-only choice remains available.
 
 Read [REQUIREMENTS.md](REQUIREMENTS.md) for scope and [DESIGN.md](DESIGN.md) for implementation decisions. See [APP_ICON.md](APP_ICON.md) for the logo design.

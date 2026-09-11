@@ -69,6 +69,7 @@ struct TerminalScreen: View {
                         Button("Close tab", systemImage: "xmark.circle") { onDisconnect() }
                     }
                     Section("Terminal") {
+                        if let message = session.scrollStatus { Text(message) }
                         Button(session.keyboardVisible ? "Hide keyboard" : "Show keyboard", systemImage: "keyboard") { session.toggleKeyboard() }
                         Button("Larger text", systemImage: "textformat.size.larger") { session.changeFontSize(by: 1) }
                         Button("Smaller text", systemImage: "textformat.size.smaller") { session.changeFontSize(by: -1) }

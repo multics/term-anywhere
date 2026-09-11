@@ -111,6 +111,15 @@ public final class SSHConnection: @unchecked Sendable {
             worker.async { do { continuation.resume(returning: try self.resolveTmuxSession(host)) } catch { continuation.resume(throwing: error) } }
         }
     }
+    public func scrollTmux(for host: Host, lines: Int) async throws {
+        let id = try await tmuxSessionID(for: host)
+        try Task.checkCancellation()
+        let state = try await execute("\(host.tmuxCommand) display-message -p -t \(shellQuote(id + ":")) '#{pane_id}|#{pane_mode}|#{alternate_on}'")
+        try Task.checkCancellation()
+        if let command = try TmuxScroll(state: state).command(tmux: host.tmuxCommand, lines: lines) {
+            _ = try await execute(command)
+        }
+    }
     public func startTerminal(host: Host, reconnecting: Bool, columns: Int = 80, rows: Int = 24) async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             worker.async {

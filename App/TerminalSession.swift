@@ -15,6 +15,7 @@ import TermCore
     @Published var error: String?
     @Published var bindings: TmuxBindings?
     @Published var bindingsStatus = "Connect to read this server’s shortcuts."
+    @Published var scrollStatus: String?
     @Published var pendingFingerprint: String?
     @Published var changedFingerprint = false
     @Published var passphrase = ""
@@ -31,6 +32,9 @@ import TermCore
     var connection: SSHConnection?
     var coordinator: TerminalCoordinator?
     private var connectTask: Task<Void, Never>?
+    private var scrollTask: Task<Void, Never>?
+    private var pendingScrollLines = 0
+    private var scrollRequestID = UUID()
     var hasStarted = false
     @Published private var wantsConnection = false
     var canDisconnect: Bool { isLive || isConnecting || wantsConnection }
@@ -163,6 +167,7 @@ import TermCore
                 } }
                 let attachOnly = try await prepareTmuxSession(using: c, forceSelection: forceSessionSelection)
                 guard generation == attempt, !Task.isCancelled else { c.close(); return }
+                (terminal as? SafeTerminalView)?.tmuxScrollHandler = host.tmuxSession.isEmpty ? nil : { [weak self] lines in self?.scrollTmux(lines: lines) }
                 let t = terminal.getTerminal()
                 try await c.startTerminal(host: host, reconnecting: attachOnly, columns: t.cols, rows: t.rows)
                 guard generation == attempt, !Task.isCancelled else { c.close(); return }
@@ -259,8 +264,36 @@ import TermCore
         coordinator?.refreshMenu()
     }
     var prefixBytes: Data? { TmuxBindings.keyBytes(bindings?.prefix ?? host.manualPrefix) }
-    func send(_ data: Data) { guard isLive else { return }; connection?.send(data) }
+    func send(_ data: Data) { guard isLive else { return }; stopScrolling(); connection?.send(data) }
+    func scrollTmux(lines: Int) {
+        guard isLive, let connection else { return }
+        pendingScrollLines = max(-120, min(120, pendingScrollLines + lines))
+        guard scrollTask == nil else { return }
+        let attempt = generation, scrollID = scrollRequestID
+        scrollTask = Task { [weak self] in
+            guard let self else { return }
+            defer { if scrollRequestID == scrollID { scrollTask = nil } }
+            do {
+                while !Task.isCancelled, isLive, generation == attempt, pendingScrollLines != 0 {
+                    try await Task.sleep(for: .milliseconds(60))
+                    let lines = max(-30, min(30, pendingScrollLines)); pendingScrollLines -= lines
+                    try await connection.scrollTmux(for: host, lines: lines)
+                    try Task.checkCancellation()
+                    scrollStatus = nil
+                }
+            } catch {
+                if !Task.isCancelled, generation == attempt {
+                    pendingScrollLines = 0; scrollStatus = "Touch scrolling: " + error.localizedDescription
+                }
+            }
+        }
+    }
+    func stopScrolling() {
+        scrollRequestID = UUID(); scrollTask?.cancel(); scrollTask = nil; pendingScrollLines = 0
+    }
     func disconnect(closeUI: Bool = true) {
+        stopScrolling(); scrollStatus = nil
+        (terminal as? SafeTerminalView)?.tmuxScrollHandler = nil
         hasStarted = true; wantsConnection = false; generation = UUID(); connectTask?.cancel(); connectTask = nil
         let pending = tmuxSelectionContinuation; tmuxSelectionContinuation = nil; selectingTmux = false
         pending?.resume(throwing: CancellationError())
@@ -277,6 +310,8 @@ import TermCore
         } else { coordinator?.refreshMenu() }
     }
     private func didClose(_ reason: String?) {
+        stopScrolling()
+        (terminal as? SafeTerminalView)?.tmuxScrollHandler = nil
         connection = nil; isLive = false; isConnecting = false; bindings = nil
         let pending = tmuxSelectionContinuation; tmuxSelectionContinuation = nil; selectingTmux = false
         pending?.resume(throwing: ConnectionError.message(reason ?? "The connection ended while choosing a session."))

@@ -59,6 +59,29 @@ import TermCore
             print("TMUX_CHECK_QUERY_ISOLATION")
             let query = try await active.execute("printf QUERY_CHANNEL_OK")
             guard query == "QUERY_CHANNEL_OK", !captured.text.contains("QUERY_CHANNEL_OK") else { throw ConnectionError.message("Command output leaked into the interactive channel.") }
+            active.send(Data("for n in $(seq 1 100); do printf 'history line %s\\n' \"$n\"; done; printf 'SCROLL_%s\\n' READY\n".utf8))
+            try await waitFor("SCROLL_READY", capture: captured)
+            try await active.scrollTmux(for: target, lines: 8)
+            let history = try await active.execute("\(tmux) display-message -p -t check: '#{pane_in_mode}|#{scroll_position}'")
+            guard history.hasPrefix("1|"), history.trimmingCharacters(in: .newlines) != "1|0" else { throw ConnectionError.message("Touch scrolling did not enter tmux history.") }
+            try await active.scrollTmux(for: target, lines: -30)
+            let bottom = try await active.execute("\(tmux) display-message -p -t check: '#{pane_in_mode}'")
+            guard bottom.trimmingCharacters(in: .whitespacesAndNewlines) == "0" else { throw ConnectionError.message("Scrolling to the bottom did not leave copy mode.") }
+            let cancelledScroll = Task { try await active.scrollTmux(for: target, lines: 8) }
+            cancelledScroll.cancel()
+            do { try await cancelledScroll.value; throw ConnectionError.message("A cancelled scroll completed.") }
+            catch is CancellationError {}
+            let afterCancel = try await active.execute("\(tmux) display-message -p -t check: '#{pane_in_mode}'")
+            guard afterCancel.trimmingCharacters(in: .whitespacesAndNewlines) == "0" else { throw ConnectionError.message("A cancelled gesture entered history.") }
+            // Change mouse settings only on this isolated test server.
+            _ = try await active.execute("\(tmux) set-option -g mouse on")
+            try await Task.sleep(nanoseconds: 300_000_000)
+            active.send(Data("\u{1b}[<64;10;5M\u{1b}[<64;10;5M".utf8))
+            try await Task.sleep(nanoseconds: 300_000_000)
+            let mouseHistory = try await active.execute("\(tmux) display-message -p -t check: '#{pane_in_mode}'")
+            guard mouseHistory.trimmingCharacters(in: .whitespacesAndNewlines) == "1" else { throw ConnectionError.message("Wheel input did not enter tmux history.") }
+            _ = try await active.execute("\(tmux) send-keys -X -t check: cancel; \(tmux) set-option -g mouse off")
+            print("TMUX_TOUCH_SCROLL_OK MOUSE_OFF_HISTORY MOUSE_ON_WHEEL RETURN_TO_PROMPT")
             var otherHost = target; otherHost.tmuxSession = "other"
             let other = try await SSHConnection.open(host: otherHost, privateKey: key, trustedFingerprint: trusted, aws: aws)
             defer { other.close() }
