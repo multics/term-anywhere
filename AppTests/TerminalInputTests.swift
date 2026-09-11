@@ -23,12 +23,16 @@ import TermCore
         XCTAssertNotNil(session.terminal.window)
         session.isLive = true; session.status = "Connected"
         session.terminal.feed(text: "Welcome to the terminal\r\n$ ")
-        try await Task.sleep(for: .seconds(1))
+        for _ in 0..<50 {
+            if scene.traitCollection.userInterfaceIdiom != .phone || scene.effectiveGeometry.interfaceOrientation.isLandscape { break }
+            try await Task.sleep(for: .milliseconds(100))
+        }
         if scene.traitCollection.userInterfaceIdiom == .phone {
             XCTAssertTrue(scene.effectiveGeometry.interfaceOrientation.isLandscape, "A connected iPhone terminal must request landscape")
         } else {
             XCTAssertEqual(scene.effectiveGeometry.interfaceOrientation, initialOrientation, "iPad orientation must remain under user control")
         }
+        try await Task.sleep(for: .milliseconds(600))
         let image = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in
             window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
         }
@@ -36,7 +40,10 @@ import TermCore
         attachment.name = "Connected terminal layout"; attachment.lifetime = .keepAlways
         add(attachment)
         store.closeSession(host.id)
-        try await Task.sleep(for: .milliseconds(600))
+        for _ in 0..<50 {
+            if session.terminal.window == nil && scene.effectiveGeometry.interfaceOrientation == initialOrientation { break }
+            try await Task.sleep(for: .milliseconds(100))
+        }
         XCTAssertEqual(scene.effectiveGeometry.interfaceOrientation, initialOrientation)
         XCTAssertNil(store.selectedHostID)
         XCTAssertNil(session.terminal.window, "Disconnect must remove the terminal from the displayed hierarchy")

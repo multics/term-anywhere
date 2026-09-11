@@ -33,6 +33,9 @@ import TermCore
     var canDisconnect: Bool { isLive || isConnecting || wantsConnection }
     private var retryCount = 0
     private var generation = UUID()
+    private var requestedLandscape = false
+    private var previousOrientation: UIInterfaceOrientation?
+    private weak var orientationScene: UIWindowScene?
 
     init(host: TermCore.Host, store: AppStore) {
         self.host = host; self.store = store
@@ -55,6 +58,36 @@ import TermCore
     func applyPreferences(_ value: TerminalPreferences) {
         optionAsMeta = value.optionAsMeta; terminal.optionAsMetaKey = value.optionAsMeta
         if terminal.font.pointSize != value.fontSize { terminal.font = .monospacedSystemFont(ofSize: value.fontSize, weight: .regular) }
+    }
+    func requestInitialLandscape(in window: UIWindow) {
+        guard !requestedLandscape, isLive, let scene = window.windowScene,
+              scene.traitCollection.userInterfaceIdiom == .phone else { return }
+        requestedLandscape = true
+        previousOrientation = scene.effectiveGeometry.interfaceOrientation
+        orientationScene = scene
+        window.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations()
+        // SwiftUI can rebuild the terminal controller when a large iPhone rotates.
+        // Keep this request with the session and wait until the view update ends.
+        let request: @MainActor () -> Void = { [weak self, weak scene] in
+            DispatchQueue.main.async {
+                guard let self, let scene, self.isLive else { return }
+                scene.requestGeometryUpdate(.iOS(interfaceOrientations: .landscape)) { error in
+                    NSLog("Terminal orientation request: %@", error.localizedDescription)
+                }
+            }
+        }
+        if let transition = coordinator?.transitionCoordinator,
+           transition.animate(alongsideTransition: nil, completion: { _ in request() }) { return }
+        request()
+    }
+    private func restoreOrientation() {
+        guard let scene = orientationScene, let previousOrientation else { return }
+        orientationScene = nil; self.previousOrientation = nil
+        guard previousOrientation != .unknown else { return }
+        let mask = UIInterfaceOrientationMask(rawValue: 1 << previousOrientation.rawValue)
+        scene.requestGeometryUpdate(.iOS(interfaceOrientations: mask)) { error in
+            NSLog("Terminal orientation restore: %@", error.localizedDescription)
+        }
     }
     func setOptionAsMeta(_ enabled: Bool) {
         guard var value = store?.preferences else { return }
@@ -193,6 +226,7 @@ import TermCore
         error = nil; pendingFingerprint = nil; changedFingerprint = false; showingPassphrase = false
         bindingsStatus = "Connect to read this server’s shortcuts."
         if closeUI {
+            restoreOrientation()
             terminal.resignFirstResponder()
             coordinator?.closeUI(); coordinator = nil
         } else { coordinator?.refreshMenu() }

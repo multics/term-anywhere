@@ -73,16 +73,13 @@ struct TerminalScreen: View {
 }
 
 struct TerminalContainer: UIViewControllerRepresentable {
-    let session: TerminalSession
+    @ObservedObject var session: TerminalSession
     func makeUIViewController(context: Context) -> TerminalCoordinator {
         let controller = TerminalCoordinator(session: session); session.coordinator = controller; return controller
     }
     func updateUIViewController(_ controller: TerminalCoordinator, context: Context) {
         controller.refreshMenu()
         controller.requestInitialLandscape()
-    }
-    static func dismantleUIViewController(_ controller: TerminalCoordinator, coordinator: ()) {
-        controller.restoreOrientation()
     }
 }
 
@@ -92,9 +89,6 @@ struct TerminalContainer: UIViewControllerRepresentable {
     private var controlButton: UIButton?
     private var moreButton: UIButton?
     private var repeatTimer: Timer?
-    private var requestedLandscape = false
-    private var previousOrientation: UIInterfaceOrientation?
-    private weak var orientationScene: UIWindowScene?
     init(session: TerminalSession) { self.session = session; self.terminal = session.terminal; super.init(nibName: nil, bundle: nil) }
     required init?(coder: NSCoder) { fatalError("init(coder:) is unavailable") }
     override func loadView() {
@@ -122,29 +116,8 @@ struct TerminalContainer: UIViewControllerRepresentable {
         requestInitialLandscape()
     }
     func requestInitialLandscape() {
-        guard !requestedLandscape, session?.isLive == true,
-              let scene = viewIfLoaded?.window?.windowScene,
-              scene.traitCollection.userInterfaceIdiom == .phone else { return }
-        requestedLandscape = true
-        previousOrientation = scene.effectiveGeometry.interfaceOrientation
-        orientationScene = scene
-        view.window?.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations()
-        // Request after SwiftUI has finished updating the view hierarchy.
-        DispatchQueue.main.async { [weak self, weak scene] in
-            guard let self, let scene, self.session?.isLive == true, self.view.window != nil else { return }
-            scene.requestGeometryUpdate(.iOS(interfaceOrientations: .landscape)) { error in
-                NSLog("Terminal orientation request: %@", error.localizedDescription)
-            }
-        }
-    }
-    func restoreOrientation() {
-        guard let scene = orientationScene, let previousOrientation else { return }
-        orientationScene = nil; self.previousOrientation = nil
-        guard previousOrientation != .unknown else { return }
-        let mask = UIInterfaceOrientationMask(rawValue: 1 << previousOrientation.rawValue)
-        scene.requestGeometryUpdate(.iOS(interfaceOrientations: mask)) { error in
-            NSLog("Terminal orientation restore: %@", error.localizedDescription)
-        }
+        guard let window = viewIfLoaded?.window else { return }
+        session?.requestInitialLandscape(in: window)
     }
     override func viewWillDisappear(_ animated: Bool) { super.viewWillDisappear(animated); stopRepeat(); terminal.controlModifier = false; resetControl() }
     private func makeAccessory() {
@@ -180,7 +153,6 @@ struct TerminalContainer: UIViewControllerRepresentable {
         terminal.send(txt: "\u{1b}" + (terminal.getTerminal().applicationCursor ? "O" : "[") + suffix)
     }
     func closeUI() {
-        restoreOrientation()
         stopRepeat()
         terminal.resignFirstResponder()
         viewIfLoaded?.endEditing(true)
