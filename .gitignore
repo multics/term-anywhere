@@ -26,3 +26,6 @@ aws-credentials
 hosts.json
 connection-test-fixture.json
 keychain-transfer.json
+
+# Local planning notes contain private environment details.
+/[Pp][Rr][Oo][Pp][Oo][Ss][Aa][Ll].[Mm][Dd]

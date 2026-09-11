@@ -49,6 +49,6 @@ Build for iPhone and iPad. Run protocol and parsing tests. Test an actual direct
 
 Test offline configuration merges, competing host edits, settings persistence, and invalid cloud data. Verify actual iCloud transfer between two signed-in devices when an iCloud-enabled provisioning profile is available. Unit tests do not prove that transfer. Test selected-credential migration, same-name conflicts, shared updates, removal from iCloud, and local fingerprint trust in signed app hosts. Use synthetic data for cross-device credential tests.
 
-The original investigation, alternatives, and sources are in [PROPOSAL.md](PROPOSAL.md). Implementation decisions are in [DESIGN.md](DESIGN.md).
+Implementation decisions are in [DESIGN.md](DESIGN.md). Keep local planning notes that contain private environment details out of source control.
 
 Delivery state, including requirements that are not yet deployed, is tracked in [docs/DELIVERY_PLAN.md](docs/DELIVERY_PLAN.md). Follow the test, deploy, then commit sequence in [AGENTS.md](AGENTS.md).

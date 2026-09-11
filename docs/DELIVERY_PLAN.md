@@ -29,7 +29,7 @@ Updated: 2026-09-11. This file tracks the user's active requests. Each feature f
 | 12 | Azure managed SSH access | Deferred by the user on 2026-09-11 | Removed from the active queue; the unshipped draft is outside Git |
 | 13 | Visible keyboard dismissal | A terminal toolbar button hides the keyboard and brings it back on iPhone and iPad | Delivered: all 12 Simulator terminal tests pass. The hide/restore lifecycle test passes on both physical devices and retains the session and output. The iPad render with the keyboard hidden was inspected. The signed update is installed and launched on iPhone and iPad |
 
-No requested feature remains in the active queue. Broader validation limits remain in README.md.
+Repository history cleanup is published and verified. Remaining privacy task: request GitHub removal of retained old objects and verify that old file URLs are inaccessible. A local support draft is prepared but has not been sent. Broader app validation limits remain in README.md.
 
 Network interruptions must keep the terminal screen for recovery. Explicit disconnect closes the local terminal. Removing or duplicating a host must not remove or copy its credential values. Existing credentials are referenced by name.
 
@@ -60,3 +60,11 @@ A Mac runtime sample identified a deadlock between the main thread and Apple's K
 On 2026-09-11, scanned the 81 tracked files and all 214 distinct file versions reachable from local Git refs. The refs included 17 published commits and two local stash commits. Gitleaks 8.30.1 found no secrets. Credential-like test literals were synthetic data or a published AWS signing test vector. Commit messages also passed. GitHub had no pull-request refs, releases, Actions runs, or Actions artifacts.
 
 Added ignore rules for credential files, signing files, and private fixtures. The exclusion checks pass. GitHub visibility is now public; secret scanning and push protection are enabled. The initial GitHub secret-alert query returned no alerts. See [SECRET_AUDIT.md](SECRET_AUDIT.md) for scope and limits. This task changes repository settings and documentation only; no app build or device deployment is required.
+
+## Local proposal privacy
+
+The proposal contains private environment details and must stay local. It is now untracked and ignored regardless of filename letter case. Links from public documents are removed. The local file is unchanged. This change does not affect app code or installed builds.
+
+The earlier credential audit checked for secrets; it did not establish that the documents were suitable for public release. With user approval, published rewritten history using an explicit force-with-lease check. A fresh GitHub clone confirms that the proposal is absent from all 19 commits. Gitleaks reports no findings. The local main branch uses the cleaned history. A recovery bundle and the existing stash remain local. Do not publish old recovery refs or merge old history.
+
+An anonymous check still retrieved the proposal through an old commit ID after the rewrite. GitHub Support must assess removal of retained objects and cached views. A support request is prepared locally and has not been sent. Full removal from GitHub remains unverified. See [GitHub removal guidance](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository#fully-removing-the-data-from-github).

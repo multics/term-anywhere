@@ -8,7 +8,7 @@ On iPhone and iPad, tap the keyboard button beside the terminal's tools menu to 
 
 Host settings and terminal preferences also sync through iCloud. SSH keys and AWS profiles use iCloud Keychain by default. An explicit device-only choice remains available.
 
-Read [REQUIREMENTS.md](REQUIREMENTS.md) for scope, [DESIGN.md](DESIGN.md) for implementation decisions, and [PROPOSAL.md](PROPOSAL.md) for the original investigation and references. See [APP_ICON.md](APP_ICON.md) for the logo design.
+Read [REQUIREMENTS.md](REQUIREMENTS.md) for scope and [DESIGN.md](DESIGN.md) for implementation decisions. See [APP_ICON.md](APP_ICON.md) for the logo design.
 
 ## Build
 
