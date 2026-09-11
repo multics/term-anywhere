@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		04B137B74C673F6043680ECB /* SSMMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F1ACD30831169FB1298DC6C /* SSMMessage.swift */; };
 		0C0DBF301BD839D14621074B /* ConfigurationSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = F95E071FF0A5BB5E041CC047 /* ConfigurationSync.swift */; };
+		0D96A3F8CDE1A0192959D834 /* ConfigurationNotificationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6716B694AAC9F3691D1CE69 /* ConfigurationNotificationTests.swift */; };
 		0FC608BFFE16CAFD3C0B8029 /* ThirdPartyNotices.txt in Resources */ = {isa = PBXBuildFile; fileRef = E9EF21EA2EB966A7E7F6FAA9 /* ThirdPartyNotices.txt */; };
 		10A9A20E5E1E0178DD0FD8C6 /* ExternalTerminalLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B74224BAD281C8C0D264A34 /* ExternalTerminalLaunchTests.swift */; };
 		10B5CA1735B2C21046416E4B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 72F6D4379F251CF492710EAB /* Assets.xcassets */; };
@@ -78,6 +79,7 @@
 		DF118EC49D4AB8E674B36335 /* ExternalSSHSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8B9E09F19190D0B16DC87F9 /* ExternalSSHSession.swift */; };
 		E66DE979BD37720E71BC746C /* CSSH.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 70C483CC1D0BE3BACC12BE9F /* CSSH.h */; };
 		E7598ECE691592B7891822D8 /* SSMTunnel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F08F0988DBAC3BE6671CA51 /* SSMTunnel.swift */; };
+		E914F934798ECE9A48653E5A /* ConfigurationNotificationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6716B694AAC9F3691D1CE69 /* ConfigurationNotificationTests.swift */; };
 		EBE0BAA5B5A0D8D91C966DE6 /* ThirdPartyNotices.txt in Resources */ = {isa = PBXBuildFile; fileRef = E9EF21EA2EB966A7E7F6FAA9 /* ThirdPartyNotices.txt */; };
 		ECAAC86BE09E4E1D58B39B86 /* HostListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AE5D0544E9F4F81025CEFC7 /* HostListView.swift */; };
 		EDC50CAAC9CFF7717DC3725B /* MacConfigurationImport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C14B232BF03474FBD75FDFA2 /* MacConfigurationImport.swift */; };
@@ -270,6 +272,7 @@
 		C47D3923DA57DDC93649ECA7 /* libCSSHMac.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libCSSHMac.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		D2D782176811BCC4187E4D84 /* module.modulemap */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.module-map"; path = module.modulemap; sourceTree = "<group>"; };
 		D3FF3D783F627B1D46EAE767 /* MacImportViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacImportViews.swift; sourceTree = "<group>"; };
+		D6716B694AAC9F3691D1CE69 /* ConfigurationNotificationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigurationNotificationTests.swift; sourceTree = "<group>"; };
 		D8B9E09F19190D0B16DC87F9 /* ExternalSSHSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalSSHSession.swift; sourceTree = "<group>"; };
 		DFEE8DFA113E47D9BF83387A /* MacHostListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacHostListView.swift; sourceTree = "<group>"; };
 		E260444A780A9616953992ED /* TerminalSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalSession.swift; sourceTree = "<group>"; };
@@ -407,6 +410,7 @@
 		2F91C52D1DB6DA851508B936 /* SharedAppTests */ = {
 			isa = PBXGroup;
 			children = (
+				D6716B694AAC9F3691D1CE69 /* ConfigurationNotificationTests.swift */,
 				7B74224BAD281C8C0D264A34 /* ExternalTerminalLaunchTests.swift */,
 				43BFD99C72D668007F131D25 /* KeychainSyncTests.swift */,
 				29E2DAB4E08A3E4127F740B0 /* KeychainTransferTests.swift */,
@@ -737,6 +741,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0D96A3F8CDE1A0192959D834 /* ConfigurationNotificationTests.swift in Sources */,
 				33BB86C67C4236BC57060F80 /* ConnectionIntegrationTests.swift in Sources */,
 				10A9A20E5E1E0178DD0FD8C6 /* ExternalTerminalLaunchTests.swift in Sources */,
 				564CDE55BCF8283882DC74CB /* KeychainSyncTests.swift in Sources */,
@@ -835,6 +840,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E914F934798ECE9A48653E5A /* ConfigurationNotificationTests.swift in Sources */,
 				8C673CBE61C858383FFD6614 /* ExternalTerminalLaunchTests.swift in Sources */,
 				598259418D32EA74FC54255B /* KeychainSyncTests.swift in Sources */,
 				3279143D45C16A78D12A06E5 /* KeychainTransferTests.swift in Sources */,

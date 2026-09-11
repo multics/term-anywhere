@@ -45,3 +45,7 @@ The iPad is ready after its update to iPadOS 26.6.2. Its 20 active hosted tests 
 ## Configuration cleanup
 
 Cleared the exact tmux session value mobile from 15 saved host records on Mac. Other named sessions remain. Updated record revisions and reopened the signed app to reconcile iCloud. Readback from both mobile app containers confirms 15 empty session values, no mobile values, and the other named session retained. Private host data and the backup stay outside Git.
+
+## iCloud callback fix
+
+A Mac runtime sample identified a deadlock between the main thread and Apple's KVS callback queue. Cloud notification handling now moves to MainActor. The background-notification regression passes on Mac and Simulator; all 12 active Mac tests pass. The signed fix is installed on all three devices and the Mac app responds normally.

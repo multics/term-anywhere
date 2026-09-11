@@ -139,3 +139,7 @@ After host selection, show the terminal detail at full width. The native sidebar
 ## iPhone orientation
 
 When a connected terminal is visible on iPhone, request landscape once through UIWindowScene.requestGeometryUpdate. The terminal wrapper observes the session so connection-state changes reach UIKit. Wait for an active navigation transition and defer the request until SwiftUI completes its view update. A request made during that update can fail with a temporary portrait-only restriction. Do not lock orientation. Keep the orientation request on the session because rotation can rebuild the view controller on a large iPhone. Return to the previous orientation after explicit disconnect. Do not request an orientation change on iPad. Use Apple's [window geometry API](https://developer.apple.com/documentation/uikit/uiwindowscene/requestgeometryupdate(_:errorhandler:)); the system decides whether it can apply the request.
+
+## iCloud notification delivery
+
+Apple can deliver key-value store notifications on a background queue. The Objective-C notification entry point extracts only the change reason, then schedules handling on MainActor. All configuration merges and published state changes use that actor. This prevents a lock cycle between Combine and SwiftUI when a cloud update arrives during a window update. A hosted regression test posts a synthetic notification from a background task and checks the publication thread.

@@ -104,8 +104,11 @@ import TermCore
             status = "Saved locally. iCloud syncs when available."
         } catch { status = "iCloud sync paused: " + error.localizedDescription }
     }
-    @objc private func cloudChanged(_ notification: Notification) {
+    @objc nonisolated private func cloudChanged(_ notification: Notification) {
         let reason = notification.userInfo?[NSUbiquitousKeyValueStoreChangeReasonKey] as? Int
+        Task { @MainActor [weak self] in self?.handleCloudChange(reason) }
+    }
+    private func handleCloudChange(_ reason: Int?) {
         if reason == NSUbiquitousKeyValueStoreAccountChange { pauseForAccountChange(); return }
         if reason == NSUbiquitousKeyValueStoreQuotaViolationChange {
             status = "iCloud settings limit reached. Changes are saved on this device."; return
