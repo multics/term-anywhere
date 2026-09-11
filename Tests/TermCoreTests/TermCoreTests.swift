@@ -67,6 +67,26 @@ final class TermCoreTests: XCTestCase {
         host.tmuxSession = "mobile-one"; XCTAssertNoThrow(try host.validate())
         XCTAssertEqual(shellQuote("a'b"), "'a'\\''b'")
     }
+    func testNewAndDuplicatedHostsChooseSessionsIndependently() throws {
+        var original = Host(name: "server", address: "example.invalid", username: "user", keyID: "shared-key")
+        XCTAssertEqual(original.tmuxSession, ""); XCTAssertNil(original.tmuxSelectionMade)
+        original.tmuxSession = "work"; original.tmuxSelectionMade = true; original.awsProfile = "shared-profile"
+        let copy = original.duplicate()
+        XCTAssertNotEqual(copy.id, original.id); XCTAssertEqual(copy.address, original.address)
+        XCTAssertEqual(copy.keyID, original.keyID); XCTAssertEqual(copy.awsProfile, original.awsProfile)
+        XCTAssertTrue(copy.tmuxSession.isEmpty); XCTAssertNil(copy.tmuxSelectionMade)
+        XCTAssertEqual(original.sessionLabel, "tmux · work")
+        original.tmuxSession = ""
+        XCTAssertEqual(original.sessionLabel, "Plain shell")
+        XCTAssertEqual(try JSONDecoder().decode(Host.self, from: JSONEncoder().encode(original)).tmuxSelectionMade, true)
+    }
+    func testTmuxSessionDiscoveryDistinguishesUnavailableAndEmptyServers() throws {
+        let sessions = try TmuxSessionList(output: "TERM_ANYWHERE_TMUX_AVAILABLE\nwork\nother\nwork\n")
+        XCTAssertTrue(sessions.isAvailable); XCTAssertEqual(sessions.names, ["other", "work"])
+        XCTAssertTrue(try TmuxSessionList(output: "TERM_ANYWHERE_TMUX_AVAILABLE\n").isAvailable)
+        XCTAssertFalse(try TmuxSessionList(output: "TERM_ANYWHERE_TMUX_UNAVAILABLE\n").isAvailable)
+        XCTAssertThrowsError(try TmuxSessionList(output: "unexpected banner"))
+    }
     func testKeychainRoundTripAndDelete() throws {
         let vault = KeychainStore(service: "me.tianyong.term-anywhere.tests." + UUID().uuidString)
         defer { try? vault.delete(account: "key:test") }

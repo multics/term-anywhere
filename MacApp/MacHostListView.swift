@@ -149,7 +149,10 @@ struct MacHostEditor: View {
                     Text("Use the same credential name on each device. Manage keys and profiles in the sidebar.").font(.caption).foregroundStyle(.secondary)
                 }
                 Section("tmux on iPhone and iPad") {
-                    TextField("Session (empty for plain shell)", text: $host.tmuxSession)
+                    TextField("Session (empty to choose on device)", text: $host.tmuxSession)
+                        .onChange(of: host.tmuxSession) { _, value in host.tmuxSelectionMade = value.isEmpty ? nil : true }
+                    Button("Reset remembered session") { host.tmuxSession = ""; host.tmuxSelectionMade = nil }
+                        .disabled(host.tmuxSession.isEmpty && host.tmuxSelectionMade != true)
                     TextField("Socket path (optional)", text: $host.tmuxSocket)
                     TextField("Fallback prefix (for example C-a)", text: $host.manualPrefix)
                 }

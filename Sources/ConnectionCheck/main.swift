@@ -24,6 +24,10 @@ import TermCore
             let connection = try await SSHConnection.open(host: host, privateKey: key, trustedFingerprint: trusted, aws: aws)
             let output = try await connection.execute("printf 'SSH_OK\\n'; command -v tmux >/dev/null && tmux -V || true")
             print(output.trimmingCharacters(in: .whitespacesAndNewlines))
+            if args.contains("--list-sessions") {
+                let sessions = try await connection.tmuxSessions(for: host)
+                print("TMUX_LIST_OK available=\(sessions.isAvailable) count=\(sessions.names.count)")
+            }
             if args.contains("--tmux-check") {
                 try await checkTmux(connection: connection, host: host, key: key, trusted: trusted, aws: aws)
             } else { connection.close() }
@@ -39,6 +43,9 @@ import TermCore
         var active = connection
         do {
         _ = try await connection.execute("\(tmux) -f /dev/null new-session -d -s check && \(tmux) set-option -t check prefix C-a && \(tmux) unbind-key -T prefix % && \(tmux) bind-key -T prefix v split-window -h")
+            let listing = try await active.tmuxSessions(for: target)
+            guard listing.isAvailable, listing.names == ["check"] else { throw ConnectionError.message("The tmux session list did not match the isolated server.") }
+            print("TMUX_SESSION_DISCOVERY_OK")
             print("TMUX_CHECK_READ_BINDINGS")
             let map = try await active.tmuxBindings(for: target)
             guard map.prefix == "C-a", map.shortcuts.contains(where: { $0.title == "Split side by side" && $0.bytes == Data([1, 118]) }) else { throw ConnectionError.message("Runtime tmux mapping did not match server settings.") }

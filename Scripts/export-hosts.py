@@ -3,7 +3,7 @@
 import argparse, subprocess, json, shlex, uuid
 from pathlib import Path
 p=argparse.ArgumentParser(description=__doc__)
-p.add_argument('aliases',nargs='+');p.add_argument('--output',required=True);p.add_argument('--tmux-session',default='mobile')
+p.add_argument('aliases',nargs='+');p.add_argument('--output',required=True);p.add_argument('--tmux-session',default='')
 a=p.parse_args();hosts=[]
 for alias in a.aliases:
     r=subprocess.run(['ssh','-G',alias],capture_output=True,text=True,check=True)

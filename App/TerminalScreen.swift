@@ -45,10 +45,12 @@ struct TerminalScreen: View {
                     Toggle("Option as Meta", isOn: Binding(get: { session.optionAsMeta }, set: { session.setOptionAsMeta($0) }))
                     Button("Larger text", systemImage: "textformat.size.larger") { session.changeFontSize(by: 1) }
                     Button("Smaller text", systemImage: "textformat.size.smaller") { session.changeFontSize(by: -1) }
+                    Button("Choose tmux session…", systemImage: "rectangle.split.2x1") { session.chooseAnotherTmuxSession() }.disabled(!session.isLive)
                     Button("Disconnect", systemImage: "xmark.circle") { onDisconnect() }
                 } label: { Label("Session actions", systemImage: "ellipsis.circle") }
             }
         }
+        .sheet(isPresented: $session.selectingTmux) { TmuxSessionPicker(session: session).interactiveDismissDisabled() }
         .task { if !session.hasStarted { session.connect() } }
         .onChange(of: session.optionAsMeta) { _, value in session.terminal.optionAsMetaKey = value }
         .onDisappear { session.terminal.controlModifier = false; session.terminal.metaModifier = false }

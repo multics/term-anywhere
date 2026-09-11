@@ -3,7 +3,7 @@ import SwiftTerm
 import TermCore
 
 @MainActor final class TerminalSession: ObservableObject {
-    let host: TermCore.Host
+    @Published private(set) var host: TermCore.Host
     var id: UUID { host.id }
     let terminal: TerminalView
     weak var store: AppStore?
@@ -18,11 +18,17 @@ import TermCore
     @Published var passphrase = ""
     @Published var showingPassphrase = false
     @Published var optionAsMeta = true
+    @Published var selectingTmux = false
+    @Published private(set) var availableTmuxSessions: [String] = []
+    @Published private(set) var tmuxAvailable = false
+    @Published private(set) var tmuxDiscoveryMessage = ""
+    @Published private(set) var tmuxSelectionError: String?
+    private var tmuxSelectionContinuation: CheckedContinuation<TmuxSelection, Error>?
+    struct TmuxSelection { let name: String; let create: Bool }
     var connection: SSHConnection?
     var coordinator: TerminalCoordinator?
     private var connectTask: Task<Void, Never>?
     var hasStarted = false
-    private var hasAttached = false
     @Published private var wantsConnection = false
     var canDisconnect: Bool { isLive || isConnecting || wantsConnection }
     private var retryCount = 0
@@ -58,7 +64,7 @@ import TermCore
         guard var value = store?.preferences else { return }
         value.fontSize = min(28, max(10, value.fontSize + delta)); store?.savePreferences(value)
     }
-    func connect() {
+    func connect(forceSessionSelection: Bool = false) {
         guard !isConnecting, !isLive else { return }
         hasStarted = true; wantsConnection = true; error = nil; pendingFingerprint = nil
         bindings = nil; bindingsStatus = "Reading after attachment…"
@@ -80,10 +86,12 @@ import TermCore
                     guard let self, self.generation == attempt else { return }
                     self.didClose(reason)
                 } }
-                let t = terminal.getTerminal()
-                try await c.startTerminal(host: host, reconnecting: hasAttached, columns: t.cols, rows: t.rows)
+                let attachOnly = try await prepareTmuxSession(using: c, forceSelection: forceSessionSelection)
                 guard generation == attempt, !Task.isCancelled else { c.close(); return }
-                hasAttached = true; retryCount = 0; isConnecting = false; isLive = true; status = "Connected"
+                let t = terminal.getTerminal()
+                try await c.startTerminal(host: host, reconnecting: attachOnly, columns: t.cols, rows: t.rows)
+                guard generation == attempt, !Task.isCancelled else { c.close(); return }
+                retryCount = 0; isConnecting = false; isLive = true; status = "Connected"
                 await refreshBindings()
             } catch {
                 guard generation == attempt, !Task.isCancelled else { return }
@@ -94,6 +102,61 @@ import TermCore
                 let c = connection; connection = nil; generation = UUID(); c?.close()
             }
         }
+    }
+    private func prepareTmuxSession(using connection: SSHConnection, forceSelection: Bool) async throws -> Bool {
+        if !forceSelection {
+            if host.tmuxSession.isEmpty && host.tmuxSelectionMade == true { return false }
+        }
+        status = "Reading tmux sessions…"
+        availableTmuxSessions = []; tmuxAvailable = false; tmuxSelectionError = nil
+        do {
+            let listing = try await connection.tmuxSessions(for: host)
+            try Task.checkCancellation()
+            availableTmuxSessions = listing.names; tmuxAvailable = listing.isAvailable
+            tmuxDiscoveryMessage = listing.isAvailable ? (listing.names.isEmpty ? "No tmux sessions were listed. Create one or open a plain shell." : "Choose a session for this host entry.") : "tmux is not available in this server’s PATH. You can open a plain shell."
+        } catch {
+            try Task.checkCancellation()
+            tmuxDiscoveryMessage = "Cannot list tmux sessions. You can cancel and retry, or open a plain shell."
+        }
+        guard self.connection === connection, wantsConnection else { throw ConnectionError.message("The connection ended while reading tmux sessions.") }
+        if !forceSelection, !host.tmuxSession.isEmpty, availableTmuxSessions.contains(host.tmuxSession) { return true }
+        if tmuxAvailable, !host.tmuxSession.isEmpty, !availableTmuxSessions.contains(host.tmuxSession) {
+            tmuxDiscoveryMessage = "The saved session was not listed. Choose another session, create one, or open a plain shell."
+        }
+        let choice = try await requestTmuxSelection()
+        try Task.checkCancellation()
+        guard let store, var saved = store.hosts.first(where: { $0.id == host.id }) else {
+            throw ConnectionError.message("This host was removed while choosing a session.")
+        }
+        saved.tmuxSession = choice.name; saved.tmuxSelectionMade = true
+        try store.save(saved)
+        // Keep the connected endpoint even if another device edited the host during selection.
+        host.tmuxSession = choice.name; host.tmuxSelectionMade = true
+        return !choice.create && !choice.name.isEmpty
+    }
+    func requestTmuxSelection() async throws -> TmuxSelection {
+        try Task.checkCancellation()
+        status = "Choose a session"
+        return try await withCheckedThrowingContinuation { continuation in
+            tmuxSelectionContinuation = continuation; selectingTmux = true
+        }
+    }
+    func selectTmuxSession(_ name: String, create: Bool = false) {
+        guard let pending = tmuxSelectionContinuation else { return }
+        do {
+            var candidate = host; candidate.tmuxSession = name; try candidate.validate()
+            if create && !tmuxAvailable { throw ConnectionError.message("tmux is not available for session creation.") }
+            tmuxSelectionContinuation = nil; selectingTmux = false
+            pending.resume(returning: TmuxSelection(name: name, create: create))
+        } catch { tmuxSelectionError = error.localizedDescription }
+    }
+    func cancelTmuxSelection() {
+        guard tmuxSelectionContinuation != nil else { return }
+        if let store { store.closeSession(id) } else { disconnect() }
+    }
+    func chooseAnotherTmuxSession() {
+        disconnect(closeUI: false)
+        connect(forceSessionSelection: true)
     }
     func trustAndConnect() {
         guard let fingerprint = pendingFingerprint, let store else { return }
@@ -120,18 +183,25 @@ import TermCore
     }
     var prefixBytes: Data? { TmuxBindings.keyBytes(bindings?.prefix ?? host.manualPrefix) }
     func send(_ data: Data) { guard isLive else { return }; connection?.send(data) }
-    func disconnect() {
+    func disconnect(closeUI: Bool = true) {
         hasStarted = true; wantsConnection = false; generation = UUID(); connectTask?.cancel(); connectTask = nil
+        let pending = tmuxSelectionContinuation; tmuxSelectionContinuation = nil; selectingTmux = false
+        pending?.resume(throwing: CancellationError())
         connection?.close(); connection = nil
         isLive = false; isConnecting = false; status = "Disconnected"; passphrase = ""
         resetModifiers(); bindings = nil
         error = nil; pendingFingerprint = nil; changedFingerprint = false; showingPassphrase = false
         bindingsStatus = "Connect to read this server’s shortcuts."
-        terminal.resignFirstResponder()
-        coordinator?.closeUI(); coordinator = nil
+        if closeUI {
+            terminal.resignFirstResponder()
+            coordinator?.closeUI(); coordinator = nil
+        } else { coordinator?.refreshMenu() }
     }
     private func didClose(_ reason: String?) {
         connection = nil; isLive = false; isConnecting = false; bindings = nil
+        let pending = tmuxSelectionContinuation; tmuxSelectionContinuation = nil; selectingTmux = false
+        pending?.resume(throwing: ConnectionError.message(reason ?? "The connection ended while choosing a session."))
+        if pending != nil { wantsConnection = false }
         resetModifiers()
         status = reason == nil ? "Session ended" : "Connection lost"; error = reason
         coordinator?.refreshMenu()

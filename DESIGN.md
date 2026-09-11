@@ -35,7 +35,7 @@ Re-query on every connection and reconnection, and on manual Refresh. Do not par
 
 ## Recovery
 
-Initial connection can create or attach to a named session. Recovery must attach to the existing session; it must not silently create a replacement. Keep the last terminal screen after a network interruption. Explicit Disconnect closes the local terminal view, dismisses its input and tools, and returns to Hosts. Create a fresh local session only after a new host selection. AppStore owns the selected host ID. The detail view only reads cached sessions. Closing a selected session clears navigation first, then stops its connection and input UI and removes it from the cache. Closing a different session preserves the current selection. Discard unsent keystrokes on connection loss. Retry transient failures with bounded delays while active. Stop for trust or credential decisions and explicit disconnects.
+On a first connection, query the server for tmux sessions before opening the PTY. A new or unconfigured host opens a session chooser. Offer existing sessions, a plain shell, and explicit new-session creation. Save the choice per host entry. An empty name with tmuxSelectionMade=true means a remembered plain shell; an empty name with no flag means ask. A saved session that exists attaches directly. Query named sessions again during reconnection, so a session removed by a server restart opens the chooser instead of leaving the user in a failed retry loop. Recovery must attach to the existing session; it must not silently create a replacement. Keep the last terminal screen after a network interruption. Explicit Disconnect closes the local terminal view, dismisses its input and tools, and returns to Hosts. Create a fresh local session only after a new host selection. AppStore owns the selected host ID. The detail view only reads cached sessions. Closing a selected session clears navigation first, then stops its connection and input UI and removes it from the cache. Closing a different session preserves the current selection. Discard unsent keystrokes on connection loss. Retry transient failures with bounded delays while active. Stop for trust or credential decisions and explicit disconnects.
 
 App state is independent of transient SwiftUI view creation. On return to the foreground, check the connection and reconnect if needed. Remote tmux retains remote programs; the app retains only local connection references. Closing the app's session does not kill the remote tmux session.
 
@@ -123,3 +123,11 @@ Place Duplicate after Edit on the leading swipe edge and in the context menu. Op
 Use native list dragging. On iPhone and iPad, Reorder hosts in the Hosts menu shows drag handles; Done exits reorder mode. On Mac, drag within the Hosts section. Disable moving while search filters the list.
 
 Store the ordered host IDs in a separate iCloud record. Merge this record by revision and timestamp. Ignore IDs for removed hosts and append newly received hosts after the saved order. Changing order does not change a host's connection settings or interrupt its terminal.
+
+## tmux selection flow
+
+Use a separate SSH exec channel to list sessions on the configured socket. A marker distinguishes tmux unavailable from an empty session list. Query failure permits cancel and retry or an explicit plain shell. Never type the query into the terminal channel.
+
+The picker waits before PTY attachment. Cancel resumes the waiting task with cancellation and closes the local screen. Network loss also releases the waiting picker. Switching sessions closes the connection but keeps its visible terminal coordinator. Save only the selected tmux fields onto the latest host record, so a simultaneous configuration edit is not overwritten. Refresh effective shortcut mappings after attachment and reconnection.
+
+The Mac editor can reset the mobile selection. An external Mac terminal opens a plain shell when its session field is empty; the in-app chooser is for iPhone and iPad.

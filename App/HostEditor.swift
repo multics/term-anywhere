@@ -29,7 +29,10 @@ struct HostEditor: View {
                     }
                 }
                 Section {
-                    TextField("tmux session (empty for plain shell)", text: $host.tmuxSession)
+                    TextField("tmux session (empty to choose when connecting)", text: $host.tmuxSession)
+                        .onChange(of: host.tmuxSession) { _, value in host.tmuxSelectionMade = value.isEmpty ? nil : true }
+                    Button("Reset remembered session") { host.tmuxSession = ""; host.tmuxSelectionMade = nil }
+                        .disabled(host.tmuxSession.isEmpty && host.tmuxSelectionMade != true)
                     DisclosureGroup("Advanced tmux settings") {
                         TextField("Socket path (optional)", text: $host.tmuxSocket)
                         TextField("Fallback prefix, for example C-a", text: $host.manualPrefix)

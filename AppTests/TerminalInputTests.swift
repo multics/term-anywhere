@@ -73,6 +73,44 @@ import TermCore
         XCTAssertNotNil(store.sessions[second.id])
         store.closeSession(second.id)
     }
+    func testCancellingSessionPickerClosesTheLocalSession() async throws {
+        let store = AppStore()
+        let host = Host(name: "Picker fixture", address: "example.invalid", username: "fixture", keyID: "missing-fixture")
+        store.hosts = [host]; store.selectHost(host.id)
+        let session = try XCTUnwrap(store.sessions[host.id])
+        let waiting = Task { try await session.requestTmuxSelection() }
+        await Task.yield()
+        XCTAssertTrue(session.selectingTmux)
+        session.cancelTmuxSelection()
+        do { _ = try await waiting.value; XCTFail("The waiting connection must be cancelled") }
+        catch { XCTAssertTrue(error is CancellationError) }
+        XCTAssertFalse(session.selectingTmux); XCTAssertNil(store.selectedHostID)
+        XCTAssertNil(store.sessions[host.id])
+    }
+    func testSessionPickerValidatesBeforeResuming() async throws {
+        let store = AppStore()
+        let host = Host(name: "Picker fixture", address: "example.invalid", username: "fixture", keyID: "missing-fixture")
+        let session = store.session(for: host)
+        let waiting = Task { try await session.requestTmuxSelection() }
+        await Task.yield()
+        session.selectTmuxSession("invalid;name")
+        XCTAssertTrue(session.selectingTmux); XCTAssertNotNil(session.tmuxSelectionError)
+        session.selectTmuxSession("work")
+        let selected = try await waiting.value
+        XCTAssertEqual(selected.name, "work"); XCTAssertFalse(selected.create)
+        XCTAssertFalse(session.selectingTmux)
+        store.closeSession(host.id)
+    }
+    func testSessionSwitchKeepsTheVisibleTerminalCoordinator() {
+        let store = AppStore()
+        let host = Host(name: "Switch fixture", address: "example.invalid", username: "fixture", keyID: "missing-fixture")
+        let session = store.session(for: host)
+        let coordinator = TerminalCoordinator(session: session)
+        session.coordinator = coordinator
+        session.chooseAnotherTmuxSession()
+        XCTAssertTrue(session.coordinator === coordinator)
+        store.closeSession(host.id)
+    }
     func testChineseCompositionSendsOnlyCommittedText() {
         let terminal = SafeTerminalView(frame: CGRect(x: 0, y: 0, width: 393, height: 500))
         let output = InputRecorder(); terminal.terminalDelegate = output

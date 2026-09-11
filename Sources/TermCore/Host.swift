@@ -8,22 +8,23 @@ public struct Host: Codable, Identifiable, Hashable, Sendable {
     public var username: String
     public var keyID: String
     public var tmuxSession: String
+    public var tmuxSelectionMade: Bool?
     public var tmuxSocket: String
     public var awsProfile: String
     public var region: String
     public var manualPrefix: String
     public var isSSM: Bool { !awsProfile.isEmpty }
-    public var sessionLabel: String { tmuxSession.isEmpty ? "Plain shell" : "tmux · " + tmuxSession }
-    public func duplicate() -> Host {
-        var copy = self
-        copy.id = UUID(); copy.name += " Copy"; copy.tmuxSession = ""
-        return copy
-    }
     public var trustID: String { "\(isSSM ? awsProfile + ":" + region : "ssh"):\(address):\(port)" }
-    public init(id: UUID = UUID(), name: String = "", address: String = "", port: Int = 22, username: String = "", keyID: String = "", tmuxSession: String = "mobile", tmuxSocket: String = "", awsProfile: String = "", region: String = "us-west-2", manualPrefix: String = "") {
+    public init(id: UUID = UUID(), name: String = "", address: String = "", port: Int = 22, username: String = "", keyID: String = "", tmuxSession: String = "", tmuxSocket: String = "", awsProfile: String = "", region: String = "us-west-2", manualPrefix: String = "") {
         self.id = id; self.name = name; self.address = address; self.port = port
         self.username = username; self.keyID = keyID; self.tmuxSession = tmuxSession
         self.tmuxSocket = tmuxSocket; self.awsProfile = awsProfile; self.region = region; self.manualPrefix = manualPrefix
+    }
+    public var sessionLabel: String { tmuxSession.isEmpty ? (tmuxSelectionMade == true ? "Plain shell" : "Choose a session") : "tmux · " + tmuxSession }
+    public func duplicate() -> Host {
+        var copy = self; copy.id = UUID(); copy.name += " Copy"
+        copy.tmuxSession = ""; copy.tmuxSelectionMade = nil
+        return copy
     }
     public func validate() throws {
         guard !name.isEmpty, !address.isEmpty, !username.isEmpty, (1...65535).contains(port), !keyID.isEmpty else {

@@ -93,6 +93,10 @@ public final class SSHConnection: @unchecked Sendable {
         guard libssh2_channel_get_exit_status(c) == 0 else { throw ConnectionError.message("The remote query failed. Check that tmux and the selected session are available.") }
         return String(decoding: output, as: UTF8.self)
     }
+    public func tmuxSessions(for host: Host) async throws -> TmuxSessionList {
+        let command = "if command -v tmux >/dev/null 2>&1; then printf 'TERM_ANYWHERE_TMUX_AVAILABLE\\n'; \(host.tmuxCommand) list-sessions -F '#{session_name}' 2>/dev/null || :; else printf 'TERM_ANYWHERE_TMUX_UNAVAILABLE\\n'; fi"
+        return try TmuxSessionList(output: await execute(command))
+    }
     private func resolveTmuxSession(_ host: Host) throws -> String {
         let listing = try executeSync("\(host.tmuxCommand) list-sessions -F '#{session_name}\t#{session_id}'")
         for line in listing.split(separator: "\n") {

@@ -61,13 +61,13 @@ The product is `DerivedData-mac/Build/Products/Debug/Term Anywhere.app`. This pe
 
    ```sh
    python3 Scripts/export-hosts.py HOST_ALIAS ANOTHER_ALIAS \
-     --output .local/hosts.json --tmux-session mobile
+     --output .local/hosts.json
    ```
 
 2. Transfer the JSON through Files and select **Import connections** in the app. The export contains host settings and key names. It contains no private keys or AWS credentials.
 3. Open **Keys and AWS**. Import each private key under the name shown in its host settings. For an SSM host, enter AWS credentials under the matching profile name. A session token is optional. Replace temporary credentials when they expire.
 4. Open a host. Compare its fingerprint with a trusted source before you accept it. Enter a key passphrase when requested.
-5. Use the host's context menu to edit it. An empty tmux session field opens a plain shell. An empty tmux socket field uses the server's default socket.
+5. Use the host's context menu to edit it. An unconfigured empty tmux session field opens the session chooser on connection. The chooser can remember a plain-shell choice. An empty tmux socket field uses the server's default socket.
 
 The export script uses macOS `ssh -G`; it does not run imported proxy commands. It supports the observed `AWS-StartSSHSession` pattern and rejects other proxy commands and ProxyJump. It does not implement all OpenSSH settings. Review the resulting host, user, port, key, profile, and region before import. Local VPN access must already work on the device where required.
 
@@ -79,7 +79,7 @@ Connection recovery attaches to the saved tmux session. It does not create a rep
 
 Open **+ → Settings and iCloud** to see the sync status and change terminal preferences. Sign in to the same iCloud account on both devices. Host addresses, users, ports, credential names, AWS regions, tmux settings, text size, and Option-as-Meta sync. In **Keys and AWS**, new credentials use **iCloud Keychain** by default. Existing local credentials also migrate unless explicitly marked device-only. Turn off the import switch to keep a new credential local; use the menu beside a saved credential to change its storage. Enable **Passwords & Keychain** in system iCloud settings on each device. Passphrases, fingerprint trust, active connections, and terminal output do not sync.
 
-Local changes remain saved without a network. Different hosts merge independently. Swipe right on a host to edit or duplicate it. A duplicate opens an editor with a new ID and an empty tmux session; it retains credential references. Host rows show their session names. Use **+ → Reorder hosts** on iPhone or iPad, or drag host rows on Mac, to save and sync their order. Swipe left to disconnect an active app session or remove the host. Removal requires confirmation and syncs to other devices; credentials remain. Removal markers prevent later offline edits from restoring the same host. A newer edit wins when two devices change the same host; dates use the device clocks, with a stable tie-break rule. When Apple reports an iCloud account change, the app pauses further sync writes until you select **Merge settings**. Apple's service controls transfers already queued. Cloud edits do not interrupt a live terminal; close and reopen that app session to use updated connection settings.
+Local changes remain saved without a network. Different hosts merge independently. Swipe right on a host to edit or duplicate it. A duplicate opens an editor with a new ID and an empty tmux session; it retains credential references. On iPhone and iPad, an unconfigured empty session prompts for a server session after SSH authentication. Choose an existing session, a plain shell, or create a named session. The app remembers the choice for that host entry. A missing saved session prompts again. Use the terminal menu to choose another session or the host editor to reset the choice. Host rows show their session names. Use **+ → Reorder hosts** on iPhone or iPad, or drag host rows on Mac, to save and sync their order. Swipe left to disconnect an active app session or remove the host. Removal requires confirmation and syncs to other devices; credentials remain. Removal markers prevent later offline edits from restoring the same host. A newer edit wins when two devices change the same host; dates use the device clocks, with a stable tie-break rule. When Apple reports an iCloud account change, the app pauses further sync writes until you select **Merge settings**. Apple's service controls transfers already queued. Cloud edits do not interrupt a live terminal; close and reopen that app session to use updated connection settings.
 
 Credential labels show **This device**, **iCloud Keychain**, or **This device + iCloud**. A local copy takes precedence if the same name exists in both places. Migration only merges identical copies; it preserves both and reports a conflict if their values differ. Select **Use iCloud copy on this device** to remove the separate local copy. Replacing an existing synced credential updates its shared copy. Temporary AWS credentials still expire.
 
@@ -93,16 +93,16 @@ Validation date: 2026-09-10 (America/Los_Angeles). Toolchain: Xcode 26.6, Swift 
 
 | Check | Result |
 | --- | --- |
-| macOS core tests | 29 passed: includes configuration merges and native SSH/AWS import checks |
+| macOS core tests | 31 passed: includes configuration merges and native SSH/AWS import checks |
 | Native Mac app | Signed configuration companion installed and launched. Host editor, separate SSH Keys and AWS Profiles pages, sidebar sync status, and Mobile Terminal settings inspected. Three SSH keys and four AWS profiles retained their iCloud Keychain labels. Mac Keychain retest: 10 passed. External-terminal checks: detection and actual command execution in Terminal and Ghostty passed. Read-only direct SSH and AWS SSM checks passed with saved Keychain credentials |
 | Hosted iOS tests | Ten Keychain tests passed on each physical device. Four input/Keychain tests also passed in Simulator. Earlier live run passed direct SSH and both AWS profile paths |
 | Hosted Mac Keychain tests | Ten passed: includes default sync, legacy migration, persistent local choices, updates, collisions, migration failure, and local trust |
 | Actual iCloud transfer | Synthetic SSH key and AWS profile, including session token, transferred from Mac to both iPhone and iPad. Exact key bytes and decoded AWS fields matched. Synthetic items removed after testing |
 | Actual remote tmux checks | Direct SSH and both SSM paths passed with tmux 3.4; custom prefix/binding detection, separate query channel, and retained state after reconnect |
-| Input and disconnect checks | Chinese composition, one-shot Ctrl, cursor mode, and terminal dimensions pass. Explicit disconnect clears navigation, input state, and cached terminal. A hosted UI test confirms the terminal leaves the visible hierarchy without reconnecting. 17 Simulator tests passed; 2 opt-in tests skipped. Update installed and launched on iPhone and iPad |
+| Input and disconnect checks | Chinese composition, one-shot Ctrl, cursor mode, and terminal dimensions pass. Explicit disconnect clears navigation, input state, and cached terminal. A hosted UI test confirms the terminal leaves the visible hierarchy without reconnecting. 20 active tests passed in Simulator and on the updated iPad; 2 opt-in tests skipped. Update installed and launched on iPhone and iPad |
 | Simulator launch | App launched on iPhone 17 Pro and iPad Pro 11-inch; native host layouts inspected |
 | Device build | arm64 iOS development signing passed with the Yong Tian team; profile covers both test devices |
-| Physical installation | Final default-sync build installed and launched on iPhone 17 Pro Max and iPad mini 6; ten Keychain behavior tests passed on each |
+| Physical installation | Current tmux-selection build installed and launched on iPhone 17 Pro Max and iPad mini 6. The updated iPad passed 20 active hosted tests. Both devices received the cleared mobile session values |
 
 Run the core tests:
 
