@@ -29,7 +29,7 @@ Use UIKit keyboard-aware layout and send the terminal's new row/column count to 
 
 ## Runtime tmux adaptation
 
-After attaching to the configured session, use a separate SSH execution channel to query the same user's tmux socket. Read the session's effective prefix and root/prefix bindings. Map only recognized built-in actions with supported key encodings. Show the resolved sequence in the More menu.
+After attaching to the configured session, use a separate SSH execution channel to query the same user's tmux socket. Read the session's effective prefix and root/prefix bindings. Map only recognized built-in actions with supported key encodings. Show the resolved sequence in a dedicated tmux toolbar menu and the keyboard More menu. Put Zoom pane, Next window, and Previous window first, followed by the other detected actions. Keep prefix and refresh controls below these actions. The toolbar button is visible for a named tmux session, including with the keyboard hidden. Use the native split-rectangle symbol and the accessibility label tmux controls. Do not add a second toolbar row or change the eight keyboard accessory keys.
 
 Resolve the exact session name from `list-sessions` to its numeric session ID. Use that ID for queries and recovery. This avoids name-prefix matches and works with the tested tmux 3.4 servers. Drain stdout and stderr on query channels and close command input. Limit the query size and duration.
 

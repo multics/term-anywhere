@@ -5,6 +5,50 @@ import TermCore
 @testable import TermAnywhere
 
 @MainActor final class TerminalInputTests: XCTestCase {
+    func testTmuxMenusUseCurrentServerBindingsAndDisableAfterDisconnect() async throws {
+        let store = AppStore(); store.configuration.onChange = nil
+        var host = Host(name: "Terminal tools", address: "example.invalid", username: "fixture", keyID: "missing-fixture")
+        host.tmuxSession = "work"
+        let session = store.session(for: host); session.hasStarted = true
+        session.isLive = true; session.status = "Connected"
+        session.bindings = TmuxBindings(prefix: "C-a", listing: """
+        bind-key -T prefix N next-window
+        bind-key -T root M-p previous-window
+        bind-key -T prefix Z resize-pane -Z
+        """)
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let window = UIWindow(windowScene: scene)
+        window.rootViewController = UIHostingController(rootView: NavigationStack {
+            TerminalScreen(session: session, onDisconnect: {})
+        })
+        window.makeKeyAndVisible()
+        defer { store.closeSession(host.id); window.isHidden = true; window.rootViewController = nil }
+        try await Task.sleep(for: .milliseconds(600))
+        session.hideKeyboard()
+        session.terminal.feed(text: "tmux work: use the toolbar to zoom panes or change windows\r\n$ ")
+        func descendants(_ view: UIView) -> [UIView] { [view] + view.subviews.flatMap(descendants) }
+        let bar = try XCTUnwrap(session.terminal.inputAccessoryView)
+        let more = try XCTUnwrap(descendants(bar).compactMap { $0 as? UIButton }.first { $0.accessibilityIdentifier == "terminal.keyboard.more" })
+        func actions() throws -> [UIAction] {
+            let menu = try XCTUnwrap(more.menu?.children.first as? UIMenu)
+            return menu.children.compactMap { $0 as? UIAction }
+        }
+        let initial = try actions()
+        XCTAssertEqual(Array(initial.prefix(3).map(\.title)), ["Zoom pane", "Next window", "Previous window"])
+        XCTAssertEqual(Array(initial.prefix(3).map(\.subtitle)), ["C-a → Z", "C-a → N", "M-p"])
+        XCTAssertEqual(session.bindings?.shortcuts.map(\.bytes), [Data([1, 90]), Data([1, 78]), Data([27, 112])])
+        XCTAssertFalse(initial.contains { $0.attributes.contains(.disabled) })
+        let image = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in window.drawHierarchy(in: window.bounds, afterScreenUpdates: true) }
+        let attachment = XCTAttachment(image: image); attachment.name = "Dedicated tmux toolbar"; attachment.lifetime = .keepAlways; add(attachment)
+        // A refresh must replace old host bindings and must not retain an absent action.
+        session.bindings = TmuxBindings(prefix: "C-x", listing: "bind-key -T prefix q next-window")
+        session.coordinator?.refreshMenu()
+        XCTAssertEqual(try actions().first?.title, "Next window")
+        XCTAssertEqual(try actions().first?.subtitle, "C-x → q")
+        XCTAssertFalse(try actions().contains { $0.title == "Zoom pane" })
+        session.isLive = false; session.coordinator?.refreshMenu()
+        XCTAssertTrue(try actions().allSatisfy { $0.attributes.contains(.disabled) })
+    }
     func testKeyboardCanHideAndReturnWithoutClosingTheSession() async throws {
         let store = AppStore(); store.configuration.onChange = nil
         let host = Host(name: "Keyboard fixture", address: "example.invalid", username: "fixture", keyID: "missing-fixture")

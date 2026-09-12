@@ -29,7 +29,8 @@ public struct TmuxBindings: Sendable {
             bytes.append(keyBytes)
             found[title, default: []].append(TmuxShortcut(title: title, keys: table == "prefix" ? "\(self.prefix) → \(key)" : key, bytes: bytes))
         }
-        let order = ["New window", "Previous window", "Next window", "Split side by side", "Split top and bottom", "Zoom pane", "Copy mode"]
+        // Keep frequent navigation actions first in both terminal menus.
+        let order = ["Zoom pane", "Next window", "Previous window", "New window", "Split side by side", "Split top and bottom", "Copy mode"]
         shortcuts = order.compactMap { title in
             guard let candidates = found[title], candidates.count == 1 else { return nil }
             return candidates[0]

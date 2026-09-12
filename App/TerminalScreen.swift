@@ -60,6 +60,28 @@ struct TerminalScreen: View {
                 .accessibilityIdentifier("terminal.keyboard.toggle")
             }
             ToolbarItem(placement: .topBarTrailing) {
+                if !session.host.tmuxSession.isEmpty {
+                    Menu {
+                        Section {
+                            ForEach(session.bindings?.shortcuts ?? []) { shortcut in
+                                Button(shortcut.title + " · " + shortcut.keys) { session.send(shortcut.bytes) }
+                                    .disabled(!session.isLive)
+                            }
+                        }
+                        Section {
+                            Text(session.bindingsStatus)
+                            if let prefix = session.prefixBytes {
+                                Button("Send prefix") { session.send(prefix) }.disabled(!session.isLive)
+                            }
+                            Button("Refresh shortcuts", systemImage: "arrow.clockwise") {
+                                Task { await session.refreshBindings() }
+                            }.disabled(!session.isLive)
+                        }
+                    } label: { Label("tmux controls", systemImage: "rectangle.split.2x1") }
+                    .accessibilityIdentifier("terminal.tmux")
+                }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Section("Connection") {
                         Text(session.status)
@@ -74,17 +96,6 @@ struct TerminalScreen: View {
                         Button("Larger text", systemImage: "textformat.size.larger") { session.changeFontSize(by: 1) }
                         Button("Smaller text", systemImage: "textformat.size.smaller") { session.changeFontSize(by: -1) }
                         Toggle("Option as Meta", isOn: Binding(get: { session.optionAsMeta }, set: { session.setOptionAsMeta($0) }))
-                    }
-                    // Keep tmux actions reachable when using a hardware keyboard too.
-                    Menu("tmux shortcuts") {
-                        Text(session.bindingsStatus)
-                        if let prefix = session.prefixBytes {
-                            Button("Send prefix") { session.send(prefix) }.disabled(!session.isLive)
-                        }
-                        ForEach(session.bindings?.shortcuts ?? []) { shortcut in
-                            Button(shortcut.title + " · " + shortcut.keys) { session.send(shortcut.bytes) }.disabled(!session.isLive)
-                        }
-                        Button("Refresh shortcuts", systemImage: "arrow.clockwise") { Task { await session.refreshBindings() } }.disabled(!session.isLive)
                     }
                 } label: { Label("Session and terminal tools", systemImage: "ellipsis.circle") }
             }
@@ -158,7 +169,7 @@ struct TerminalContainer: UIViewControllerRepresentable {
         for title in ["Esc", "Ctrl", "Tab", "←", "↓", "↑", "→", "More"] {
             let button = UIButton(type: .system); button.setTitle(title, for: .normal); button.titleLabel?.font = .systemFont(ofSize: 14, weight: .medium)
             button.accessibilityLabel = ["←": "Left arrow", "↓": "Down arrow", "↑": "Up arrow", "→": "Right arrow" ][title] ?? title
-            if title == "More" { moreButton = button; button.showsMenuAsPrimaryAction = true }
+            if title == "More" { moreButton = button; button.accessibilityIdentifier = "terminal.keyboard.more"; button.showsMenuAsPrimaryAction = true }
             else if title == "Ctrl" {
                 controlButton = button
                 button.addAction(UIAction { [weak self] _ in guard let self, self.session?.isLive == true else { return }; self.terminal.controlModifier.toggle(); self.resetControl() }, for: .touchUpInside)
@@ -198,11 +209,11 @@ struct TerminalContainer: UIViewControllerRepresentable {
     func refreshMenu() {
         guard let session else { return }
         var items: [UIMenuElement] = []
-        if let bytes = session.prefixBytes {
-            items.append(UIAction(title: "Prefix · " + (session.bindings?.prefix ?? session.host.manualPrefix), attributes: session.isLive ? [] : .disabled) { [weak session] _ in session?.send(bytes) })
-        }
         for shortcut in session.bindings?.shortcuts ?? [] {
             items.append(UIAction(title: shortcut.title, subtitle: shortcut.keys, attributes: session.isLive ? [] : .disabled) { [weak session] _ in session?.send(shortcut.bytes) })
+        }
+        if let bytes = session.prefixBytes {
+            items.append(UIAction(title: "Prefix · " + (session.bindings?.prefix ?? session.host.manualPrefix), attributes: session.isLive ? [] : .disabled) { [weak session] _ in session?.send(bytes) })
         }
         items.append(UIAction(title: "Refresh tmux shortcuts", attributes: session.isLive ? [] : .disabled) { [weak session] _ in Task { await session?.refreshBindings() } })
         let tmux = UIMenu(title: "tmux", options: .displayInline, children: items)
