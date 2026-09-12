@@ -50,7 +50,6 @@ import TermCore
         terminal = SafeTerminalView(frame: .zero)
         terminal.font = .monospacedSystemFont(ofSize: 14, weight: .regular)
         terminal.accessibilityLabel = "Terminal for \(host.name)"
-        terminal.allowMouseReporting = false
         terminal.registerForTraitChanges([UITraitUserInterfaceStyle.self]) { [weak self] (_: TerminalView, _: UITraitCollection) in
             self?.updateTerminalColors()
         }

@@ -1,11 +1,12 @@
 import UIKit
 import SwiftTerm
 
-/// Keep the system input method; only add a preview for pastes that can submit commands.
+/// Native keyboard and text selection with mouse input that follows the remote terminal mode.
 final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
     var approvePaste: ((String, @escaping () -> Void) -> Void)?
     var tmuxScrollHandler: ((Int) -> Void)?
     private var touchPan: UIPanGestureRecognizer!
+    private var touchTap: UITapGestureRecognizer!
     private var lastScrollTranslation: CGFloat = 0
     enum ScrollRoute { case selection, local, mouse, tmux, alternate }
     var scrollRoute: ScrollRoute {
@@ -33,11 +34,52 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
         touchPan.delegate = self
         addGestureRecognizer(touchPan)
         panGestureRecognizer.require(toFail: touchPan)
+        touchTap = UITapGestureRecognizer(target: self, action: #selector(mouseTap(_:)))
+        touchTap.name = "terminal.mouse.tap"
+        touchTap.allowedTouchTypes = [NSNumber(value: UITouch.TouchType.direct.rawValue)]
+        touchTap.delegate = self
+        for gesture in gestureRecognizers ?? [] {
+            if gesture is UITapGestureRecognizer { gesture.require(toFail: touchTap) }
+            if gesture is UILongPressGestureRecognizer { touchTap.require(toFail: gesture) }
+        }
+        touchTap.require(toFail: touchPan)
+        addGestureRecognizer(touchTap)
     }
     override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        if gestureRecognizer === touchTap {
+            let terminal = getTerminal()
+            let localSelection = gestureRecognizer.modifierFlags.contains(.shift) && !terminal.mouseShiftCapture
+            return !selection.active && !localSelection && terminal.mouseMode != .off
+        }
         guard gestureRecognizer === touchPan else { return super.gestureRecognizerShouldBegin(gestureRecognizer) }
         let velocity = touchPan.velocity(in: self)
         return abs(velocity.y) > abs(velocity.x) && scrollRoute != .local && scrollRoute != .selection
+    }
+    override func selectionChanged(source: Terminal) {
+        // Long-press Select stays local, including while the remote application produces output.
+        allowMouseReporting = !selection.active
+        super.selectionChanged(source: source)
+    }
+    @objc private func mouseTap(_ gesture: UITapGestureRecognizer) {
+        guard gesture.state == .ended else { return }
+        var point = gesture.location(in: self); point.y -= contentOffset.y
+        tapTouch(at: point)
+    }
+    func tapTouch(at point: CGPoint) {
+        let terminal = getTerminal()
+        guard !selection.active, terminal.mouseMode != .off else { return }
+        if UIMenuController.shared.isMenuVisible { UIMenuController.shared.hideMenu(); return }
+        sendMouseEvent(0, at: point)
+        if terminal.mouseMode != .x10 { sendMouseEvent(3, at: point) }
+        // A pane-selection tap must also work with the keyboard hidden, without opening it.
+    }
+    private func sendMouseEvent(_ flags: Int, at point: CGPoint) {
+        let terminal = getTerminal(), frame = getOptimalFrameSize()
+        let col = max(0, min(terminal.cols - 1, Int(point.x / max(1, frame.width / CGFloat(max(1, terminal.cols))))))
+        let row = max(0, min(terminal.rows - 1, Int(point.y / max(1, frame.height / CGFloat(max(1, terminal.rows))))))
+        terminal.sendEvent(buttonFlags: flags, x: col, y: row,
+                           pixelX: Int(max(0, min(frame.width - 1, point.x))),
+                           pixelY: Int(max(0, min(frame.height - 1, point.y))))
     }
     override func mouseModeChanged(source: Terminal) {
         // Keep SwiftTerm's pointer gesture, but direct touch uses wheel input instead of a button drag.
@@ -69,14 +111,7 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
             let key = "\u{1b}" + (terminal.applicationCursor ? "O" : "[") + (lines > 0 ? "A" : "B")
             send(txt: String(repeating: key, count: count))
         case .mouse:
-            let frame = getOptimalFrameSize()
-            let col = max(0, min(terminal.cols - 1, Int(point.x / max(1, frame.width / CGFloat(max(1, terminal.cols))))))
-            let row = max(0, min(terminal.rows - 1, Int(point.y / max(1, frame.height / CGFloat(max(1, terminal.rows))))))
-            for _ in 0..<count {
-                terminal.sendEvent(buttonFlags: lines > 0 ? 64 : 65, x: col, y: row,
-                                   pixelX: Int(max(0, min(frame.width - 1, point.x))),
-                                   pixelY: Int(max(0, min(frame.height - 1, point.y))))
-            }
+            for _ in 0..<count { sendMouseEvent(lines > 0 ? 64 : 65, at: point) }
         }
     }
     override func paste(_ sender: Any?) {

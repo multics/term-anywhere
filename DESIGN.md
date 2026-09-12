@@ -165,3 +165,9 @@ Switch tabs without closing their connections. Restore the keyboard's visible or
 ## Touch scrolling
 
 See [Terminal input and touch scrolling](docs/TERMINAL_INPUT.md) for the diagnosis and input contract. A direct vertical pan uses the remote route only when required. The native scroll view retains normal output scrolling. Active text selection takes precedence. Application mouse mode produces wheel events at the touch location. A configured tmux tab without mouse reporting queries its exact session and active pane, then uses copy-mode commands for history. An alternate-screen application uses cursor input. The app does not change the server's tmux options or depend on a fixed prefix key. Remote requests are bounded, serialized, and cancelled when their input context ends.
+
+## Mouse taps and local selection
+
+Follow the effective mouse mode reported by the remote application. Do not block mouse input globally or change the server configuration. A direct tap sends a press and release at its terminal cell, using the negotiated mouse encoding. X10 mode sends a press only. This route does not require keyboard focus and keeps a hidden keyboard hidden. When mouse mode is off, retain native tap-to-type behavior.
+
+The mouse tap waits for a vertical pan or long press to fail. Native tap handlers wait for the mouse tap to fail, so the same touch is not sent twice. Long press retains the native selection menu. While local text selection is active, suppress remote taps and scrolling; preserve that selection during output. A tap dismisses an open selection menu without sending a mouse click. Resume mouse handling when local selection ends.

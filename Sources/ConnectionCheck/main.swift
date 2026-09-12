@@ -76,6 +76,19 @@ import TermCore
             // Change mouse settings only on this isolated test server.
             _ = try await active.execute("\(tmux) set-option -g mouse on")
             try await Task.sleep(nanoseconds: 300_000_000)
+            let originalPane = try await active.execute("\(tmux) display-message -p -t check: '#{pane_id}'").trimmingCharacters(in: .whitespacesAndNewlines)
+            let otherPane = try await active.execute("\(tmux) split-window -h -d -t check: -P -F '#{pane_id}'").trimmingCharacters(in: .whitespacesAndNewlines)
+            guard originalPane.range(of: "^%[0-9]+$", options: .regularExpression) != nil,
+                  otherPane.range(of: "^%[0-9]+$", options: .regularExpression) != nil else { throw ConnectionError.message("Cannot identify isolated test panes.") }
+            let position = try await active.execute("\(tmux) display-message -p -t \(shellQuote(otherPane)) '#{pane_left}|#{pane_top}'")
+            let coordinates = position.trimmingCharacters(in: .whitespacesAndNewlines).split(separator: "|").compactMap { Int($0) }
+            guard coordinates.count == 2 else { throw ConnectionError.message("Cannot read test pane coordinates.") }
+            active.send(Data("\u{1b}[<0;\(coordinates[0] + 2);\(coordinates[1] + 2)M\u{1b}[<0;\(coordinates[0] + 2);\(coordinates[1] + 2)m".utf8))
+            try await Task.sleep(nanoseconds: 300_000_000)
+            let selectedPane = try await active.execute("\(tmux) display-message -p -t check: '#{pane_id}'").trimmingCharacters(in: .whitespacesAndNewlines)
+            guard selectedPane == otherPane else { throw ConnectionError.message("Mouse tap did not activate the touched tmux pane.") }
+            _ = try await active.execute("\(tmux) select-pane -t \(shellQuote(originalPane))")
+            print("TMUX_MOUSE_TAP_SELECTS_TOUCHED_PANE")
             active.send(Data("\u{1b}[<64;10;5M\u{1b}[<64;10;5M".utf8))
             try await Task.sleep(nanoseconds: 300_000_000)
             let mouseHistory = try await active.execute("\(tmux) display-message -p -t check: '#{pane_in_mode}'")

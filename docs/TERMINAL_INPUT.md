@@ -4,7 +4,7 @@
 
 The app has three input layers: UIKit gestures, the SwiftTerm terminal emulator, and the remote program reached through SSH. SSH transports bytes. It does not define a scroll command. Output escape sequences tell the emulator which screen buffer and mouse protocol the remote program uses.
 
-The current app sets `allowMouseReporting` to false. In the pinned SwiftTerm iOS implementation, a mouse pan is a button drag, not a wheel event. A selection pan can send cursor keys when mouse reporting is disabled. Enabling that flag alone therefore does not provide the required touch-scroll behavior.
+The original app set `allowMouseReporting` to false. In the pinned SwiftTerm iOS implementation, a mouse pan is a button drag, not a wheel event. A selection pan can send cursor keys when mouse reporting is disabled. Enabling that flag alone therefore does not provide the required touch-scroll behavior. The first scroll change supplied wheel input separately but left ordinary taps blocked. The pane-tap fix removes that global restriction and follows the remote mouse mode.
 
 Normal terminal history belongs to the local scroll view. A full-screen program usually uses the alternate buffer. tmux owns its pane history on the server; local scrollback cannot recover that history from screen redraws. These cases require different input routes.
 
@@ -20,6 +20,8 @@ Normal terminal history belongs to the local scroll view. A full-screen program 
 
 Keep horizontal drags out of the scroll handler. Keep tap-to-type and long-press selection. Preserve Chinese composition, one-shot modifiers, bracketed paste, and the keyboard hide/show control. A drag must not submit a command, navigate shell command history, or change global tmux options.
 
+When the remote program requests mouse input, a tap sends its cell coordinates as a press and release. The tap keeps a hidden keyboard hidden. With mouse mode off, use native tap-to-type. Long press opens the local selection menu; active local selection suppresses remote mouse input. Follow live mouse-mode changes instead of reading or changing the server's configuration file.
+
 Remote scroll requests must be bounded and serialized. Drop pending input when a tab closes, switches away, or loses its connection. Never replay scroll input after reconnection. Remote errors must leave the terminal available for keyboard input.
 
 ## Validation
@@ -29,6 +31,8 @@ Check local history without transmitted bytes, mouse-wheel encoding and coordina
 On 2026-09-11, all 36 core tests passed. All 20 hosted input, tab, and scroll tests passed in Simulator and on the physical iPhone. A live AWS SSM check passed with tmux 3.4 on an isolated socket: mouse-off history, mouse-on wheel input, return to the prompt, cancellation before input, separate tab output, and retained sessions after closing and reconnecting. The test removed only its isolated tmux server.
 
 These hosted checks test input routing and native view state. They do not replace a manual finger-gesture check. The Mac UI was unavailable for the Simulator gesture inspection. The signed update is installed on both devices and launched on iPhone. The physical iPad test and launch are blocked while the device is locked. Manually started nested tmux sessions in a plain-shell tab are not identified by this routing; application mouse reporting can still handle their wheel input.
+
+Pane-tap validation on 2026-09-12: all 23 automated regressions passed in Simulator and on the physical iPhone (the separate interactive check skips by default), including mouse enable/disable transitions, SGR coordinates, X10 press-only input, hidden keyboard focus, and local selection during output. A computer-use tap passed through the real UIKit gesture recognizers and produced press/release events without showing the keyboard. An isolated live tmux test over AWS SSM confirmed that clicking the second pane made it active; wheel scrolling and retained sessions also passed. The computer-use drag attempt produced clicks instead of a continuous pan and did not complete the scroll check; it is not recorded as a gesture pass.
 
 ## Sources
 

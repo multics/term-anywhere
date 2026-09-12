@@ -10,6 +10,8 @@ Tap the session title in the terminal header to switch between open tabs for the
 
 Drag vertically in the terminal to scroll. Normal shells use local output history. Applications that request mouse input receive wheel events. Configured tmux sessions use server history even when mouse reporting is off; scrolling back to the bottom leaves copy mode. Long-press text selection remains available. The app does not change server-wide tmux settings. See [the input design and validation](docs/TERMINAL_INPUT.md).
 
+When tmux enables mouse input, tap a pane to select it. The keyboard can remain hidden. Long press to open the local text-selection menu. The app follows the server's effective mouse mode and bindings; it does not enable mouse support on the server for you.
+
 Host settings and terminal preferences also sync through iCloud. SSH keys and AWS profiles use iCloud Keychain by default. An explicit device-only choice remains available.
 
 Read [REQUIREMENTS.md](REQUIREMENTS.md) for scope and [DESIGN.md](DESIGN.md) for implementation decisions. See [APP_ICON.md](APP_ICON.md) for the logo design.
