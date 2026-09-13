@@ -8,29 +8,12 @@ struct TerminalScreen: View {
     var tabCount = 1
     var showSessions: (() -> Void)?
     var body: some View {
-        VStack(spacing: 0) {
-            if !session.isLive {
-                HStack(spacing: 8) {
-                    Image(systemName: session.isLive ? "circle.fill" : "circle").font(.system(size: 8)).foregroundStyle(session.isLive ? .green : .secondary)
-                    Text(session.status).font(.caption)
-                    Spacer()
-                    if !session.host.tmuxSession.isEmpty { Text("tmux · " + session.host.tmuxSession).font(.caption).foregroundStyle(.secondary) }
-                }.padding(.horizontal).padding(.vertical, 8)
+        TerminalContainer(session: session)
+            .allowsHitTesting(session.isLive)
+            .accessibilityHidden(!session.isLive)
+            .overlay {
+                if !session.isLive { ConnectionOverlay(session: session) }
             }
-            if !session.isLive {
-                VStack(alignment: .leading, spacing: 10) {
-                    if let error = session.error { Text(error).font(.callout).textSelection(.enabled) }
-                    if session.pendingFingerprint != nil {
-                        Button(session.changedFingerprint ? "I verified the new fingerprint — update trust" : "Trust this fingerprint and connect") { session.trustAndConnect() }.buttonStyle(.borderedProminent)
-                    } else if !session.isConnecting {
-                        if session.showingPassphrase { SecureField("Key passphrase", text: $session.passphrase).textFieldStyle(.roundedBorder) }
-                        Button("Connect", systemImage: "bolt") { session.connect() }.buttonStyle(.borderedProminent)
-                    }
-                    if session.isConnecting { ProgressView().frame(maxWidth: .infinity, alignment: .leading) }
-                }.padding().frame(maxWidth: .infinity, alignment: .leading)
-            }
-            TerminalContainer(session: session)
-        }
         .navigationTitle(session.host.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -104,6 +87,51 @@ struct TerminalScreen: View {
         .task { if !session.hasStarted { session.connect() } }
         .onChange(of: session.optionAsMeta) { _, value in session.terminal.optionAsMetaKey = value }
         .onDisappear { session.terminal.controlModifier = false; session.terminal.metaModifier = false }
+    }
+}
+
+private struct ConnectionOverlay: View {
+    @ObservedObject var session: TerminalSession
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    var body: some View {
+        GeometryReader { geometry in
+            ScrollView {
+                VStack(spacing: 16) {
+                    if session.isConnecting { ProgressView().accessibilityLabel("Connecting") }
+                    Text(session.status).font(.headline)
+                    if let error = session.error {
+                        Text(error).font(.callout).textSelection(.enabled)
+                    }
+                    if session.pendingFingerprint != nil {
+                        Button(session.changedFingerprint ? "I verified the new fingerprint — update trust" : "Trust this fingerprint and connect") {
+                            session.trustAndConnect()
+                        }.buttonStyle(.borderedProminent)
+                    } else if !session.isConnecting {
+                        if session.showingPassphrase {
+                            SecureField("Key passphrase", text: $session.passphrase)
+                                .textFieldStyle(.roundedBorder)
+                        }
+                        Button("Connect", systemImage: "bolt") { session.connect() }
+                            .buttonStyle(.borderedProminent)
+                            .accessibilityIdentifier("terminal.connect")
+                    }
+                }
+                .multilineTextAlignment(.center)
+                .padding(24)
+                .frame(maxWidth: 420)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20))
+                .padding(24)
+                .frame(maxWidth: .infinity)
+                .frame(minHeight: geometry.size.height)
+            }
+            .background {
+                Color(uiColor: .systemBackground)
+                    .opacity(reduceTransparency ? 1 : 0.25)
+                    .ignoresSafeArea()
+            }
+        }
+        .accessibilityIdentifier("terminal.connection.overlay")
     }
 }
 

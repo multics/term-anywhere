@@ -5,6 +5,51 @@ import TermCore
 @testable import TermAnywhere
 
 @MainActor final class TerminalInputTests: XCTestCase {
+    func testConnectionOverlayPreservesTerminalGeometryAndOutput() async throws {
+        try await checkConnectionOverlay(appearance: .light)
+    }
+    func testDarkConnectionOverlayPreservesTerminalGeometryAndOutput() async throws {
+        try await checkConnectionOverlay(appearance: .dark)
+    }
+    private func checkConnectionOverlay(appearance: AppAppearance) async throws {
+        let store = AppStore(); store.configuration.onChange = nil
+        let host = Host(name: "Connection overlay", address: "example.invalid", username: "fixture", keyID: "missing-fixture")
+        let session = store.session(for: host); session.hasStarted = true; session.isLive = true
+        var preferences = store.preferences; preferences.appearance = appearance
+        session.applyPreferences(preferences)
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let window = UIWindow(windowScene: scene)
+        let content = NavigationStack { TerminalScreen(session: session, onDisconnect: {}) }
+        let controller = UIHostingController(rootView: content.preferredColorScheme(appearance == .dark ? .dark : .light))
+        window.rootViewController = controller
+        window.makeKeyAndVisible()
+        defer { store.closeSession(host.id); window.isHidden = true; window.rootViewController = nil }
+        try await Task.sleep(for: .milliseconds(900))
+        session.hideKeyboard()
+        session.terminal.feed(text: (1...12).map { "Job \($0): completed — previous terminal output stays in place\r\n" }.joined() + "$ ")
+        try await Task.sleep(for: .milliseconds(200))
+        let bounds = session.terminal.bounds
+        let rows = session.terminal.getTerminal().rows, cols = session.terminal.getTerminal().cols
+        let output = session.terminal.getTerminal().getBufferAsData()
+        for state in ["Connection lost", "Connecting…", "Needs attention", "Connected"] {
+            session.status = state; session.isLive = state == "Connected"
+            session.isConnecting = state == "Connecting…"
+            session.error = state == "Connection lost" ? "The network connection was interrupted." : nil
+            session.showingPassphrase = state == "Needs attention"
+            try await Task.sleep(for: .milliseconds(600))
+            XCTAssertEqual(session.terminal.bounds, bounds, "Connection controls must not resize the terminal")
+            XCTAssertEqual(session.terminal.getTerminal().rows, rows)
+            XCTAssertEqual(session.terminal.getTerminal().cols, cols)
+            XCTAssertEqual(session.terminal.getTerminal().getBufferAsData(), output)
+            if state == "Connection lost" || state == "Needs attention" {
+                let image = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in window.drawHierarchy(in: window.bounds, afterScreenUpdates: true) }
+                let attachment = XCTAttachment(image: image); attachment.name = appearance.title + " " + state + " overlay"; attachment.lifetime = .keepAlways; add(attachment)
+            }
+        }
+        // Finish the fixture's orientation restoration before the next UI test starts.
+        store.closeSession(host.id); window.isHidden = true; window.rootViewController = nil
+        try await Task.sleep(for: .milliseconds(500))
+    }
     func testTmuxMenusUseCurrentServerBindingsAndDisableAfterDisconnect() async throws {
         let store = AppStore(); store.configuration.onChange = nil
         var host = Host(name: "Terminal tools", address: "example.invalid", username: "fixture", keyID: "missing-fixture")

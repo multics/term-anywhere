@@ -35,6 +35,8 @@ Updated: 2026-09-11. This file tracks the user's active requests. Each feature f
 
 | 17 | Frequent tmux controls | Dedicated toolbar menu with Zoom pane and Next/Previous window first; the keyboard More menu uses the same order and detected bindings | Implemented: 36 core tests and 24 active hosted tests pass on iPhone, iPhone Simulator, and iPad Simulator; one interactive tap test is opt-in and skipped in each run. The iPhone landscape and iPad portrait toolbar renders were inspected. Signed update installed and launched on iPhone. Physical iPad deployment and checks remain pending because developer tools cannot find the device |
 
+| 18 | Connection overlay | Center status and recovery controls over a full-size terminal; use a transparent tint so previous output remains readable | Implemented, installed, and launched on iPhone. The transparent version passes 25 active Simulator input, tab, and gesture tests; the opt-in interactive tap test is skipped. Separate Light and Dark overlay tests and the iPad Simulator geometry check pass. Rendered previews were inspected. The preceding overlay revision also passed 25 active iPhone tests after fixture orientation cleanup. Physical iPad deployment stays deferred because the user does not have the device available |
+
 Repository recreation is complete. The new public repository contains only the cleaned history. Secret scanning and push protection are enabled. Anonymous checks of the old proposal page, raw-file URL, and API URL return HTTP 404. Broader app validation limits remain in README.md.
 
 Network interruptions must keep the terminal screen for recovery. Explicit disconnect closes the local terminal. Removing or duplicating a host must not remove or copy its credential values. Existing credentials are referenced by name.
@@ -51,7 +53,7 @@ The external-terminal request adds a Mac Connect action. It replaces the earlier
 
 ## Current device availability
 
-As of 2026-09-12, the iPhone is reachable. The tmux controls update is installed and launched; all 24 active input, tab, and gesture tests pass. The iPad is unlocked according to the user but remains unavailable to developer tools (device lookup error 1011). Its last installed version includes touch scrolling. Pane-tap and tmux-controls deployment, device tests, and manual finger scrolling remain open. The current iPad Simulator run passes all 24 active tests.
+As of 2026-09-12, the iPhone is reachable. The transparent connection overlay is installed and launched. Simulator checks cover the final appearance and unchanged terminal dimensions. The physical iPad is not available to the user, so its deployment stays deferred without further unlock requests. Its last installed version includes touch scrolling. Pane-tap, tmux-controls, and connection-overlay deployment and device checks remain open, along with manual finger scrolling.
 
 ## Configuration cleanup
 
