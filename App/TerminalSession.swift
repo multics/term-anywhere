@@ -41,6 +41,23 @@ import TermCore
     private var retryCount = 0
     private var generation = UUID()
     private var terminalStyle: UIUserInterfaceStyle?
+    private(set) var backgroundTask: UIBackgroundTaskIdentifier = .invalid
+    private var requestedBackgroundTime = false
+
+    func prepareForBackground() {
+        stopScrolling()
+        (terminal as? SafeTerminalView)?.endMouseDrag()
+        guard !requestedBackgroundTime, isLive || isConnecting else { return }
+        requestedBackgroundTime = true
+        backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "Terminal connection") { [weak self] in
+            MainActor.assumeIsolated { self?.endBackgroundTime() }
+        }
+    }
+    func endBackgroundTime() {
+        guard backgroundTask != .invalid else { return }
+        let task = backgroundTask; backgroundTask = .invalid
+        UIApplication.shared.endBackgroundTask(task)
+    }
 
     init(host: TermCore.Host, store: AppStore) {
         self.host = host; self.store = store
@@ -141,6 +158,7 @@ import TermCore
                 guard generation == attempt, !Task.isCancelled else { return }
                 isConnecting = false; isLive = false; status = "Needs attention"; self.error = error.localizedDescription
                 wantsConnection = false
+                endBackgroundTime()
                 if case ConnectionError.hostKey(let fingerprint, let changed) = error { pendingFingerprint = fingerprint; changedFingerprint = changed }
                 if error.localizedDescription.contains("passphrase") { showingPassphrase = true }
                 let c = connection; connection = nil; generation = UUID(); c?.close()
@@ -253,6 +271,7 @@ import TermCore
         scrollRequestID = UUID(); scrollTask?.cancel(); scrollTask = nil; pendingScrollLines = 0
     }
     func disconnect(closeUI: Bool = true) {
+        endBackgroundTime()
         (terminal as? SafeTerminalView)?.endMouseDrag()
         stopScrolling(); scrollStatus = nil
         (terminal as? SafeTerminalView)?.tmuxScrollHandler = nil
@@ -271,6 +290,7 @@ import TermCore
         }
     }
     private func didClose(_ reason: String?) {
+        endBackgroundTime()
         (terminal as? SafeTerminalView)?.endMouseDrag(sendRelease: false)
         stopScrolling()
         (terminal as? SafeTerminalView)?.tmuxScrollHandler = nil
@@ -288,6 +308,7 @@ import TermCore
         }
     }
     func resume() {
+        endBackgroundTime(); requestedBackgroundTime = false
         guard wantsConnection else { return }
         if !isLive && !isConnecting { connect() }
         else if let connection {

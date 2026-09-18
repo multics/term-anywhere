@@ -99,7 +99,7 @@ The user authorized deletion and recreation after an old commit URL remained acc
 - Request: Do not auto-lock while the app is active.
 - Scope: iPhone and iPad, including Hosts and terminal screens. Disable the app idle timer while its scene is active; restore normal auto-lock when inactive or in the background. Manual device locking stays available.
 - Acceptance: Apply on initial appearance and each lifecycle transition; verify the native idle-timer state, build, deploy, commit, and push.
-- Status: Implemented. The native idle-timer lifecycle test passes on iPhone Simulator and physical iPhone 17 Pro Max. Signed build passes and is installed on iPhone. iPad Simulator could not launch its test runner (SpringBoard Busy preflight error); a retry remains pending. Physical iPad deployment and earlier manual Pinyin and pane-drag checks remain open.
+- Status: Implemented. The native idle-timer lifecycle test passes on iPhone Simulator and physical iPhone 17 Pro Max. Signed build passes and is installed on iPhone. Normal launch was blocked by the phone lock; the physical hosted lifecycle test passed before that lock. The iPad Simulator retry passed both idle-timer and background-task lifecycle tests. Physical iPad deployment and earlier manual Pinyin and pane-drag checks remain open.
 
 ## Feature 25: Preserve connections across brief screen locks
 
@@ -107,4 +107,11 @@ The user authorized deletion and recreation after an old commit URL remained acc
 - Findings: The app does not explicitly close SSH on lock. It already has SSH keepalives and foreground connection probes, but it requests no background execution time. iOS can suspend arbitrary SSH sockets; indefinite locked-screen connectivity cannot be guaranteed.
 - Scope: Request one finite background grace period for an active connection; release it on foreground, disconnect, or system expiry. Do not renew it indefinitely or change server settings. Preserve existing reconnect and tmux attachment behavior; never replay typed input.
 - Acceptance: Verify grace-period lifecycle and expiry cleanup, existing foreground recovery paths, relevant tests, deployment, commit, and push. Actual duration while locked remains system-controlled.
-- Status: Queued behind the keep-awake deployment checkpoint. Next: implement the native background task lifecycle.
+- Status: Implemented. Each active connection requests background time once per foreground/background cycle. Foreground return, explicit disconnect, connection failure, or OS expiry releases the assertion. Expiry does not force-close a healthy socket. Validation: all 26 input, tab, and lifecycle tests pass on iPhone Simulator and physical iPhone 17 Pro Max. Both selected iPad Simulator lifecycle checks pass. Signed build is installed on iPhone. Evidence: `.build/background-grace-simulator.log`, `.build/background-grace-iphone.log`, and `.build/background-grace-ipad.log`. A real SSH connection through a timed physical screen lock remains unverified; next action is a brief-lock network check on an active session. The duration is controlled by iOS, not promised by the app.
+
+## Feature 26: Show Hosts when the workspace is empty
+
+- Request: Open the left navigation sidebar when the app opens to an empty workspace.
+- Scope: Show Hosts on launch with no selected terminal and after the last selected session closes. Continue hiding the sidebar when a host is selected.
+- Acceptance: Verify initial empty-workspace navigation on iPhone and iPad, preserve host-selection behavior, deploy, commit, and push.
+- Status: Queued after feature 25. Next: set explicit initial sidebar visibility and test the native split-view state.

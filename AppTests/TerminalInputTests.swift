@@ -24,6 +24,37 @@ import TermCore
             XCTAssertEqual(UIApplication.shared.isIdleTimerDisabled, phase == .active)
         }
     }
+    func testBackgroundTimeIsBoundedAndDoesNotDisconnectOrReplayInput() {
+        let store = AppStore(); store.configuration.onChange = nil
+        let host = Host(name: "Background fixture", address: "example.invalid", username: "fixture", keyID: "missing-fixture")
+        let session = store.session(for: host)
+        defer { store.closeSession(host.id) }
+        session.prepareForBackground()
+        XCTAssertEqual(session.backgroundTask, .invalid, "Idle hosts need no background time")
+        session.isLive = true; session.hasStarted = true
+        session.terminal.feed(text: "Keep this remote output")
+        let output = session.terminal.getTerminal().getBufferAsData()
+        session.prepareForBackground()
+        let task = session.backgroundTask
+        XCTAssertNotEqual(task, .invalid)
+        session.prepareForBackground()
+        XCTAssertEqual(session.backgroundTask, task, "Inactive and background must share one task")
+        session.endBackgroundTime() // The OS expiration handler uses this same path.
+        XCTAssertEqual(session.backgroundTask, .invalid)
+        XCTAssertTrue(session.isLive, "Expiry must not force-close a potentially live socket")
+        session.prepareForBackground()
+        XCTAssertEqual(session.backgroundTask, .invalid, "Do not renew after expiration in the same background period")
+        session.resume()
+        session.prepareForBackground()
+        XCTAssertNotEqual(session.backgroundTask, .invalid, "A later foreground/background cycle gets a new request")
+        session.resume()
+        XCTAssertEqual(session.backgroundTask, .invalid)
+        XCTAssertEqual(session.terminal.getTerminal().getBufferAsData(), output)
+        session.prepareForBackground()
+        session.disconnect()
+        XCTAssertEqual(session.backgroundTask, .invalid)
+        XCTAssertFalse(session.isLive)
+    }
     func testPhoneOrientationIsFixedAndPadRemainsUnrestricted() async throws {
         let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
         let window = UIWindow(windowScene: scene)
