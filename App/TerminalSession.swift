@@ -85,6 +85,7 @@ import TermCore
         terminal.becomeFirstResponder()
     }
     func hideKeyboard() {
+        (terminal as? SafeTerminalView)?.endMouseDrag()
         terminal.resignFirstResponder()
         keyboardVisible = false
         resetModifiers()
@@ -252,6 +253,7 @@ import TermCore
         scrollRequestID = UUID(); scrollTask?.cancel(); scrollTask = nil; pendingScrollLines = 0
     }
     func disconnect(closeUI: Bool = true) {
+        (terminal as? SafeTerminalView)?.endMouseDrag()
         stopScrolling(); scrollStatus = nil
         (terminal as? SafeTerminalView)?.tmuxScrollHandler = nil
         hasStarted = true; wantsConnection = false; generation = UUID(); connectTask?.cancel(); connectTask = nil
@@ -269,6 +271,7 @@ import TermCore
         }
     }
     private func didClose(_ reason: String?) {
+        (terminal as? SafeTerminalView)?.endMouseDrag(sendRelease: false)
         stopScrolling()
         (terminal as? SafeTerminalView)?.tmuxScrollHandler = nil
         connection = nil; isLive = false; isConnecting = false; bindings = nil

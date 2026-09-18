@@ -36,6 +36,76 @@ import SwiftTerm
         while !ready(), Date() < deadline { try await Task.sleep(for: .milliseconds(100)) }
         XCTAssertTrue(ready(), "The expected interactive gesture did not arrive")
     }
+    func testTwoFingerDragSendsPressMotionReleaseWithoutWheelOrKeyboard() {
+        let view = SafeTerminalView(frame: CGRect(x: 0, y: 0, width: 390, height: 300))
+        let recorder = ScrollRecorder(); view.terminalDelegate = recorder
+        view.feed(text: "\u{1b}[?1002h\u{1b}[?1006h")
+        let gesture = view.gestureRecognizers?.first { $0.name == "terminal.mouse.drag" } as? UIPanGestureRecognizer
+        XCTAssertEqual(gesture?.minimumNumberOfTouches, 2)
+        XCTAssertEqual(gesture?.maximumNumberOfTouches, 2)
+        let size = view.getOptimalFrameSize(), terminal = view.getTerminal()
+        let cell = CGSize(width: size.width / CGFloat(terminal.cols), height: size.height / CGFloat(terminal.rows))
+        view.beginMouseDrag(at: CGPoint(x: cell.width * 5, y: cell.height * 3))
+        view.scrollTouch(lines: 3, at: .zero)
+        view.moveMouseDrag(to: CGPoint(x: cell.width * 9, y: cell.height * 3))
+        view.moveMouseDrag(to: CGPoint(x: cell.width * 9, y: cell.height * 7))
+        view.endMouseDrag(); view.endMouseDrag()
+        XCTAssertEqual(recorder.text, "\u{1b}[<0;6;4M\u{1b}[<32;10;4M\u{1b}[<32;10;8M\u{1b}[<0;10;8m")
+        XCTAssertFalse(view.isFirstResponder)
+        recorder.bytes = []
+        view.scrollTouch(lines: 1, at: .zero)
+        XCTAssertEqual(recorder.text, "\u{1b}[<64;1;1M")
+    }
+    @MainActor func testRemovingTerminalReleasesActiveMouseDrag() throws {
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let window = UIWindow(windowScene: scene)
+        window.rootViewController = UIViewController(); window.makeKeyAndVisible()
+        defer { window.isHidden = true; window.rootViewController = nil }
+        let view = SafeTerminalView(frame: CGRect(x: 0, y: 0, width: 390, height: 300))
+        window.rootViewController?.view.addSubview(view)
+        let recorder = ScrollRecorder(); view.terminalDelegate = recorder
+        view.feed(text: "\u{1b}[?1002h\u{1b}[?1006h")
+        view.beginMouseDrag(at: .zero)
+        view.removeFromSuperview()
+        view.endMouseDrag()
+        XCTAssertEqual(recorder.text, "\u{1b}[<0;1;1M\u{1b}[<0;1;1m")
+    }
+    func testDragRequiresMotionModeAndSuppressesSelectionInput() {
+        let view = SafeTerminalView(frame: CGRect(x: 0, y: 0, width: 390, height: 300))
+        let recorder = ScrollRecorder(); view.terminalDelegate = recorder
+        for sequence in ["", "\u{1b}[?9h", "\u{1b}[?9l\u{1b}[?1000h"] {
+            view.feed(text: sequence)
+            XCTAssertFalse(view.canDragMouse)
+            view.beginMouseDrag(at: .zero); view.moveMouseDrag(to: CGPoint(x: 50, y: 50)); view.endMouseDrag()
+        }
+        XCTAssertTrue(recorder.bytes.isEmpty)
+        view.feed(text: "\u{1b}[?1000l\u{1b}[?1003h\u{1b}[?1006hSELECT ME")
+        view.beginMouseDrag(at: .zero)
+        view.selectAll(nil)
+        XCTAssertEqual(recorder.text, "\u{1b}[<0;1;1M\u{1b}[<0;1;1m")
+        recorder.bytes = []
+        view.beginMouseDrag(at: .zero); view.moveMouseDrag(to: .zero); view.endMouseDrag()
+        XCTAssertTrue(recorder.bytes.isEmpty)
+    }
+    func testCancelledDragClampsCoordinatesAndDoesNotReplayAfterModeChange() {
+        let view = SafeTerminalView(frame: CGRect(x: 0, y: 0, width: 390, height: 300))
+        let recorder = ScrollRecorder(); view.terminalDelegate = recorder
+        view.feed(text: "\u{1b}[?1002h\u{1b}[?1006h")
+        view.beginMouseDrag(at: CGPoint(x: -10, y: -10))
+        view.moveMouseDrag(to: CGPoint(x: 9999, y: 9999)); view.endMouseDrag()
+        let terminal = view.getTerminal()
+        XCTAssertEqual(recorder.text, "\u{1b}[<0;1;1M\u{1b}[<32;\(terminal.cols);\(terminal.rows)M\u{1b}[<0;\(terminal.cols);\(terminal.rows)m")
+        view.beginMouseDrag(at: .zero)
+        view.feed(text: "\u{1b}[?1002l")
+        recorder.bytes = []
+        view.feed(text: "\u{1b}[?1002h")
+        view.moveMouseDrag(to: .zero); view.endMouseDrag()
+        XCTAssertTrue(recorder.bytes.isEmpty)
+        view.beginMouseDrag(at: .zero); view.endMouseDrag(sendRelease: false)
+        recorder.bytes = []
+        view.moveMouseDrag(to: .zero); view.endMouseDrag()
+        XCTAssertTrue(recorder.bytes.isEmpty)
+    }
     func testTapHonorsMouseModeAndWorksWithoutKeyboardFocus() {
         let view = SafeTerminalView(frame: CGRect(x: 0, y: 0, width: 390, height: 300))
         let recorder = ScrollRecorder(); view.terminalDelegate = recorder

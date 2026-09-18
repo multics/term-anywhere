@@ -49,3 +49,15 @@ A forwarding input delegate observes marked-text changes and retains the native 
 Hosted tests cover the visible preview with the software keyboard, local editing, candidate text commit, cancellation, keyboard dismissal, Unicode deletion, and native delegate forwarding. These tests call the text-input APIs directly. They do not replace a manual Pinyin candidate-selection check.
 
 Validation on 2026-09-18: All 24 input, tab, and composition tests pass on iPhone Simulator and physical iPhone 17 Pro Max. Four selected iPad Simulator checks pass. The preview render was inspected. The signed combined build is installed on iPhone. Physical iPad deployment remains deferred because the device is unavailable.
+
+## Two-finger pane-border drag
+
+One finger scrolls. Two fingers send a left-button drag at their midpoint. Start with that midpoint on the border. This works in horizontal and vertical directions when the server requests button-motion or all-motion mouse reporting. tmux must have mouse mode and a border-drag binding. The app does not enable mouse mode or replace server bindings.
+
+The initial press uses the pan origin, before UIKit's recognition threshold. Motion uses the negotiated terminal encoding. Release occurs on completion, cancellation, local selection, backgrounding, tab changes, or view removal. Connection loss drops local drag state without replay. Active drags suppress wheel input. No terminal resize or keyboard focus change is required.
+
+Run `python3 Scripts/check-pane-drag.py` with tmux installed to test both border directions and release behavior on an isolated local server. The check removes only its own server. Hosted tests cover encoded input, mode transitions, local selection, coordinate bounds, and cancellation. Manual two-finger gesture validation remains separate.
+
+Implementation constraint: SwiftTerm can call mouseModeChanged during initialization. Do not read getTerminal from that callback before initialization has completed. Drag cleanup must first check that a drag exists.
+
+Validation on 2026-09-18: 35 automated tests pass on both iPhone Simulator and physical iPhone 17 Pro Max; the opt-in interactive tap test is skipped. All 11 automated gesture tests pass on iPad Simulator. The isolated tmux test confirms horizontal and vertical resizing and release behavior. The final signed build is installed on iPhone. Actual two-finger border targeting and physical iPad deployment remain open.

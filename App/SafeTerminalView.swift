@@ -45,6 +45,11 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
         if result { compositionChanged?() }
         return result
     }
+    private var mouseDrag: UIPanGestureRecognizer!
+    private var dragPoint: CGPoint?
+    var canDragMouse: Bool {
+        !selection.active && [.buttonEventTracking, .anyEvent].contains(getTerminal().mouseMode)
+    }
     private var touchPan: UIPanGestureRecognizer!
     private var touchTap: UITapGestureRecognizer!
     private var lastScrollTranslation: CGFloat = 0
@@ -69,6 +74,13 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
     }
     private func configureTouchPan() {
         observeComposition()
+        mouseDrag = UIPanGestureRecognizer(target: self, action: #selector(dragMouse(_:)))
+        mouseDrag.name = "terminal.mouse.drag"
+        mouseDrag.minimumNumberOfTouches = 2; mouseDrag.maximumNumberOfTouches = 2
+        mouseDrag.allowedTouchTypes = [NSNumber(value: UITouch.TouchType.direct.rawValue)]
+        mouseDrag.delegate = self
+        addGestureRecognizer(mouseDrag)
+        panGestureRecognizer.require(toFail: mouseDrag)
         touchPan = UIPanGestureRecognizer(target: self, action: #selector(scrollPan(_:)))
         touchPan.maximumNumberOfTouches = 1
         touchPan.allowedTouchTypes = [NSNumber(value: UITouch.TouchType.direct.rawValue)]
@@ -87,6 +99,7 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
         addGestureRecognizer(touchTap)
     }
     override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        if gestureRecognizer === mouseDrag { return canDragMouse }
         if gestureRecognizer === touchTap {
             let terminal = getTerminal()
             let localSelection = gestureRecognizer.modifierFlags.contains(.shift) && !terminal.mouseShiftCapture
@@ -98,6 +111,7 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
     }
     override func selectionChanged(source: Terminal) {
         // Long-press Select stays local, including while the remote application produces output.
+        if selection.active { endMouseDrag() }
         allowMouseReporting = !selection.active
         super.selectionChanged(source: source)
     }
@@ -114,6 +128,43 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
         if terminal.mouseMode != .x10 { sendMouseEvent(3, at: point) }
         // A pane-selection tap must also work with the keyboard hidden, without opening it.
     }
+    @objc private func dragMouse(_ gesture: UIPanGestureRecognizer) {
+        var point = gesture.location(in: self); point.y -= contentOffset.y
+        switch gesture.state {
+        case .began:
+            // UIKit recognizes a pan after movement: press at the original border.
+            let translation = gesture.translation(in: self)
+            beginMouseDrag(at: CGPoint(x: point.x - translation.x, y: point.y - translation.y))
+            moveMouseDrag(to: point)
+        case .changed: moveMouseDrag(to: point)
+        case .ended: moveMouseDrag(to: point); endMouseDrag()
+        case .cancelled, .failed: endMouseDrag()
+        default: break
+        }
+    }
+    func beginMouseDrag(at point: CGPoint) {
+        endMouseDrag()
+        guard canDragMouse else { return }
+        dragPoint = point
+        sendMouseEvent(0, at: point)
+    }
+    func moveMouseDrag(to point: CGPoint) {
+        guard dragPoint != nil else { return }
+        guard canDragMouse else { endMouseDrag(); return }
+        dragPoint = point
+        sendMouseEvent(32, at: point)
+    }
+    func endMouseDrag(sendRelease: Bool = true) {
+        guard let point = dragPoint else { return }
+        dragPoint = nil
+        if sendRelease && [.vt200, .buttonEventTracking, .anyEvent].contains(getTerminal().mouseMode) {
+            sendMouseEvent(3, at: point)
+        }
+    }
+    override func willMove(toWindow newWindow: UIWindow?) {
+        if newWindow == nil { endMouseDrag() }
+        super.willMove(toWindow: newWindow)
+    }
     private func sendMouseEvent(_ flags: Int, at point: CGPoint) {
         let terminal = getTerminal(), frame = getOptimalFrameSize()
         let col = max(0, min(terminal.cols - 1, Int(point.x / max(1, frame.width / CGFloat(max(1, terminal.cols))))))
@@ -123,7 +174,9 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
                            pixelY: Int(max(0, min(frame.height - 1, point.y))))
     }
     override func mouseModeChanged(source: Terminal) {
-        // Keep SwiftTerm's pointer gesture, but direct touch uses wheel input instead of a button drag.
+        // SwiftTerm also calls this during initialization, before its terminal exists.
+        if dragPoint != nil && !canDragMouse { endMouseDrag() }
+        // Keep SwiftTerm's pointer gesture separate from direct-touch gestures.
         let previous = Set((gestureRecognizers ?? []).map(ObjectIdentifier.init))
         super.mouseModeChanged(source: source)
         for gesture in gestureRecognizers ?? [] where !previous.contains(ObjectIdentifier(gesture)) {
@@ -136,14 +189,14 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
         let translation = gesture.translation(in: self).y
         let rowHeight = max(1, getOptimalFrameSize().height / CGFloat(max(1, getTerminal().rows)))
         let lines = Int((translation - lastScrollTranslation) / rowHeight)
-        guard lines != 0 else { return }
+        guard lines != 0, dragPoint == nil else { return }
         lastScrollTranslation += CGFloat(lines) * rowHeight
         var point = gesture.location(in: self); point.y -= contentOffset.y
         scrollTouch(lines: lines, at: point)
     }
     /// Positive lines reveal older content. Normal-buffer scrolling stays with UIScrollView.
     func scrollTouch(lines: Int, at point: CGPoint) {
-        guard lines != 0 else { return }
+        guard lines != 0, dragPoint == nil else { return }
         let terminal = getTerminal(), count = min(30, abs(lines))
         switch scrollRoute {
         case .local, .selection: return

@@ -53,6 +53,7 @@ struct TerminalScreen: View {
                             }
                         }
                         Section {
+                            Text("Drag a pane border with two fingers. Requires tmux mouse mode.")
                             Text(session.bindingsStatus)
                             if let prefix = session.prefixBytes {
                                 Button("Send prefix") { session.send(prefix) }.disabled(!session.isLive)
@@ -227,7 +228,7 @@ struct TerminalContainer: UIViewControllerRepresentable {
         session?.updateTerminalColors()
         session?.restoreKeyboardIfNeeded()
     }
-    override func viewWillDisappear(_ animated: Bool) { super.viewWillDisappear(animated); terminal.controlModifier = false }
+    override func viewWillDisappear(_ animated: Bool) { super.viewWillDisappear(animated); (terminal as? SafeTerminalView)?.endMouseDrag(); terminal.controlModifier = false }
     func closeUI() {
         terminal.resignFirstResponder()
         viewIfLoaded?.endEditing(true)

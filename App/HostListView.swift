@@ -83,7 +83,7 @@ struct HostListView: View {
                 store.configuration.start()
                 do { try store.refreshCredentials() } catch { store.error = error.localizedDescription }
                 for session in store.allSessions { session.resume() }
-            } else { for session in store.allSessions { session.stopScrolling() } }
+            } else { for session in store.allSessions { session.stopScrolling(); (session.terminal as? SafeTerminalView)?.endMouseDrag() } }
         }
         .overlay { if scenePhase == .background { Color(.systemBackground).ignoresSafeArea().overlay { Image(systemName: "terminal").font(.largeTitle) } } }
     }
