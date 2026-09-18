@@ -4,6 +4,8 @@ A personal SSH terminal for iPhone and iPad, with a Mac configuration companion.
 
 The app supports direct SSH and SSH through AWS Systems Manager. It uses private keys, device Keychain storage, and server fingerprint checks. It can attach to a named tmux session and read that server's active prefix and bindings on each connection. The keyboard adds Esc, one-shot Ctrl, Tab, arrows, symbols, and detected tmux actions.
 
+The iPhone app stays in landscape right, including the Hosts screen. Turning the phone does not rotate the interface. iPad rotation stays under your control.
+
 On iPhone and iPad, tap the keyboard button beside the terminal's tools menu to hide the keyboard and see more output. Tap it again to resume typing. The connection and terminal output stay available. The keyboard and Hosts sidebar do not change the terminal rows or columns. The sidebar overlays the terminal. When the keyboard covers the cursor, the terminal view moves up without changing its grid. Hide the keyboard to see the full screen.
 
 Tap the session title in the terminal header to switch between open tabs for the same host. The panel offers **Open session…** and **New session…**. Selecting an already-open session returns to its tab. Each tab keeps its connection and output. Closing a tab leaves the remote tmux session running; the host-row Disconnect action closes all local tabs for that host. Use Command-Option-Left or Command-Option-Right with a hardware keyboard to switch tabs.

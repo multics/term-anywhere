@@ -143,7 +143,7 @@ targets:
         UILaunchScreen: {}
         UIApplicationSupportsIndirectInputEvents: true
         NSLocalNetworkUsageDescription: Connect to SSH servers on your local network.
-        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationLandscapeRight]
         UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
   TermAnywhereMacTests:
     type: bundle.unit-test

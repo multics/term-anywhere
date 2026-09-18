@@ -144,7 +144,6 @@ struct TerminalContainer: UIViewControllerRepresentable {
     func updateUIViewController(_ controller: TerminalCoordinator, context: Context) {
         controller.refreshMenu()
         session.updateTerminalColors()
-        controller.requestInitialLandscape()
     }
 }
 
@@ -204,12 +203,7 @@ struct TerminalContainer: UIViewControllerRepresentable {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         session?.updateTerminalColors()
-        requestInitialLandscape()
         session?.restoreKeyboardIfNeeded()
-    }
-    func requestInitialLandscape() {
-        guard let window = viewIfLoaded?.window else { return }
-        session?.requestInitialLandscape(in: window)
     }
     override func viewWillDisappear(_ animated: Bool) { super.viewWillDisappear(animated); stopRepeat(); terminal.controlModifier = false; resetControl() }
     private func makeAccessory() {

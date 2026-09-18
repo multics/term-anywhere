@@ -5,6 +5,27 @@ import TermCore
 @testable import TermAnywhere
 
 @MainActor final class TerminalInputTests: XCTestCase {
+    func testPhoneOrientationIsFixedAndPadRemainsUnrestricted() async throws {
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let window = UIWindow(windowScene: scene)
+        window.rootViewController = UIHostingController(rootView: Text("Orientation fixture"))
+        window.makeKeyAndVisible()
+        defer { window.isHidden = true; window.rootViewController = nil }
+        try await Task.sleep(for: .milliseconds(500))
+        let supported = UIApplication.shared.supportedInterfaceOrientations(for: window)
+        if scene.traitCollection.userInterfaceIdiom == .phone {
+            XCTAssertEqual(supported, .landscapeRight)
+            XCTAssertEqual(scene.effectiveGeometry.interfaceOrientation, .landscapeRight)
+            for mask in [UIInterfaceOrientationMask.portrait, .landscapeLeft] {
+                let rejected = expectation(description: "Reject unsupported orientation")
+                scene.requestGeometryUpdate(.iOS(interfaceOrientations: mask)) { _ in rejected.fulfill() }
+                await fulfillment(of: [rejected], timeout: 3)
+                XCTAssertEqual(scene.effectiveGeometry.interfaceOrientation, .landscapeRight)
+            }
+        } else {
+            XCTAssertEqual(supported, .all, "Keep all four iPad orientations available")
+        }
+    }
     func testConnectionOverlayPreservesTerminalGeometryAndOutput() async throws {
         try await checkConnectionOverlay(appearance: .light)
     }
@@ -46,7 +67,7 @@ import TermCore
                 let attachment = XCTAttachment(image: image); attachment.name = appearance.title + " " + state + " overlay"; attachment.lifetime = .keepAlways; add(attachment)
             }
         }
-        // Finish the fixture's orientation restoration before the next UI test starts.
+        // Finish the fixture's UI cleanup before the next test starts.
         store.closeSession(host.id); window.isHidden = true; window.rootViewController = nil
         try await Task.sleep(for: .milliseconds(500))
     }
@@ -246,7 +267,7 @@ import TermCore
             try await Task.sleep(for: .milliseconds(100))
         }
         if scene.traitCollection.userInterfaceIdiom == .phone {
-            XCTAssertTrue(scene.effectiveGeometry.interfaceOrientation.isLandscape, "A connected iPhone terminal must request landscape")
+            XCTAssertEqual(scene.effectiveGeometry.interfaceOrientation, .landscapeRight, "The iPhone terminal must remain in its fixed orientation")
         } else {
             XCTAssertEqual(scene.effectiveGeometry.interfaceOrientation, initialOrientation, "iPad orientation must remain under user control")
         }
