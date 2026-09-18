@@ -14,9 +14,17 @@ def drain():
             except OSError: break
 def send(text):
     os.write(master, text.encode()); drain()
-def drag(x, y, nx, ny):
+def drag(x, y, nx, ny, pane, dimension):
+    before = int(tmux('display', '-p', '-t', pane, dimension))
+    delta = nx - x if nx != x else ny - y
+    halfway = int(delta / 2)
     send(f'\x1b[<0;{x};{y}M')
+    mx, my = (x + halfway, y) if nx != x else (x, y + halfway)
+    send(f'\x1b[<32;{mx};{my}M')
+    assert int(tmux('display', '-p', '-t', pane, dimension)) == before + halfway
     send(f'\x1b[<32;{nx};{ny}M')
+    assert int(tmux('display', '-p', '-t', pane, dimension)) == before + delta
+    print('TMUX_CONTINUOUS_MOVEMENT_BEFORE_RELEASE_OK')
     send(f'\x1b[<0;{nx};{ny}m')
 master, slave = pty.openpty()
 fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', 30, 100, 0, 0))
@@ -32,7 +40,7 @@ try:
     drain()
     x = int(tmux('display', '-p', '-t', second, '#{pane_left}'))
     before = int(tmux('display', '-p', '-t', first, '#{pane_width}'))
-    drag(x, 5, x + 7, 5)
+    drag(x, 5, x + 7, 5, first, '#{pane_width}')
     after = int(tmux('display', '-p', '-t', first, '#{pane_width}'))
     assert after == before + 7, (before, after)
     assert tmux('display', '-p', '-t', first, '#{pane_in_mode}') == '0'
@@ -47,7 +55,7 @@ try:
     drain()
     y = int(tmux('display', '-p', '-t', second, '#{pane_top}'))
     before = int(tmux('display', '-p', '-t', first, '#{pane_height}'))
-    drag(5, y, 5, y + 4)
+    drag(5, y, 5, y + 4, first, '#{pane_height}')
     after = int(tmux('display', '-p', '-t', first, '#{pane_height}'))
     assert after == before + 4, (before, after)
     assert tmux('display', '-p', '-t', first, '#{pane_in_mode}') == '0'

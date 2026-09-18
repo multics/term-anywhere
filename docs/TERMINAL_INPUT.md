@@ -81,3 +81,13 @@ For each resize-mode drag, query the selected tmux session on the connected serv
 A missing layout must not fall back to a press over text. Cancelling or ending a drag cancels the pending query result, so it cannot send delayed input. Query errors appear in Session and terminal tools. Manual selection-conflict validation remains separate from the automated checks.
 
 Correction validation: 43 automated tests pass on iPhone Simulator and physical iPhone; 16 gesture tests pass on iPad Simulator. The interactive test is skipped. The signed correction is installed and launched on iPhone. User confirmation of the corrected physical gesture remains pending.
+
+### Continuous resize and persistent mode
+
+Mouse-reporting negotiation must not exit the user-selected resize mode. Local tmux output confirms that redraws can disable and re-enable reporting. Preserve the held drag across these transitions; pause motion output while reporting is disabled and continue with the next movement once enabled. Finger release ends only the drag. The mode remains active for another drag until explicit exit or lifecycle cleanup. Double-tap exit also works while reporting is disabled.
+
+The regression reproduces the previous mode exit and missing motion with the observed tmux sequences, including a split network read. The local tmux check verifies two intermediate border positions before release, horizontally and vertically.
+
+Resize-mode entry requires a live tmux attachment selected in the app. Remote mouse reporting alone does not enable it in an ordinary terminal. Revoking this availability ends resize mode.
+
+Validation: The old code fails the redraw regression; the corrected code passes. All 45 automated iPhone checks and 18 iPad Simulator gesture checks pass, with the opt-in interactive test skipped. The signed build is installed and launched on iPhone. Physical gesture confirmation on the user's remote session remains pending.

@@ -45,6 +45,9 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
         if result { compositionChanged?() }
         return result
     }
+    var paneResizeAvailable = false {
+        didSet { if !paneResizeAvailable { setPaneResizeMode(false) } }
+    }
     var resolveResizeStart: ((CGPoint) async -> CGPoint?)?
     private var resizeStartTask: Task<Void, Never>?
     private var pendingDragPoint: CGPoint?
@@ -55,7 +58,7 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
     private var resizeTap: UITapGestureRecognizer!
     func setPaneResizeMode(_ enabled: Bool, sendRelease: Bool = true) {
         endMouseDrag(sendRelease: sendRelease)
-        let enabled = enabled && canDragMouse
+        let enabled = enabled && paneResizeAvailable && canDragMouse
         guard enabled != isResizingPanes else { return }
         isResizingPanes = enabled
         mouseDrag.minimumNumberOfTouches = enabled ? 1 : 2
@@ -141,7 +144,7 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
         touchPan.require(toFail: mouseDrag)
     }
     override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-        if gestureRecognizer === resizeTap { return canDragMouse }
+        if gestureRecognizer === resizeTap { return isResizingPanes || (paneResizeAvailable && canDragMouse) }
         if gestureRecognizer === mouseDrag { return canDragMouse }
         if gestureRecognizer === touchTap {
             let terminal = getTerminal()
@@ -209,7 +212,11 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
     func moveMouseDrag(to point: CGPoint) {
         if pendingDragPoint != nil { pendingDragPoint = point; return }
         guard dragPoint != nil else { return }
-        guard canDragMouse else { endMouseDrag(); return }
+        guard canDragMouse else {
+            // tmux can suspend mouse reporting during redraw; keep the held drag.
+            if !isResizingPanes { endMouseDrag() }
+            return
+        }
         let adjusted = CGPoint(x: point.x + dragOffset.x, y: point.y + dragOffset.y)
         dragPoint = adjusted
         sendMouseEvent(32, at: adjusted)
@@ -264,7 +271,9 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
     }
     override func mouseModeChanged(source: Terminal) {
         // SwiftTerm also calls this during initialization, before its terminal exists.
-        if (dragPoint != nil || isResizingPanes) && !canDragMouse { setPaneResizeMode(false) }
+        // Reporting negotiation is not an exit from the user's explicit resize mode.
+        // tmux redraws can turn reporting off and back on, even in separate reads.
+        if dragPoint != nil && !isResizingPanes && !canDragMouse { endMouseDrag() }
         // Keep SwiftTerm's pointer gesture separate from direct-touch gestures.
         let previous = Set((gestureRecognizers ?? []).map(ObjectIdentifier.init))
         super.mouseModeChanged(source: source)

@@ -36,6 +36,22 @@ import SwiftTerm
         while !ready(), Date() < deadline { try await Task.sleep(for: .milliseconds(100)) }
         XCTAssertTrue(ready(), "The expected interactive gesture did not arrive")
     }
+    func testPlainTerminalDoesNotOfferResizeModeEvenWithMouseReporting() throws {
+        let view = SafeTerminalView(frame: CGRect(x: 0, y: 0, width: 390, height: 300))
+        view.feed(text: "\u{1b}[?1002h")
+        let toggle = try XCTUnwrap(view.gestureRecognizers?.first { $0.name == "terminal.pane.resize.toggle" })
+        XCTAssertFalse(view.gestureRecognizerShouldBegin(toggle))
+        view.setPaneResizeMode(true)
+        XCTAssertFalse(view.isResizingPanes)
+        XCTAssertTrue(view.gestureRecognizers!.first { $0 is UILongPressGestureRecognizer }!.isEnabled)
+        view.paneResizeAvailable = true
+        XCTAssertTrue(view.gestureRecognizerShouldBegin(toggle))
+        view.setPaneResizeMode(true)
+        XCTAssertTrue(view.isResizingPanes)
+        view.paneResizeAvailable = false
+        XCTAssertFalse(view.isResizingPanes)
+        XCTAssertFalse(view.gestureRecognizerShouldBegin(toggle))
+    }
     func testResizeModeDisablesCompetingSelectionGesturesAndRestoresTheirState() throws {
         let view = SafeTerminalView(frame: CGRect(x: 0, y: 0, width: 390, height: 300))
         view.feed(text: "\u{1b}[?1002h")
@@ -45,6 +61,7 @@ import SwiftTerm
         })
         let disabledPan = UIPanGestureRecognizer(); disabledPan.isEnabled = false
         view.addGestureRecognizer(disabledPan)
+        view.paneResizeAvailable = true
         view.setPaneResizeMode(true)
         XCTAssertFalse(longPress.isEnabled)
         XCTAssertFalse(selectionTap.isEnabled)
@@ -64,6 +81,7 @@ import SwiftTerm
         view.feed(text: "\u{1b}[?1002h\u{1b}[?1006h")
         let cell = view.getOptimalFrameSize().width / CGFloat(view.getTerminal().cols)
         view.resolveResizeStart = { _ in CGPoint(x: cell * 10.5, y: 0) }
+        view.paneResizeAvailable = true
         view.setPaneResizeMode(true)
         view.beginMouseDrag(at: CGPoint(x: cell * 5.5, y: 0))
         view.moveMouseDrag(to: CGPoint(x: cell * 7.5, y: 0))
@@ -100,11 +118,13 @@ import SwiftTerm
         let view = SafeTerminalView(frame: CGRect(x: 0, y: 0, width: 390, height: 300))
         let recorder = ScrollRecorder(); view.terminalDelegate = recorder
         var changes: [Bool] = []; view.resizeModeChanged = { changes.append($0) }
+        view.paneResizeAvailable = true
         view.setPaneResizeMode(true)
         XCTAssertFalse(view.isResizingPanes)
         view.feed(text: "\u{1b}[?1002h\u{1b}[?1006h")
         let toggle = view.gestureRecognizers?.first { $0.name == "terminal.pane.resize.toggle" } as? UITapGestureRecognizer
         XCTAssertEqual(toggle?.numberOfTapsRequired, 2)
+        view.paneResizeAvailable = true
         view.setPaneResizeMode(true)
         let drag = view.gestureRecognizers?.first { $0.name == "terminal.mouse.drag" } as? UIPanGestureRecognizer
         XCTAssertEqual(drag?.minimumNumberOfTouches, 1)
@@ -123,15 +143,51 @@ import SwiftTerm
         XCTAssertEqual(recorder.text, "\u{1b}[<64;1;1M")
         XCTAssertFalse(view.isFirstResponder)
     }
-    func testResizeModeEndsOnRemoteModeChangeAndSelection() {
+    func testResizeDragSurvivesTmuxRedrawAndStaysEnabledAfterRelease() async throws {
+        let view = SafeTerminalView(frame: CGRect(x: 0, y: 0, width: 390, height: 300))
+        let recorder = ScrollRecorder(); view.terminalDelegate = recorder
+        view.feed(text: "\u{1b}[?1006h\u{1b}[?1000h\u{1b}[?1002h")
+        view.resolveResizeStart = { $0 }
+        let cell = view.getOptimalFrameSize().width / CGFloat(view.getTerminal().cols)
+        view.paneResizeAvailable = true
+        view.setPaneResizeMode(true)
+        view.beginMouseDrag(at: .zero)
+        try await Task.sleep(for: .milliseconds(20))
+        recorder.bytes = []
+        // Observed from tmux's redraw, including a split between network reads.
+        view.feed(text: "\u{1b}[?1006l\u{1b}[?1000l\u{1b}[?1002l\u{1b}[?1003l")
+        XCTAssertTrue(view.isResizingPanes)
+        view.moveMouseDrag(to: CGPoint(x: cell, y: 0))
+        XCTAssertTrue(recorder.bytes.isEmpty, "Do not send input while reporting is disabled")
+        view.feed(text: "\u{1b}[?1006h\u{1b}[?1000h\u{1b}[?1002h")
+        view.moveMouseDrag(to: CGPoint(x: cell * 2.5, y: 0))
+        XCTAssertEqual(recorder.text, "\u{1b}[<32;3;1M", "Motion must continue before finger release")
+        view.moveMouseDrag(to: CGPoint(x: cell * 4.5, y: 0))
+        view.endMouseDrag()
+        XCTAssertTrue(view.isResizingPanes)
+        XCTAssertEqual(recorder.text, "\u{1b}[<32;3;1M\u{1b}[<32;5;1M\u{1b}[<0;5;1m")
+        recorder.bytes = []
+        view.beginMouseDrag(at: .zero)
+        try await Task.sleep(for: .milliseconds(20))
+        view.moveMouseDrag(to: CGPoint(x: cell * 1.5, y: 0))
+        view.endMouseDrag()
+        XCTAssertTrue(view.isResizingPanes)
+        XCTAssertTrue(recorder.text.contains("\u{1b}[<32;2;1M"))
+        view.setPaneResizeMode(false)
+        XCTAssertFalse(view.isResizingPanes)
+    }
+    func testResizeModePersistsWithoutMouseReportingAndSelectionStillCleansUp() {
         let view = SafeTerminalView(frame: CGRect(x: 0, y: 0, width: 390, height: 300))
         view.feed(text: "\u{1b}[?1002hSELECT ME")
+        view.paneResizeAvailable = true
         view.setPaneResizeMode(true)
         view.feed(text: "\u{1b}[?1002l")
-        XCTAssertFalse(view.isResizingPanes)
+        XCTAssertTrue(view.isResizingPanes)
         view.feed(text: "\u{1b}[?1002h")
-        XCTAssertFalse(view.isResizingPanes)
-        view.setPaneResizeMode(true)
+        XCTAssertTrue(view.isResizingPanes)
+        let toggle = view.gestureRecognizers!.first { $0.name == "terminal.pane.resize.toggle" }!
+        view.feed(text: "\u{1b}[?1002l")
+        XCTAssertTrue(view.gestureRecognizerShouldBegin(toggle), "Explicit exit must work while reporting is off")
         view.selectAll(nil)
         XCTAssertFalse(view.isResizingPanes)
     }
@@ -165,6 +221,7 @@ import SwiftTerm
         let recorder = ScrollRecorder(); view.terminalDelegate = recorder
         view.feed(text: "\u{1b}[?1002h\u{1b}[?1006h")
         view.beginMouseDrag(at: .zero)
+        view.paneResizeAvailable = true
         view.setPaneResizeMode(true)
         view.removeFromSuperview()
         XCTAssertFalse(view.isResizingPanes)

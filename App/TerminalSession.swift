@@ -12,7 +12,9 @@ import TermCore
     @Published private(set) var isResizingPanes = false
     func finishPaneResize() { (terminal as? SafeTerminalView)?.setPaneResizeMode(false) }
     @Published var status = "Disconnected"
-    @Published var isLive = false
+    @Published var isLive = false {
+        didSet { (terminal as? SafeTerminalView)?.paneResizeAvailable = isLive && !host.tmuxSession.isEmpty }
+    }
     @Published var isConnecting = false
     @Published var error: String?
     @Published var bindings: TmuxBindings?
