@@ -9,6 +9,7 @@ struct TerminalScreen: View {
     var showSessions: (() -> Void)?
     var body: some View {
         TerminalContainer(session: session)
+            .ignoresSafeArea(.keyboard)
             .allowsHitTesting(session.isLive)
             .accessibilityHidden(!session.isLive)
             .overlay {
@@ -153,16 +154,17 @@ struct TerminalContainer: UIViewControllerRepresentable {
     private var controlButton: UIButton?
     private var moreButton: UIButton?
     private var repeatTimer: Timer?
+    private var keyboardFrame: CGRect?
     init(session: TerminalSession) { self.session = session; self.terminal = session.terminal; super.init(nibName: nil, bundle: nil) }
     required init?(coder: NSCoder) { fatalError("init(coder:) is unavailable") }
     override func loadView() {
         view = UIView(); view.backgroundColor = terminal.nativeBackgroundColor
+        view.clipsToBounds = true
         terminal.removeFromSuperview(); terminal.terminalDelegate = self
         terminal.translatesAutoresizingMaskIntoConstraints = false; view.addSubview(terminal)
-        view.keyboardLayoutGuide.followsUndockedKeyboard = false
         NSLayoutConstraint.activate([
             terminal.topAnchor.constraint(equalTo: view.topAnchor), terminal.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            terminal.trailingAnchor.constraint(equalTo: view.trailingAnchor), terminal.bottomAnchor.constraint(equalTo: view.keyboardLayoutGuide.topAnchor)
+            terminal.trailingAnchor.constraint(equalTo: view.trailingAnchor), terminal.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
         (terminal as? SafeTerminalView)?.approvePaste = { [weak self] text, insert in
             guard let self, let session = self.session, session.isLive else { return }
@@ -176,7 +178,28 @@ struct TerminalContainer: UIViewControllerRepresentable {
         session?.updateTerminalColors()
         NotificationCenter.default.addObserver(self, selector: #selector(resetControl), name: .terminalViewControlModifierReset, object: terminal)
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardFrameChanged), name: UIResponder.keyboardWillChangeFrameNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
+    }
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        updateKeyboardViewport()
+    }
+    func updateKeyboardViewport() {
+        guard isViewLoaded else { return }
+        // Move the viewport to keep the cursor visible without changing the PTY grid.
+        var visibleHeight = view.bounds.height
+        if let keyboardFrame, let window = view.window {
+            let frame = view.convert(keyboardFrame, from: window.screen.coordinateSpace)
+            // An undocked iPad keyboard must not move the full terminal viewport.
+            if frame.maxY >= view.bounds.maxY && frame.width >= view.bounds.width {
+                visibleHeight = max(0, min(view.bounds.height, frame.minY))
+            }
+        }
+        let cellHeight = terminal.getOptimalFrameSize().height / CGFloat(max(1, terminal.getTerminal().rows))
+        let cursorBottom = CGFloat(terminal.getTerminal().getCursorLocation().y + 1) * cellHeight
+        let shift = min(max(0, view.bounds.height - visibleHeight), max(0, cursorBottom - visibleHeight))
+        terminal.transform = CGAffineTransform(translationX: 0, y: -shift)
     }
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
@@ -228,10 +251,14 @@ struct TerminalContainer: UIViewControllerRepresentable {
         dismiss(animated: false)
         (terminal as? SafeTerminalView)?.approvePaste = nil
     }
+    @objc private func keyboardFrameChanged(_ notification: Notification) {
+        keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
+        updateKeyboardViewport()
+    }
     @objc private func keyboardWillShow() {
         if terminal.isFirstResponder { session?.keyboardVisible = true }
     }
-    @objc private func keyboardWillHide() { session?.keyboardVisible = false }
+    @objc private func keyboardWillHide() { session?.keyboardVisible = false; keyboardFrame = nil; updateKeyboardViewport() }
     func stopRepeat() { repeatTimer?.invalidate(); repeatTimer = nil }
     @objc private func resetControl() { controlButton?.tintColor = terminal.controlModifier ? .systemOrange : .label; controlButton?.accessibilityValue = terminal.controlModifier ? "On" : "Off" }
     func refreshMenu() {

@@ -65,6 +65,8 @@ struct HostListView: View {
                 ContentUnavailableView("Term Anywhere", systemImage: "terminal", description: Text("Choose a server to open a terminal."))
             }
         }
+        .navigationSplitViewStyle(.prominentDetail)
+        .ignoresSafeArea(.keyboard)
         .onChange(of: store.selectedHostID) { _, id in
             compactColumn = id == nil ? .sidebar : .detail
             columnVisibility = id == nil ? .all : .detailOnly

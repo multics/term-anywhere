@@ -159,6 +159,7 @@ import TermCore
                 c.onData = { [weak self] data in Task { @MainActor in
                     guard let self, self.generation == attempt else { return }
                     self.terminal.feed(byteArray: Array(data)[...])
+                    self.coordinator?.updateKeyboardViewport()
                 } }
                 c.onClose = { [weak self] reason in Task { @MainActor in
                     guard let self, self.generation == attempt else { return }

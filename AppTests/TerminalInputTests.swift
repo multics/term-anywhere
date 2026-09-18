@@ -98,7 +98,7 @@ import TermCore
         let store = AppStore(); store.configuration.onChange = nil
         let host = Host(name: "Keyboard fixture", address: "example.invalid", username: "fixture", keyID: "missing-fixture")
         store.hosts = [host]; store.selectHost(host.id)
-        let session = try XCTUnwrap(store.sessions[host.id]); session.hasStarted = true
+        let session = try XCTUnwrap(store.sessions[host.id]); session.hasStarted = true; session.isLive = true
         let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
         let window = UIWindow(windowScene: scene)
         let controller = UIHostingController(rootView: NavigationStack {
@@ -106,21 +106,82 @@ import TermCore
         })
         window.rootViewController = controller; window.makeKeyAndVisible()
         defer { store.closeSession(host.id); window.isHidden = true; window.rootViewController = nil }
-        try await Task.sleep(for: .milliseconds(300))
-        session.terminal.feed(text: "Read this output with the keyboard hidden\r\n$ ")
+        try await Task.sleep(for: .milliseconds(1000))
+        session.terminal.feed(text: "Read this output with the keyboard hidden\r\n$ " + "\u{1b}[999;1H")
+        let stableSize = session.terminal.bounds.size
+        let stableRows = session.terminal.getTerminal().rows
+        let stableCols = session.terminal.getTerminal().cols
+        let stableOutput = session.terminal.getTerminal().getBufferAsData()
         session.showKeyboard()
         try await Task.sleep(for: .milliseconds(500))
+        XCTAssertEqual(session.terminal.bounds.size, stableSize)
+        XCTAssertEqual(session.terminal.getTerminal().rows, stableRows)
+        XCTAssertEqual(session.terminal.getTerminal().cols, stableCols)
+        XCTAssertEqual(session.terminal.getTerminal().getBufferAsData(), stableOutput)
         XCTAssertTrue(session.terminal.isFirstResponder)
+        let viewport = try XCTUnwrap(session.coordinator)
+        XCTAssertLessThan(viewport.view.keyboardLayoutGuide.layoutFrame.minY, viewport.view.bounds.height,
+                          "The test must show the software keyboard")
+        let cursorBottom = CGFloat(session.terminal.getTerminal().getCursorLocation().y + 1)
+            * session.terminal.getOptimalFrameSize().height / CGFloat(session.terminal.getTerminal().rows)
+        XCTAssertLessThanOrEqual(cursorBottom + session.terminal.transform.ty,
+                                 viewport.view.keyboardLayoutGuide.layoutFrame.minY + 1)
+        let keyboardImage = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in window.drawHierarchy(in: window.bounds, afterScreenUpdates: true) }
+        let keyboardAttachment = XCTAttachment(image: keyboardImage); keyboardAttachment.name = "Stable terminal above keyboard"; keyboardAttachment.lifetime = .keepAlways; add(keyboardAttachment)
         session.hideKeyboard()
         try await Task.sleep(for: .milliseconds(500))
         XCTAssertFalse(session.terminal.isFirstResponder); XCTAssertFalse(session.keyboardVisible)
+        XCTAssertEqual(session.terminal.bounds.size, stableSize)
+        XCTAssertEqual(session.terminal.getTerminal().rows, stableRows)
+        XCTAssertEqual(session.terminal.getTerminal().cols, stableCols)
+        XCTAssertEqual(session.terminal.transform, .identity)
         XCTAssertEqual(store.selectedHostID, host.id); XCTAssertTrue(store.sessions[host.id] === session)
         XCTAssertTrue(String(decoding: session.terminal.getTerminal().getBufferAsData(), as: UTF8.self).contains("Read this output"))
         let image = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in window.drawHierarchy(in: window.bounds, afterScreenUpdates: true) }
         let attachment = XCTAttachment(image: image); attachment.name = "Terminal with keyboard hidden"; attachment.lifetime = .keepAlways; add(attachment)
         session.showKeyboard()
         try await Task.sleep(for: .milliseconds(300))
+        XCTAssertEqual(session.terminal.bounds.size, stableSize)
+        XCTAssertEqual(session.terminal.getTerminal().rows, stableRows)
+        XCTAssertEqual(session.terminal.getTerminal().cols, stableCols)
+        XCTAssertEqual(session.terminal.getTerminal().getBufferAsData(), stableOutput)
         XCTAssertTrue(session.terminal.isFirstResponder)
+    }
+    func testHostsSidebarDoesNotResizeTerminal() async throws {
+        let store = AppStore(); store.configuration.onChange = nil
+        let host = Host(name: "Sidebar fixture", address: "example.invalid", username: "fixture", keyID: "missing-fixture")
+        store.hosts = [host]
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let window = UIWindow(windowScene: scene)
+        let root = UIHostingController(rootView: HostListView().environmentObject(store))
+        window.rootViewController = root; window.makeKeyAndVisible()
+        defer { store.closeSession(host.id); window.isHidden = true; window.rootViewController = nil }
+        try await Task.sleep(for: .milliseconds(300))
+        store.selectHost(host.id)
+        let session = try XCTUnwrap(store.sessions[host.id]); session.hasStarted = true; session.isLive = true
+        try await Task.sleep(for: .milliseconds(1500))
+        session.hideKeyboard()
+        try await Task.sleep(for: .milliseconds(500))
+        func split(in controller: UIViewController) -> UISplitViewController? {
+            if let value = controller as? UISplitViewController { return value }
+            return controller.children.compactMap { split(in: $0) }.first
+        }
+        let navigation = try XCTUnwrap(split(in: root))
+        XCTAssertFalse(navigation.isCollapsed, "Exercise the landscape sidebar")
+        let size = session.terminal.bounds.size
+        let rows = session.terminal.getTerminal().rows, cols = session.terminal.getTerminal().cols
+        session.terminal.feed(text: "Sidebar keeps output and terminal dimensions\r\n$ ")
+        let output = session.terminal.getTerminal().getBufferAsData()
+        navigation.show(.primary)
+        try await Task.sleep(for: .milliseconds(600))
+        XCTAssertEqual(navigation.displayMode, .oneOverSecondary)
+        XCTAssertEqual(session.terminal.bounds.size, size)
+        XCTAssertEqual(session.terminal.getTerminal().rows, rows)
+        XCTAssertEqual(session.terminal.getTerminal().cols, cols)
+        XCTAssertEqual(session.terminal.getTerminal().getBufferAsData(), output)
+        navigation.hide(.primary)
+        try await Task.sleep(for: .milliseconds(600))
+        XCTAssertEqual(session.terminal.bounds.size, size)
     }
     func testTerminalAppearanceChangesWithoutLosingOutput() async throws {
         let store = AppStore()
