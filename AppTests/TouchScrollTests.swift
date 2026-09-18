@@ -36,6 +36,24 @@ import SwiftTerm
         while !ready(), Date() < deadline { try await Task.sleep(for: .milliseconds(100)) }
         XCTAssertTrue(ready(), "The expected interactive gesture did not arrive")
     }
+    func testResizeMotionSendsOnlyChangedCellsAndKeepsFinalRelease() async throws {
+        let view = SafeTerminalView(frame: CGRect(x: 0, y: 0, width: 390, height: 300))
+        let recorder = ScrollRecorder(); view.terminalDelegate = recorder
+        view.feed(text: "\u{1b}[?1002h\u{1b}[?1006h")
+        view.resolveResizeStart = { $0 }
+        view.paneResizeAvailable = true; view.setPaneResizeMode(true)
+        view.beginMouseDrag(at: .zero)
+        try await Task.sleep(for: .milliseconds(20))
+        let cell = view.getOptimalFrameSize().width / CGFloat(view.getTerminal().cols)
+        recorder.bytes = []
+        for step in 0..<120 { view.moveMouseDrag(to: CGPoint(x: cell * CGFloat(step) / 200, y: 0)) }
+        XCTAssertTrue(recorder.bytes.isEmpty, "Sub-cell motion must not flood SSH")
+        view.moveMouseDrag(to: CGPoint(x: cell * 1.2, y: 0))
+        view.moveMouseDrag(to: CGPoint(x: cell * 1.8, y: 0))
+        view.moveMouseDrag(to: CGPoint(x: cell * 2.2, y: 0))
+        view.endMouseDrag()
+        XCTAssertEqual(recorder.text, "\u{1b}[<32;2;1M\u{1b}[<32;3;1M\u{1b}[<0;3;1m")
+    }
     func testPlainTerminalDoesNotOfferResizeModeEvenWithMouseReporting() throws {
         let view = SafeTerminalView(frame: CGRect(x: 0, y: 0, width: 390, height: 300))
         view.feed(text: "\u{1b}[?1002h")

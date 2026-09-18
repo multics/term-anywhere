@@ -91,3 +91,11 @@ The regression reproduces the previous mode exit and missing motion with the obs
 Resize-mode entry requires a live tmux attachment selected in the app. Remote mouse reporting alone does not enable it in an ordinary terminal. Revoking this availability ends resize mode.
 
 Validation: The old code fails the redraw regression; the corrected code passes. All 45 automated iPhone checks and 18 iPad Simulator gesture checks pass, with the opt-in interactive test skipped. The signed build is installed and launched on iPhone. Physical gesture confirmation on the user's remote session remains pending.
+
+### Resize responsiveness
+
+Read the layout when resize mode opens and refresh it after a drag ends. The toolbar shows preparation while the read is pending. A prepared drag reuses that result without another SSH query. Exit and connection cleanup discard it; missing data never falls back to pressing text.
+
+Send motion only when the target terminal cell changes. Preserve the first motion and final release. Pane dimensions use terminal cells, so resizing changes in whole columns or rows. Hold the keyboard viewport translation while a drag is active or waiting for its border; restore cursor-following after release. This prevents server cursor redraws from changing the touch coordinate mapping. Network latency still affects when a remote redraw arrives.
+
+Responsiveness validation: 48 automated checks pass on iPhone Simulator and physical iPhone; 21 selected checks pass on iPad Simulator, with one interactive-test skip in each run. Tests cover prepared layout reuse and invalidation, 120 sub-cell movements without duplicate mouse events, final release order, and fixed viewport translation during a drag. The signed app is installed and launched on iPhone. Real-network latency and physical gesture feel have not been measured.

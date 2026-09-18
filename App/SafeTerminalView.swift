@@ -52,6 +52,9 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
     private var resizeStartTask: Task<Void, Never>?
     private var pendingDragPoint: CGPoint?
     private var dragOffset = CGPoint.zero
+    var resizeDragEnded: (() -> Void)?
+    var isDraggingPane: Bool { isResizingPanes && (dragPoint != nil || pendingDragPoint != nil) }
+    private var lastMotionCell: CGPoint?
     var resizeModeChanged: ((Bool) -> Void)?
     private(set) var isResizingPanes = false
     private var suspendedResizeGestures: [UIGestureRecognizer] = []
@@ -222,6 +225,9 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
         sendMouseEvent(32, at: adjusted)
     }
     func endMouseDrag(sendRelease: Bool = true) {
+        let wasResizing = isDraggingPane
+        defer { if wasResizing { resizeDragEnded?() } }
+        lastMotionCell = nil
         resizeStartTask?.cancel(); resizeStartTask = nil
         pendingDragPoint = nil; dragOffset = .zero
         guard let point = dragPoint else { return }
@@ -265,6 +271,12 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
         let terminal = getTerminal(), frame = getOptimalFrameSize()
         let col = max(0, min(terminal.cols - 1, Int(point.x / max(1, frame.width / CGFloat(max(1, terminal.cols))))))
         let row = max(0, min(terminal.rows - 1, Int(point.y / max(1, frame.height / CGFloat(max(1, terminal.rows))))))
+        // tmux resizes by cells. Repeating sub-cell motion only adds network backlog.
+        if flags == 32 && isResizingPanes {
+            let cell = CGPoint(x: col, y: row)
+            guard cell != lastMotionCell else { return }
+            lastMotionCell = cell
+        }
         terminal.sendEvent(buttonFlags: flags, x: col, y: row,
                            pixelX: Int(max(0, min(frame.width - 1, point.x))),
                            pixelY: Int(max(0, min(frame.height - 1, point.y))))

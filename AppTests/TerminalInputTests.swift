@@ -5,6 +5,54 @@ import TermCore
 @testable import TermAnywhere
 
 @MainActor final class TerminalInputTests: XCTestCase {
+    func testPreparedPaneLayoutIsReusedAndDiscardedOnModeExit() async throws {
+        let store = AppStore(); store.configuration.onChange = nil
+        let host = Host(name: "Resize fixture", address: "example.invalid", username: "fixture", keyID: "missing", tmuxSession: "fixture")
+        let session = TerminalSession(host: host, store: store)
+        let view = try XCTUnwrap(session.terminal as? SafeTerminalView)
+        defer { session.disconnect() }
+        session.isLive = true
+        view.feed(text: "\u{1b}[?1002h")
+        view.setPaneResizeMode(true)
+        let grid = view.getTerminal()
+        let split = grid.cols / 2
+        var reads = 0
+        session.preparePaneResizeLayout {
+            reads += 1
+            try? await Task.sleep(for: .milliseconds(50))
+            return "0|0|\(split)|\(grid.rows - 1)|\(grid.cols)|\(grid.rows - 1)|bottom|0"
+        }
+        XCTAssertTrue(session.isPreparingPaneResize)
+        try await Task.sleep(for: .milliseconds(80))
+        XCTAssertEqual(reads, 1)
+        XCTAssertFalse(session.isPreparingPaneResize)
+        for _ in 0..<5 { let border = await session.resolvePaneBorder(near: .zero); XCTAssertNotNil(border) }
+        XCTAssertEqual(reads, 1, "Prepared drags must not trigger another SSH layout read")
+        session.finishPaneResize()
+        let discarded = await session.resolvePaneBorder(near: .zero)
+        XCTAssertNil(discarded)
+    }
+    func testResizeDragHoldsViewportPositionUntilRelease() async throws {
+        let store = AppStore(); store.configuration.onChange = nil
+        let host = Host(name: "Viewport fixture", address: "example.invalid", username: "fixture", keyID: "missing")
+        let session = TerminalSession(host: host, store: store)
+        let controller = TerminalCoordinator(session: session); controller.loadViewIfNeeded()
+        let view = try XCTUnwrap(session.terminal as? SafeTerminalView)
+        view.frame = CGRect(x: 0, y: 0, width: 390, height: 300)
+        view.feed(text: "\u{1b}[?1002h")
+        view.resolveResizeStart = { $0 }; view.paneResizeAvailable = true
+        view.setPaneResizeMode(true)
+        view.beginMouseDrag(at: .zero)
+        try await Task.sleep(for: .milliseconds(20))
+        view.transform = CGAffineTransform(translationX: 0, y: -80)
+        view.feed(text: "\u{1b}[1;1H")
+        controller.updateKeyboardViewport()
+        XCTAssertEqual(view.transform.ty, -80)
+        view.endMouseDrag()
+        controller.updateKeyboardViewport()
+        XCTAssertEqual(view.transform, .identity)
+        session.disconnect()
+    }
     func testEmptyWorkspaceShowsHostsOnLaunchAndAfterDisconnect() async throws {
         let store = AppStore(); store.configuration.onChange = nil
         let host = Host(name: "Navigation fixture", address: "example.invalid", username: "fixture", keyID: "missing-fixture")

@@ -20,6 +20,9 @@ struct TerminalScreen: View {
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 if session.isResizingPanes {
+                    if session.isPreparingPaneResize {
+                        ProgressView().accessibilityLabel("Reading pane borders")
+                    }
                     Button("Done resizing") { session.finishPaneResize() }
                         .accessibilityIdentifier("terminal.pane.resize.done")
                 }
@@ -201,6 +204,8 @@ struct TerminalContainer: UIViewControllerRepresentable {
     }
     func updateKeyboardViewport() {
         guard isViewLoaded else { return }
+        // Server redraws move the cursor while resizing; keep touch coordinates stable.
+        guard (terminal as? SafeTerminalView)?.isDraggingPane != true else { return }
         // Move the viewport to keep the cursor visible without changing the PTY grid.
         var visibleHeight = view.bounds.height
         if let keyboardFrame, let window = view.window {

@@ -10,6 +10,9 @@ import TermCore
     let terminal: TerminalView
     weak var store: AppStore?
     @Published private(set) var isResizingPanes = false
+    @Published private(set) var isPreparingPaneResize = false
+    private var paneLayoutTask: Task<String?, Never>?
+    private var paneLayoutRequest = UUID()
     func finishPaneResize() { (terminal as? SafeTerminalView)?.setPaneResizeMode(false) }
     @Published var status = "Disconnected"
     @Published var isLive = false {
@@ -66,7 +69,21 @@ import TermCore
     init(host: TermCore.Host, store: AppStore) {
         self.host = host; self.store = store
         terminal = SafeTerminalView(frame: .zero)
-        (terminal as? SafeTerminalView)?.resizeModeChanged = { [weak self] in self?.isResizingPanes = $0 }
+        (terminal as? SafeTerminalView)?.resizeModeChanged = { [weak self] enabled in
+            guard let self else { return }
+            self.isResizingPanes = enabled
+            if enabled { self.preparePaneResizeLayout() }
+            else {
+                self.paneLayoutRequest = UUID()
+                self.paneLayoutTask?.cancel(); self.paneLayoutTask = nil
+                self.isPreparingPaneResize = false
+            }
+        }
+        (terminal as? SafeTerminalView)?.resizeDragEnded = { [weak self] in
+            guard let self else { return }
+            self.coordinator?.updateKeyboardViewport()
+            if self.isResizingPanes { self.preparePaneResizeLayout() }
+        }
         (terminal as? SafeTerminalView)?.resolveResizeStart = { [weak self] point in
             await self?.resolvePaneBorder(near: point)
         }
@@ -252,28 +269,45 @@ import TermCore
     }
     var prefixBytes: Data? { TmuxBindings.keyBytes(bindings?.prefix ?? host.manualPrefix) }
     func send(_ data: Data) { guard isLive else { return }; stopScrolling(); connection?.send(data) }
-    private func resolvePaneBorder(near point: CGPoint) async -> CGPoint? {
-        guard isLive, let connection, !host.tmuxSession.isEmpty else {
-            scrollStatus = "Choose a tmux session to resize panes."
-            return nil
+    private func preparePaneResizeLayout() {
+        preparePaneResizeLayout { [weak self] in await self?.readPaneLayout() }
+    }
+    func preparePaneResizeLayout(load: @escaping () async -> String?) {
+        paneLayoutTask?.cancel()
+        let request = UUID(); paneLayoutRequest = request
+        isPreparingPaneResize = true
+        paneLayoutTask = Task { [weak self] in
+            defer { if self?.paneLayoutRequest == request { self?.isPreparingPaneResize = false } }
+            guard !Task.isCancelled else { return nil }
+            return await load()
         }
+    }
+    private func readPaneLayout() async -> String? {
+        guard isLive, let connection, !host.tmuxSession.isEmpty else { return nil }
         let attempt = generation
         do {
+            try Task.checkCancellation()
             let id = try await connection.tmuxSessionID(for: host)
             try Task.checkCancellation()
             let layout = try await connection.execute("\(host.tmuxCommand) list-panes -t \(shellQuote(id + ":")) -F '#{pane_left}|#{pane_top}|#{pane_width}|#{pane_height}|#{window_width}|#{window_height}|#{status-position}|#{window_zoomed_flag}'")
             try Task.checkCancellation()
             guard generation == attempt, isLive else { return nil }
-            let grid = terminal.getTerminal(), size = terminal.getOptimalFrameSize()
-            let result = SafeTerminalView.nearestPaneBorder(layout, to: point,
-                cell: CGSize(width: size.width / CGFloat(grid.cols), height: size.height / CGFloat(grid.rows)),
-                columns: grid.cols, rows: grid.rows)
-            scrollStatus = result == nil ? "No resizable pane border in this window." : nil
-            return result
+            return layout
         } catch {
-            if !Task.isCancelled, generation == attempt { scrollStatus = "Cannot read pane borders. Try again." }
+            if !Task.isCancelled, generation == attempt { scrollStatus = "Cannot read pane borders. Exit resize mode and try again." }
             return nil
         }
+    }
+    func resolvePaneBorder(near point: CGPoint) async -> CGPoint? {
+        let request = paneLayoutRequest
+        guard let layout = await paneLayoutTask?.value, !Task.isCancelled,
+              request == paneLayoutRequest, isLive, isResizingPanes else { return nil }
+        let grid = terminal.getTerminal(), size = terminal.getOptimalFrameSize()
+        let result = SafeTerminalView.nearestPaneBorder(layout, to: point,
+            cell: CGSize(width: size.width / CGFloat(grid.cols), height: size.height / CGFloat(grid.rows)),
+            columns: grid.cols, rows: grid.rows)
+        scrollStatus = result == nil ? "No resizable pane border in this window." : nil
+        return result
     }
     func scrollTmux(lines: Int) {
         guard isLive, let connection else { return }
