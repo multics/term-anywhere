@@ -71,7 +71,7 @@ import TermCore
         store.closeSession(host.id); window.isHidden = true; window.rootViewController = nil
         try await Task.sleep(for: .milliseconds(500))
     }
-    func testTmuxMenusUseCurrentServerBindingsAndDisableAfterDisconnect() async throws {
+    func testKeyboardHasNoShortcutRowWithTmuxSession() async throws {
         let store = AppStore(); store.configuration.onChange = nil
         var host = Host(name: "Terminal tools", address: "example.invalid", username: "fixture", keyID: "missing-fixture")
         host.tmuxSession = "work"
@@ -92,28 +92,10 @@ import TermCore
         try await Task.sleep(for: .milliseconds(600))
         session.hideKeyboard()
         session.terminal.feed(text: "tmux work: use the toolbar to zoom panes or change windows\r\n$ ")
-        func descendants(_ view: UIView) -> [UIView] { [view] + view.subviews.flatMap(descendants) }
-        let bar = try XCTUnwrap(session.terminal.inputAccessoryView)
-        let more = try XCTUnwrap(descendants(bar).compactMap { $0 as? UIButton }.first { $0.accessibilityIdentifier == "terminal.keyboard.more" })
-        func actions() throws -> [UIAction] {
-            let menu = try XCTUnwrap(more.menu?.children.first as? UIMenu)
-            return menu.children.compactMap { $0 as? UIAction }
-        }
-        let initial = try actions()
-        XCTAssertEqual(Array(initial.prefix(3).map(\.title)), ["Zoom pane", "Next window", "Previous window"])
-        XCTAssertEqual(Array(initial.prefix(3).map(\.subtitle)), ["C-a → Z", "C-a → N", "M-p"])
-        XCTAssertEqual(session.bindings?.shortcuts.map(\.bytes), [Data([1, 90]), Data([1, 78]), Data([27, 112])])
-        XCTAssertFalse(initial.contains { $0.attributes.contains(.disabled) })
+        XCTAssertNil(session.terminal.inputAccessoryView)
+        XCTAssertEqual(Array(session.bindings?.shortcuts.prefix(3).map(\.title) ?? []), ["Zoom pane", "Next window", "Previous window"])
         let image = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in window.drawHierarchy(in: window.bounds, afterScreenUpdates: true) }
         let attachment = XCTAttachment(image: image); attachment.name = "Dedicated tmux toolbar"; attachment.lifetime = .keepAlways; add(attachment)
-        // A refresh must replace old host bindings and must not retain an absent action.
-        session.bindings = TmuxBindings(prefix: "C-x", listing: "bind-key -T prefix q next-window")
-        session.coordinator?.refreshMenu()
-        XCTAssertEqual(try actions().first?.title, "Next window")
-        XCTAssertEqual(try actions().first?.subtitle, "C-x → q")
-        XCTAssertFalse(try actions().contains { $0.title == "Zoom pane" })
-        session.isLive = false; session.coordinator?.refreshMenu()
-        XCTAssertTrue(try actions().allSatisfy { $0.attributes.contains(.disabled) })
     }
     func testKeyboardCanHideAndReturnWithoutClosingTheSession() async throws {
         let store = AppStore(); store.configuration.onChange = nil
@@ -374,8 +356,8 @@ import TermCore
     func testControlModifierIsOneShot() {
         let terminal = SafeTerminalView(frame: CGRect(x: 0, y: 0, width: 393, height: 500))
         let output = InputRecorder(); terminal.terminalDelegate = output
-        // The app replaces SwiftTerm's default accessory with its fixed native row.
-        terminal.inputAccessoryView = UIInputView(frame: .zero, inputViewStyle: .keyboard)
+        // The app removes SwiftTerm's default keyboard accessory.
+        terminal.inputAccessoryView = nil
         terminal.controlModifier = true; terminal.insertText("c"); terminal.insertText("x")
         XCTAssertEqual(output.data, Data([3, 120]))
         XCTAssertFalse(terminal.controlModifier)

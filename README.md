@@ -2,7 +2,7 @@
 
 A personal SSH terminal for iPhone and iPad, with a Mac configuration companion. Minimum OS: iOS/iPadOS 26 and macOS 26. The current Mac build supports Apple Silicon. This is a development build.
 
-The app supports direct SSH and SSH through AWS Systems Manager. It uses private keys, device Keychain storage, and server fingerprint checks. It can attach to a named tmux session and read that server's active prefix and bindings on each connection. The keyboard adds Esc, one-shot Ctrl, Tab, arrows, symbols, and detected tmux actions.
+The app supports direct SSH and SSH through AWS Systems Manager. It uses private keys, device Keychain storage, and server fingerprint checks. It can attach to a named tmux session and read that server's active prefix and bindings on each connection. The keyboard has no custom shortcut row. The terminal toolbar keeps the session tools and detected tmux actions.
 
 The iPhone app stays in landscape right, including the Hosts screen. Turning the phone does not rotate the interface. iPad rotation stays under your control.
 

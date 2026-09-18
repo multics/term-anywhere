@@ -142,7 +142,6 @@ struct TerminalContainer: UIViewControllerRepresentable {
         let controller = TerminalCoordinator(session: session); session.coordinator = controller; return controller
     }
     func updateUIViewController(_ controller: TerminalCoordinator, context: Context) {
-        controller.refreshMenu()
         session.updateTerminalColors()
     }
 }
@@ -150,9 +149,6 @@ struct TerminalContainer: UIViewControllerRepresentable {
 @MainActor final class TerminalCoordinator: UIViewController, @preconcurrency TerminalViewDelegate {
     weak var session: TerminalSession?
     let terminal: TerminalView
-    private var controlButton: UIButton?
-    private var moreButton: UIButton?
-    private var repeatTimer: Timer?
     private var keyboardFrame: CGRect?
     init(session: TerminalSession) { self.session = session; self.terminal = session.terminal; super.init(nibName: nil, bundle: nil) }
     required init?(coder: NSCoder) { fatalError("init(coder:) is unavailable") }
@@ -173,9 +169,8 @@ struct TerminalContainer: UIViewControllerRepresentable {
             alert.addAction(UIAlertAction(title: "Paste", style: .default) { [weak session] _ in if session?.isLive == true { insert() } })
             self.present(alert, animated: true)
         }
-        makeAccessory()
+        terminal.inputAccessoryView = nil
         session?.updateTerminalColors()
-        NotificationCenter.default.addObserver(self, selector: #selector(resetControl), name: .terminalViewControlModifierReset, object: terminal)
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardFrameChanged), name: UIResponder.keyboardWillChangeFrameNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
@@ -205,41 +200,8 @@ struct TerminalContainer: UIViewControllerRepresentable {
         session?.updateTerminalColors()
         session?.restoreKeyboardIfNeeded()
     }
-    override func viewWillDisappear(_ animated: Bool) { super.viewWillDisappear(animated); stopRepeat(); terminal.controlModifier = false; resetControl() }
-    private func makeAccessory() {
-        let bar = UIInputView(frame: CGRect(x: 0, y: 0, width: 393, height: 48), inputViewStyle: .keyboard)
-        let stack = UIStackView(); stack.axis = .horizontal; stack.distribution = .fillEqually; stack.spacing = 2
-        stack.translatesAutoresizingMaskIntoConstraints = false; bar.addSubview(stack)
-        NSLayoutConstraint.activate([stack.leadingAnchor.constraint(equalTo: bar.leadingAnchor, constant: 4), stack.trailingAnchor.constraint(equalTo: bar.trailingAnchor, constant: -4), stack.topAnchor.constraint(equalTo: bar.topAnchor, constant: 2), stack.bottomAnchor.constraint(equalTo: bar.bottomAnchor, constant: -2)])
-        for title in ["Esc", "Ctrl", "Tab", "←", "↓", "↑", "→", "More"] {
-            let button = UIButton(type: .system); button.setTitle(title, for: .normal); button.titleLabel?.font = .systemFont(ofSize: 14, weight: .medium)
-            button.accessibilityLabel = ["←": "Left arrow", "↓": "Down arrow", "↑": "Up arrow", "→": "Right arrow" ][title] ?? title
-            if title == "More" { moreButton = button; button.accessibilityIdentifier = "terminal.keyboard.more"; button.showsMenuAsPrimaryAction = true }
-            else if title == "Ctrl" {
-                controlButton = button
-                button.addAction(UIAction { [weak self] _ in guard let self, self.session?.isLive == true else { return }; self.terminal.controlModifier.toggle(); self.resetControl() }, for: .touchUpInside)
-            } else if ["←", "↓", "↑", "→"].contains(title) {
-                button.addAction(UIAction { [weak self] _ in
-                    guard let self else { return }; self.stopRepeat(); self.arrow(title)
-                    self.repeatTimer = Timer.scheduledTimer(withTimeInterval: 0.45, repeats: false) { [weak self] _ in
-                        MainActor.assumeIsolated {
-                            self?.repeatTimer = Timer.scheduledTimer(withTimeInterval: 0.08, repeats: true) { [weak self] _ in MainActor.assumeIsolated { self?.arrow(title) } }
-                        }
-                    }
-                }, for: .touchDown)
-                button.addAction(UIAction { [weak self] _ in self?.stopRepeat() }, for: [.touchUpInside, .touchUpOutside, .touchCancel, .touchDragExit])
-            } else { button.addAction(UIAction { [weak self] _ in self?.terminal.send(title == "Esc" ? [27] : [9]) }, for: .touchUpInside) }
-            stack.addArrangedSubview(button)
-        }
-        terminal.inputAccessoryView = bar; refreshMenu()
-    }
-    private func arrow(_ key: String) {
-        guard session?.isLive == true else { return }
-        let suffix = ["↑": "A", "↓": "B", "→": "C", "←": "D"][key]!
-        terminal.send(txt: "\u{1b}" + (terminal.getTerminal().applicationCursor ? "O" : "[") + suffix)
-    }
+    override func viewWillDisappear(_ animated: Bool) { super.viewWillDisappear(animated); terminal.controlModifier = false }
     func closeUI() {
-        stopRepeat()
         terminal.resignFirstResponder()
         viewIfLoaded?.endEditing(true)
         dismiss(animated: false)
@@ -253,22 +215,6 @@ struct TerminalContainer: UIViewControllerRepresentable {
         if terminal.isFirstResponder { session?.keyboardVisible = true }
     }
     @objc private func keyboardWillHide() { session?.keyboardVisible = false; keyboardFrame = nil; updateKeyboardViewport() }
-    func stopRepeat() { repeatTimer?.invalidate(); repeatTimer = nil }
-    @objc private func resetControl() { controlButton?.tintColor = terminal.controlModifier ? .systemOrange : .label; controlButton?.accessibilityValue = terminal.controlModifier ? "On" : "Off" }
-    func refreshMenu() {
-        guard let session else { return }
-        var items: [UIMenuElement] = []
-        for shortcut in session.bindings?.shortcuts ?? [] {
-            items.append(UIAction(title: shortcut.title, subtitle: shortcut.keys, attributes: session.isLive ? [] : .disabled) { [weak session] _ in session?.send(shortcut.bytes) })
-        }
-        if let bytes = session.prefixBytes {
-            items.append(UIAction(title: "Prefix · " + (session.bindings?.prefix ?? session.host.manualPrefix), attributes: session.isLive ? [] : .disabled) { [weak session] _ in session?.send(bytes) })
-        }
-        items.append(UIAction(title: "Refresh tmux shortcuts", attributes: session.isLive ? [] : .disabled) { [weak session] _ in Task { await session?.refreshBindings() } })
-        let tmux = UIMenu(title: "tmux", options: .displayInline, children: items)
-        let symbols = ["/", "~", "|", "-", "_", "$"].map { symbol in UIAction(title: symbol) { [weak self] _ in self?.terminal.insertText(symbol) } }
-        moreButton?.menu = UIMenu(children: [tmux, UIMenu(title: "Symbols", children: symbols), UIAction(title: "Alt / Meta", state: terminal.metaModifier ? .on : .off) { [weak self] _ in self?.terminal.metaModifier.toggle() }, UIAction(title: "Hide keyboard") { [weak session] _ in session?.hideKeyboard() }])
-    }
     func sizeChanged(source: TerminalView, newCols: Int, newRows: Int) { session?.connection?.resize(columns: newCols, rows: newRows) }
     func send(source: TerminalView, data: ArraySlice<UInt8>) { session?.send(Data(data)) }
     func setTerminalTitle(source: TerminalView, title: String) {}

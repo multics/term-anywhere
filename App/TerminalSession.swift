@@ -88,8 +88,6 @@ import TermCore
         terminal.resignFirstResponder()
         keyboardVisible = false
         resetModifiers()
-        coordinator?.stopRepeat()
-        coordinator?.refreshMenu()
     }
     func restoreKeyboardIfNeeded() {
         guard terminal.window != nil, let restore = restoreKeyboardOnAppear else { return }
@@ -224,7 +222,6 @@ import TermCore
             guard generation == attempt else { return }
             bindings = nil; bindingsStatus = "Detection unavailable. Use terminal keys or a manual prefix."
         }
-        coordinator?.refreshMenu()
     }
     var prefixBytes: Data? { TmuxBindings.keyBytes(bindings?.prefix ?? host.manualPrefix) }
     func send(_ data: Data) { guard isLive else { return }; stopScrolling(); connection?.send(data) }
@@ -269,7 +266,7 @@ import TermCore
             keyboardVisible = false
             terminal.resignFirstResponder()
             coordinator?.closeUI(); coordinator = nil
-        } else { coordinator?.refreshMenu() }
+        }
     }
     private func didClose(_ reason: String?) {
         stopScrolling()
@@ -280,7 +277,6 @@ import TermCore
         if pending != nil { wantsConnection = false }
         resetModifiers()
         status = reason == nil ? "Session ended" : "Connection lost"; error = reason
-        coordinator?.refreshMenu()
         guard wantsConnection, reason != nil, retryCount < 3, !host.tmuxSession.isEmpty else { return }
         retryCount += 1; let attempt = generation, delay = UInt64(1 << retryCount)
         status = "Reconnecting in \(delay)s…"
