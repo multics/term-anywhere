@@ -5,6 +5,32 @@ import TermCore
 @testable import TermAnywhere
 
 @MainActor final class TerminalInputTests: XCTestCase {
+    func testEmptyWorkspaceShowsHostsOnLaunchAndAfterDisconnect() async throws {
+        let store = AppStore(); store.configuration.onChange = nil
+        let host = Host(name: "Navigation fixture", address: "example.invalid", username: "fixture", keyID: "missing-fixture")
+        store.hosts = [host]
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let window = UIWindow(windowScene: scene)
+        let controller = UIHostingController(rootView: HostListView().environmentObject(store))
+        window.rootViewController = controller; window.makeKeyAndVisible()
+        defer { store.closeSession(host.id); window.isHidden = true; window.rootViewController = nil }
+        func split(in controller: UIViewController) -> UISplitViewController? {
+            if let value = controller as? UISplitViewController { return value }
+            return controller.children.compactMap { split(in: $0) }.first
+        }
+        try await Task.sleep(for: .milliseconds(500))
+        let navigation = try XCTUnwrap(split(in: controller))
+        XCTAssertFalse(navigation.isCollapsed)
+        XCTAssertEqual(navigation.displayMode, .oneOverSecondary, "Hosts must open over the empty workspace")
+        let session = store.session(for: host); session.hasStarted = true; session.isLive = true
+        store.selectHost(host.id)
+        try await Task.sleep(for: .milliseconds(500))
+        XCTAssertEqual(navigation.displayMode, .secondaryOnly, "Selecting a host hides navigation")
+        store.closeSession(host.id)
+        try await Task.sleep(for: .milliseconds(500))
+        XCTAssertNil(store.selectedHostID)
+        XCTAssertEqual(navigation.displayMode, .oneOverSecondary, "Disconnect returns to Hosts")
+    }
     func testAppKeepsScreenAwakeOnlyWhileActive() async throws {
         let store = AppStore(); store.configuration.onChange = nil
         let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)

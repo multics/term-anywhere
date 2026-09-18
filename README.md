@@ -6,6 +6,8 @@ The app supports direct SSH and SSH through AWS Systems Manager. It uses private
 
 On iPhone and iPad, the screen stays awake while the app is active. Normal auto-lock returns when you leave the app. You can still lock the device manually. Active connections request limited background time for brief locks or app switches. iOS controls that time and can later suspend SSH. On return, the app checks the connection and reconnects to the saved tmux session if needed; it does not replay typed input.
 
+The Hosts sidebar opens when no terminal is selected. Selecting a host hides the sidebar; disconnecting returns to Hosts.
+
 The iPhone app stays in landscape right, including the Hosts screen. Turning the phone does not rotate the interface. iPad rotation stays under your control.
 
 On iPhone and iPad, tap the keyboard button beside the terminal's tools menu to hide the keyboard and see more output. Tap it again to resume typing. The connection and terminal output stay available. The keyboard and Hosts sidebar do not change the terminal rows or columns. The sidebar overlays the terminal. When the keyboard covers the cursor, the terminal view moves up without changing its grid. Hide the keyboard to see the full screen.

@@ -99,7 +99,7 @@ The user authorized deletion and recreation after an old commit URL remained acc
 - Request: Do not auto-lock while the app is active.
 - Scope: iPhone and iPad, including Hosts and terminal screens. Disable the app idle timer while its scene is active; restore normal auto-lock when inactive or in the background. Manual device locking stays available.
 - Acceptance: Apply on initial appearance and each lifecycle transition; verify the native idle-timer state, build, deploy, commit, and push.
-- Status: Implemented. The native idle-timer lifecycle test passes on iPhone Simulator and physical iPhone 17 Pro Max. Signed build passes and is installed on iPhone. Normal launch was blocked by the phone lock; the physical hosted lifecycle test passed before that lock. The iPad Simulator retry passed both idle-timer and background-task lifecycle tests. Physical iPad deployment and earlier manual Pinyin and pane-drag checks remain open.
+- Status: Implemented. The native idle-timer lifecycle test passes on iPhone Simulator and physical iPhone 17 Pro Max. Signed build passes and is installed on iPhone. The subsequent background-time build launched successfully with this change included. The iPad Simulator retry passed both idle-timer and background-task lifecycle tests. Physical iPad deployment and earlier manual Pinyin and pane-drag checks remain open.
 
 ## Feature 25: Preserve connections across brief screen locks
 
@@ -114,4 +114,4 @@ The user authorized deletion and recreation after an old commit URL remained acc
 - Request: Open the left navigation sidebar when the app opens to an empty workspace.
 - Scope: Show Hosts on launch with no selected terminal and after the last selected session closes. Continue hiding the sidebar when a host is selected.
 - Acceptance: Verify initial empty-workspace navigation on iPhone and iPad, preserve host-selection behavior, deploy, commit, and push.
-- Status: Queued after feature 25. Next: set explicit initial sidebar visibility and test the native split-view state.
+- Status: Implemented: request the sidebar after the native split view mounts when no terminal is selected. A fixed initial visibility value was ignored by the native prominent-detail style; the initial-launch regression reproduced that behavior. The mounted request passes the launch, selection, and disconnect test on iPhone Simulator. All three navigation and terminal-geometry checks pass on physical iPhone 17 Pro Max and iPad Simulator. Signed combined build is installed on iPhone. Evidence: `.build/initial-sidebar-mount-simulator.log`, `.build/initial-sidebar-iphone.log`, and `.build/initial-sidebar-ipad.log`. Physical iPad deployment remains deferred.

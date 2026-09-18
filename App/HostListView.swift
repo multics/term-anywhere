@@ -4,7 +4,7 @@ import TermCore
 
 struct HostListView: View {
     @EnvironmentObject private var store: AppStore
-    @State private var columnVisibility: NavigationSplitViewVisibility = .automatic
+    @State private var columnVisibility: NavigationSplitViewVisibility = .detailOnly
     @State private var compactColumn: NavigationSplitViewColumn = .sidebar
     @State private var search = ""
     @State private var editing: Host?
@@ -67,6 +67,11 @@ struct HostListView: View {
         }
         .navigationSplitViewStyle(.prominentDetail)
         .ignoresSafeArea(.keyboard)
+        .task {
+            // Apply initial visibility after the native split view has mounted.
+            await Task.yield()
+            if store.selectedHostID == nil { columnVisibility = .all }
+        }
         .onChange(of: store.selectedHostID) { _, id in
             compactColumn = id == nil ? .sidebar : .detail
             columnVisibility = id == nil ? .all : .detailOnly
