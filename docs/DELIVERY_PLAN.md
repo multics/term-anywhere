@@ -93,3 +93,18 @@ The user authorized deletion and recreation after an old commit URL remained acc
 - Scope: Follow the remote mouse protocol and tmux bindings. Do not change server options. Release an active drag on cancellation or when leaving the view; never replay input after reconnect.
 - Acceptance: Correct horizontal and vertical drag coordinates and event order; no wheel events during resize; no drag input when mouse motion is off or local selection is active; lifecycle cleanup; isolated tmux resize evidence; relevant tests, signed deployment, one feature commit and push.
 - Status: Implemented; validation in progress. The isolated local tmux check passed horizontal resize (50 to 57 columns), vertical resize (14 to 18 rows), and release behavior. The first hosted run exposed a crash: SwiftTerm calls mouseModeChanged during initialization, before getTerminal is available. The guard now reads terminal state only when a drag is active. Stopped the crash-loop test runs, installed the corrected signed build, and launched it on iPhone; process readback confirms it is running. Validation: 35 automated tests pass on both iPhone Simulator and physical iPhone 17 Pro Max; one opt-in manual gesture test is skipped. The 11 iPad Simulator gesture tests pass, with the same opt-in skip. Logs: `.build/pane-drag-verified-simulator.log`, `.build/pane-drag-verified-iphone.log`, `.build/pane-drag-ipad.log`, and `.build/pane-drag-tmux.log`. The signed build is installed on iPhone. Manual two-finger border targeting remains unverified; next action is a user gesture check on a tmux session with mouse mode enabled. Physical iPad deployment remains blocked by device unavailability. Earlier manual Pinyin selection and deferred physical iPad checks remain open.
+
+## Feature 24: Keep the screen awake while active
+
+- Request: Do not auto-lock while the app is active.
+- Scope: iPhone and iPad, including Hosts and terminal screens. Disable the app idle timer while its scene is active; restore normal auto-lock when inactive or in the background. Manual device locking stays available.
+- Acceptance: Apply on initial appearance and each lifecycle transition; verify the native idle-timer state, build, deploy, commit, and push.
+- Status: Implemented. The native idle-timer lifecycle test passes on iPhone Simulator and physical iPhone 17 Pro Max. Signed build passes and is installed on iPhone. iPad Simulator could not launch its test runner (SpringBoard Busy preflight error); a retry remains pending. Physical iPad deployment and earlier manual Pinyin and pane-drag checks remain open.
+
+## Feature 25: Preserve connections across brief screen locks
+
+- Request: Avoid losing the network connection a few seconds after locking the phone.
+- Findings: The app does not explicitly close SSH on lock. It already has SSH keepalives and foreground connection probes, but it requests no background execution time. iOS can suspend arbitrary SSH sockets; indefinite locked-screen connectivity cannot be guaranteed.
+- Scope: Request one finite background grace period for an active connection; release it on foreground, disconnect, or system expiry. Do not renew it indefinitely or change server settings. Preserve existing reconnect and tmux attachment behavior; never replay typed input.
+- Acceptance: Verify grace-period lifecycle and expiry cleanup, existing foreground recovery paths, relevant tests, deployment, commit, and push. Actual duration while locked remains system-controlled.
+- Status: Queued behind the keep-awake deployment checkpoint. Next: implement the native background task lifecycle.

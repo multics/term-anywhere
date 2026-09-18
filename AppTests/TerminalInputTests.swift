@@ -5,6 +5,25 @@ import TermCore
 @testable import TermAnywhere
 
 @MainActor final class TerminalInputTests: XCTestCase {
+    func testAppKeepsScreenAwakeOnlyWhileActive() async throws {
+        let store = AppStore(); store.configuration.onChange = nil
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let window = UIWindow(windowScene: scene)
+        let previous = UIApplication.shared.isIdleTimerDisabled
+        let controller = UIHostingController(rootView: HostListView().environmentObject(store).environment(\.scenePhase, .active))
+        window.rootViewController = controller; window.makeKeyAndVisible()
+        defer {
+            window.isHidden = true; window.rootViewController = nil
+            UIApplication.shared.isIdleTimerDisabled = previous
+        }
+        try await Task.sleep(for: .milliseconds(300))
+        XCTAssertTrue(UIApplication.shared.isIdleTimerDisabled, "Initial active appearance must prevent auto-lock")
+        for phase in [ScenePhase.inactive, .background, .active] {
+            controller.rootView = HostListView().environmentObject(store).environment(\.scenePhase, phase)
+            try await Task.sleep(for: .milliseconds(200))
+            XCTAssertEqual(UIApplication.shared.isIdleTimerDisabled, phase == .active)
+        }
+    }
     func testPhoneOrientationIsFixedAndPadRemainsUnrestricted() async throws {
         let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
         let window = UIWindow(windowScene: scene)

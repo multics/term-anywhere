@@ -78,6 +78,9 @@ struct HostListView: View {
             do { try store.importHosts(result.get()) } catch { store.error = error.localizedDescription }
         }
         .alert("Cannot complete the action", isPresented: Binding(get: { store.error != nil }, set: { if !$0 { store.error = nil } })) { Button("OK") { store.error = nil } } message: { Text(store.error ?? "") }
+        .onChange(of: scenePhase, initial: true) { _, phase in
+            UIApplication.shared.isIdleTimerDisabled = phase == .active
+        }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 store.configuration.start()
