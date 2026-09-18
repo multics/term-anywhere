@@ -45,8 +45,13 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
         if result { compositionChanged?() }
         return result
     }
+    var resolveResizeStart: ((CGPoint) async -> CGPoint?)?
+    private var resizeStartTask: Task<Void, Never>?
+    private var pendingDragPoint: CGPoint?
+    private var dragOffset = CGPoint.zero
     var resizeModeChanged: ((Bool) -> Void)?
     private(set) var isResizingPanes = false
+    private var suspendedResizeGestures: [UIGestureRecognizer] = []
     private var resizeTap: UITapGestureRecognizer!
     func setPaneResizeMode(_ enabled: Bool, sendRelease: Bool = true) {
         endMouseDrag(sendRelease: sendRelease)
@@ -55,6 +60,17 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
         isResizingPanes = enabled
         mouseDrag.minimumNumberOfTouches = enabled ? 1 : 2
         mouseDrag.maximumNumberOfTouches = enabled ? 1 : 2
+        if enabled {
+            // SwiftTerm's long press and selection pans must not steal a border drag.
+            suspendedResizeGestures = (gestureRecognizers ?? []).filter {
+                $0 !== mouseDrag && $0 !== resizeTap && $0 !== touchTap && $0.isEnabled &&
+                ($0 is UIPanGestureRecognizer || $0 is UITapGestureRecognizer || $0 is UILongPressGestureRecognizer)
+            }
+            suspendedResizeGestures.forEach { $0.isEnabled = false }
+        } else {
+            suspendedResizeGestures.forEach { $0.isEnabled = true }
+            suspendedResizeGestures.removeAll()
+        }
         resizeModeChanged?(enabled)
     }
     @objc private func togglePaneResize(_ gesture: UITapGestureRecognizer) {
@@ -172,16 +188,35 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
     func beginMouseDrag(at point: CGPoint) {
         endMouseDrag()
         guard canDragMouse else { return }
+        guard isResizingPanes else { startMouseDrag(at: point); return }
+        // Never send a press on text in resize mode. Resolve a real server border first.
+        guard let resolveResizeStart else { return }
+        pendingDragPoint = point
+        resizeStartTask = Task { [weak self] in
+            guard let border = await resolveResizeStart(point), !Task.isCancelled,
+                  let self, self.isResizingPanes, self.canDragMouse,
+                  let latest = self.pendingDragPoint else { return }
+            self.pendingDragPoint = nil
+            self.dragOffset = CGPoint(x: border.x - point.x, y: border.y - point.y)
+            self.startMouseDrag(at: border)
+            self.moveMouseDrag(to: latest)
+        }
+    }
+    private func startMouseDrag(at point: CGPoint) {
         dragPoint = point
         sendMouseEvent(0, at: point)
     }
     func moveMouseDrag(to point: CGPoint) {
+        if pendingDragPoint != nil { pendingDragPoint = point; return }
         guard dragPoint != nil else { return }
         guard canDragMouse else { endMouseDrag(); return }
-        dragPoint = point
-        sendMouseEvent(32, at: point)
+        let adjusted = CGPoint(x: point.x + dragOffset.x, y: point.y + dragOffset.y)
+        dragPoint = adjusted
+        sendMouseEvent(32, at: adjusted)
     }
     func endMouseDrag(sendRelease: Bool = true) {
+        resizeStartTask?.cancel(); resizeStartTask = nil
+        pendingDragPoint = nil; dragOffset = .zero
         guard let point = dragPoint else { return }
         dragPoint = nil
         if sendRelease && [.vt200, .buttonEventTracking, .anyEvent].contains(getTerminal().mouseMode) {
@@ -191,6 +226,33 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
     override func willMove(toWindow newWindow: UIWindow?) {
         if newWindow == nil { setPaneResizeMode(false) }
         super.willMove(toWindow: newWindow)
+    }
+    /// tmux pane rectangles exclude the status rows. Choose the nearest internal border.
+    static func nearestPaneBorder(_ output: String, to point: CGPoint, cell: CGSize,
+                                  columns: Int, rows: Int) -> CGPoint? {
+        var candidates: [CGPoint] = []
+        for line in output.split(separator: "\n") {
+            let fields = line.split(separator: "|", omittingEmptySubsequences: false).map(String.init)
+            guard fields.count == 8, let x = Int(fields[0]), let y = Int(fields[1]),
+                  let width = Int(fields[2]), let height = Int(fields[3]),
+                  let windowWidth = Int(fields[4]), let windowHeight = Int(fields[5]),
+                  fields[7] == "0", windowWidth == columns, windowHeight <= rows,
+                  x >= 0, y >= 0, width > 0, height > 0 else { continue }
+            let top = fields[6] == "top" ? rows - windowHeight : 0
+            let minX = (CGFloat(x) + 0.5) * cell.width
+            let minY = (CGFloat(y + top) + 0.5) * cell.height
+            if x + width < windowWidth {
+                candidates.append(CGPoint(x: (CGFloat(x + width) + 0.5) * cell.width,
+                    y: max(minY, min(point.y, (CGFloat(y + top + height) - 0.5) * cell.height))))
+            }
+            if y + height < windowHeight {
+                candidates.append(CGPoint(x: max(minX, min(point.x, (CGFloat(x + width) - 0.5) * cell.width)),
+                    y: (CGFloat(y + top + height) + 0.5) * cell.height))
+            }
+        }
+        return candidates.min {
+            hypot($0.x - point.x, $0.y - point.y) < hypot($1.x - point.x, $1.y - point.y)
+        }
     }
     private func sendMouseEvent(_ flags: Int, at point: CGPoint) {
         let terminal = getTerminal(), frame = getOptimalFrameSize()

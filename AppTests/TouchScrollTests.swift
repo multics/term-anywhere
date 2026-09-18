@@ -36,7 +36,67 @@ import SwiftTerm
         while !ready(), Date() < deadline { try await Task.sleep(for: .milliseconds(100)) }
         XCTAssertTrue(ready(), "The expected interactive gesture did not arrive")
     }
-    func testResizeModeOwnsOneFingerInputAndRestoresScrolling() {
+    func testResizeModeDisablesCompetingSelectionGesturesAndRestoresTheirState() throws {
+        let view = SafeTerminalView(frame: CGRect(x: 0, y: 0, width: 390, height: 300))
+        view.feed(text: "\u{1b}[?1002h")
+        let longPress = try XCTUnwrap(view.gestureRecognizers?.first { $0 is UILongPressGestureRecognizer })
+        let selectionTap = try XCTUnwrap(view.gestureRecognizers?.first {
+            ($0 as? UITapGestureRecognizer)?.numberOfTapsRequired == 2 && $0.name != "terminal.pane.resize.toggle"
+        })
+        let disabledPan = UIPanGestureRecognizer(); disabledPan.isEnabled = false
+        view.addGestureRecognizer(disabledPan)
+        view.setPaneResizeMode(true)
+        XCTAssertFalse(longPress.isEnabled)
+        XCTAssertFalse(selectionTap.isEnabled)
+        XCTAssertFalse(view.panGestureRecognizer.isEnabled)
+        for name in ["terminal.mouse.drag", "terminal.pane.resize.toggle", "terminal.mouse.tap"] {
+            XCTAssertEqual(view.gestureRecognizers?.first { $0.name == name }?.isEnabled, true)
+        }
+        view.setPaneResizeMode(false)
+        XCTAssertTrue(longPress.isEnabled)
+        XCTAssertTrue(selectionTap.isEnabled)
+        XCTAssertTrue(view.panGestureRecognizer.isEnabled)
+        XCTAssertFalse(disabledPan.isEnabled)
+    }
+    func testResizeDragSnapsPressToBorderAndKeepsFingerDelta() async throws {
+        let view = SafeTerminalView(frame: CGRect(x: 0, y: 0, width: 390, height: 300))
+        let recorder = ScrollRecorder(); view.terminalDelegate = recorder
+        view.feed(text: "\u{1b}[?1002h\u{1b}[?1006h")
+        let cell = view.getOptimalFrameSize().width / CGFloat(view.getTerminal().cols)
+        view.resolveResizeStart = { _ in CGPoint(x: cell * 10.5, y: 0) }
+        view.setPaneResizeMode(true)
+        view.beginMouseDrag(at: CGPoint(x: cell * 5.5, y: 0))
+        view.moveMouseDrag(to: CGPoint(x: cell * 7.5, y: 0))
+        try await Task.sleep(for: .milliseconds(20))
+        view.endMouseDrag()
+        XCTAssertEqual(recorder.text, "\u{1b}[<0;11;1M\u{1b}[<32;13;1M\u{1b}[<0;13;1m")
+        recorder.bytes = []
+        view.resolveResizeStart = { _ in
+            try? await Task.sleep(for: .milliseconds(20))
+            return .zero
+        }
+        view.beginMouseDrag(at: .zero)
+        view.endMouseDrag(sendRelease: false)
+        try await Task.sleep(for: .milliseconds(30))
+        XCTAssertTrue(recorder.bytes.isEmpty, "A completed query must not replay a cancelled drag")
+        view.resolveResizeStart = { _ in nil }
+        view.beginMouseDrag(at: .zero)
+        try await Task.sleep(for: .milliseconds(20))
+        view.moveMouseDrag(to: CGPoint(x: 50, y: 0)); view.endMouseDrag()
+        XCTAssertTrue(recorder.bytes.isEmpty, "Missing borders must not fall back to pressing text")
+    }
+    func testPaneBorderGeometryUsesLiveLayoutAndStatusPosition() {
+        let cell = CGSize(width: 10, height: 20)
+        let vertical = "0|0|49|29|100|29|bottom|0\n50|0|50|29|100|29|bottom|0"
+        XCTAssertEqual(SafeTerminalView.nearestPaneBorder(vertical, to: CGPoint(x: 400, y: 100), cell: cell, columns: 100, rows: 30), CGPoint(x: 495, y: 100))
+        let horizontal = "0|0|100|14|100|29|top|0\n0|15|100|14|100|29|top|0"
+        XCTAssertEqual(SafeTerminalView.nearestPaneBorder(horizontal, to: CGPoint(x: 400, y: 100), cell: cell, columns: 100, rows: 30), CGPoint(x: 400, y: 310))
+        for invalid in ["bad", "0|0|100|29|100|29|bottom|0", "0|0|49|29|100|29|bottom|1"] {
+            XCTAssertNil(SafeTerminalView.nearestPaneBorder(invalid, to: .zero, cell: cell, columns: 100, rows: 30))
+        }
+        XCTAssertNil(SafeTerminalView.nearestPaneBorder(vertical, to: .zero, cell: cell, columns: 80, rows: 30))
+    }
+    func testResizeModeOwnsOneFingerInputAndRestoresScrolling() async throws {
         let view = SafeTerminalView(frame: CGRect(x: 0, y: 0, width: 390, height: 300))
         let recorder = ScrollRecorder(); view.terminalDelegate = recorder
         var changes: [Bool] = []; view.resizeModeChanged = { changes.append($0) }
@@ -51,9 +111,11 @@ import SwiftTerm
         XCTAssertEqual(drag?.maximumNumberOfTouches, 1)
         view.tapTouch(at: .zero); view.scrollTouch(lines: 1, at: .zero)
         XCTAssertTrue(recorder.bytes.isEmpty)
+        view.resolveResizeStart = { $0 }
         view.beginMouseDrag(at: .zero)
+        try await Task.sleep(for: .milliseconds(20))
         view.setPaneResizeMode(false)
-        XCTAssertEqual(recorder.text, "\u{1b}[<0;1;1M\u{1b}[<0;1;1m")
+        XCTAssertEqual(recorder.text, "\u{1b}[<0;1;1M\u{1b}[<32;1;1M\u{1b}[<0;1;1m")
         XCTAssertEqual(drag?.minimumNumberOfTouches, 2)
         XCTAssertEqual(changes, [true, false])
         recorder.bytes = []

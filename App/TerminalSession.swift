@@ -65,6 +65,9 @@ import TermCore
         self.host = host; self.store = store
         terminal = SafeTerminalView(frame: .zero)
         (terminal as? SafeTerminalView)?.resizeModeChanged = { [weak self] in self?.isResizingPanes = $0 }
+        (terminal as? SafeTerminalView)?.resolveResizeStart = { [weak self] point in
+            await self?.resolvePaneBorder(near: point)
+        }
         terminal.font = .monospacedSystemFont(ofSize: 14, weight: .regular)
         terminal.accessibilityLabel = "Terminal for \(host.name)"
         terminal.registerForTraitChanges([UITraitUserInterfaceStyle.self]) { [weak self] (_: TerminalView, _: UITraitCollection) in
@@ -247,6 +250,29 @@ import TermCore
     }
     var prefixBytes: Data? { TmuxBindings.keyBytes(bindings?.prefix ?? host.manualPrefix) }
     func send(_ data: Data) { guard isLive else { return }; stopScrolling(); connection?.send(data) }
+    private func resolvePaneBorder(near point: CGPoint) async -> CGPoint? {
+        guard isLive, let connection, !host.tmuxSession.isEmpty else {
+            scrollStatus = "Choose a tmux session to resize panes."
+            return nil
+        }
+        let attempt = generation
+        do {
+            let id = try await connection.tmuxSessionID(for: host)
+            try Task.checkCancellation()
+            let layout = try await connection.execute("\(host.tmuxCommand) list-panes -t \(shellQuote(id + ":")) -F '#{pane_left}|#{pane_top}|#{pane_width}|#{pane_height}|#{window_width}|#{window_height}|#{status-position}|#{window_zoomed_flag}'")
+            try Task.checkCancellation()
+            guard generation == attempt, isLive else { return nil }
+            let grid = terminal.getTerminal(), size = terminal.getOptimalFrameSize()
+            let result = SafeTerminalView.nearestPaneBorder(layout, to: point,
+                cell: CGSize(width: size.width / CGFloat(grid.cols), height: size.height / CGFloat(grid.rows)),
+                columns: grid.cols, rows: grid.rows)
+            scrollStatus = result == nil ? "No resizable pane border in this window." : nil
+            return result
+        } catch {
+            if !Task.isCancelled, generation == attempt { scrollStatus = "Cannot read pane borders. Try again." }
+            return nil
+        }
+    }
     func scrollTmux(lines: Int) {
         guard isLive, let connection else { return }
         pendingScrollLines = max(-120, min(120, pendingScrollLines + lines))

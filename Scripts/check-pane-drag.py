@@ -35,6 +35,8 @@ try:
     drag(x, 5, x + 7, 5)
     after = int(tmux('display', '-p', '-t', first, '#{pane_width}'))
     assert after == before + 7, (before, after)
+    assert tmux('display', '-p', '-t', first, '#{pane_in_mode}') == '0'
+    assert tmux('display', '-p', '-t', second, '#{pane_in_mode}') == '0'
     print('TMUX_HORIZONTAL_BORDER_DRAG_OK', before, after)
     # A released button must not keep resizing on later motion.
     send(f'\x1b[<32;{x + 10};5M')
@@ -48,7 +50,10 @@ try:
     drag(5, y, 5, y + 4)
     after = int(tmux('display', '-p', '-t', first, '#{pane_height}'))
     assert after == before + 4, (before, after)
+    assert tmux('display', '-p', '-t', first, '#{pane_in_mode}') == '0'
+    assert tmux('display', '-p', '-t', second, '#{pane_in_mode}') == '0'
     print('TMUX_VERTICAL_BORDER_DRAG_OK', before, after)
+    print('TMUX_BORDER_DRAG_DOES_NOT_SELECT_TEXT_OK')
 finally:
     subprocess.run(cmd + ['kill-server'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     if process: process.wait(timeout=5)

@@ -71,3 +71,13 @@ The mode requires remote mouse-motion reporting. Selection, window removal, view
 The user confirmed all prior non-iPad manual checks on 2026-09-18. Physical iPad deployment remains deferred. The new resize-mode interaction needs its own validation.
 
 Resize-mode validation: 40 automated tests pass on both iPhone Simulator and physical iPhone; 13 automated gesture tests pass on iPad Simulator. Each run skips the opt-in interactive test. The signed build is installed and launched on iPhone. Manual double-tap recognition and border targeting remain separate checks.
+
+### Selection conflict correction
+
+User testing found both local selection and remote tmux selection in resize mode. Suspend enabled native selection taps, long presses, and competing pans during the mode, then restore their previous state. Keep the resize drag and mode toggle enabled.
+
+For each resize-mode drag, query the selected tmux session on the connected server. Use the current pane rectangles to choose the nearest internal border. Start the mouse press at that border and add the finger displacement to subsequent motion. Account for a top status bar and reject zoomed, unsplit, or mismatched-size layouts. This requires a tmux session selected through the app. Two-finger dragging outside resize mode retains its original mouse behavior.
+
+A missing layout must not fall back to a press over text. Cancelling or ending a drag cancels the pending query result, so it cannot send delayed input. Query errors appear in Session and terminal tools. Manual selection-conflict validation remains separate from the automated checks.
+
+Correction validation: 43 automated tests pass on iPhone Simulator and physical iPhone; 16 gesture tests pass on iPad Simulator. The interactive test is skipped. The signed correction is installed and launched on iPhone. User confirmation of the corrected physical gesture remains pending.
