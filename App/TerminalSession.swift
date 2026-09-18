@@ -9,6 +9,8 @@ import TermCore
     var restoreKeyboardOnAppear: Bool?
     let terminal: TerminalView
     weak var store: AppStore?
+    @Published private(set) var isResizingPanes = false
+    func finishPaneResize() { (terminal as? SafeTerminalView)?.setPaneResizeMode(false) }
     @Published var status = "Disconnected"
     @Published var isLive = false
     @Published var isConnecting = false
@@ -46,7 +48,7 @@ import TermCore
 
     func prepareForBackground() {
         stopScrolling()
-        (terminal as? SafeTerminalView)?.endMouseDrag()
+        (terminal as? SafeTerminalView)?.setPaneResizeMode(false)
         guard !requestedBackgroundTime, isLive || isConnecting else { return }
         requestedBackgroundTime = true
         backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "Terminal connection") { [weak self] in
@@ -62,6 +64,7 @@ import TermCore
     init(host: TermCore.Host, store: AppStore) {
         self.host = host; self.store = store
         terminal = SafeTerminalView(frame: .zero)
+        (terminal as? SafeTerminalView)?.resizeModeChanged = { [weak self] in self?.isResizingPanes = $0 }
         terminal.font = .monospacedSystemFont(ofSize: 14, weight: .regular)
         terminal.accessibilityLabel = "Terminal for \(host.name)"
         terminal.registerForTraitChanges([UITraitUserInterfaceStyle.self]) { [weak self] (_: TerminalView, _: UITraitCollection) in
@@ -102,7 +105,7 @@ import TermCore
         terminal.becomeFirstResponder()
     }
     func hideKeyboard() {
-        (terminal as? SafeTerminalView)?.endMouseDrag()
+        (terminal as? SafeTerminalView)?.setPaneResizeMode(false)
         terminal.resignFirstResponder()
         keyboardVisible = false
         resetModifiers()
@@ -272,7 +275,7 @@ import TermCore
     }
     func disconnect(closeUI: Bool = true) {
         endBackgroundTime()
-        (terminal as? SafeTerminalView)?.endMouseDrag()
+        (terminal as? SafeTerminalView)?.setPaneResizeMode(false)
         stopScrolling(); scrollStatus = nil
         (terminal as? SafeTerminalView)?.tmuxScrollHandler = nil
         hasStarted = true; wantsConnection = false; generation = UUID(); connectTask?.cancel(); connectTask = nil
@@ -291,7 +294,7 @@ import TermCore
     }
     private func didClose(_ reason: String?) {
         endBackgroundTime()
-        (terminal as? SafeTerminalView)?.endMouseDrag(sendRelease: false)
+        (terminal as? SafeTerminalView)?.setPaneResizeMode(false, sendRelease: false)
         stopScrolling()
         (terminal as? SafeTerminalView)?.tmuxScrollHandler = nil
         connection = nil; isLive = false; isConnecting = false; bindings = nil

@@ -18,6 +18,12 @@ struct TerminalScreen: View {
         .navigationTitle(session.host.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                if session.isResizingPanes {
+                    Button("Done resizing") { session.finishPaneResize() }
+                        .accessibilityIdentifier("terminal.pane.resize.done")
+                }
+            }
             ToolbarItem(placement: .principal) {
                 Button { showSessions?() } label: {
                     VStack(spacing: 1) {
@@ -53,7 +59,7 @@ struct TerminalScreen: View {
                             }
                         }
                         Section {
-                            Text("Drag a pane border with two fingers. Requires tmux mouse mode.")
+                            Text("Double-tap to resize panes, then drag a border with one finger. Requires tmux mouse mode.")
                             Text(session.bindingsStatus)
                             if let prefix = session.prefixBytes {
                                 Button("Send prefix") { session.send(prefix) }.disabled(!session.isLive)
@@ -228,7 +234,7 @@ struct TerminalContainer: UIViewControllerRepresentable {
         session?.updateTerminalColors()
         session?.restoreKeyboardIfNeeded()
     }
-    override func viewWillDisappear(_ animated: Bool) { super.viewWillDisappear(animated); (terminal as? SafeTerminalView)?.endMouseDrag(); terminal.controlModifier = false }
+    override func viewWillDisappear(_ animated: Bool) { super.viewWillDisappear(animated); (terminal as? SafeTerminalView)?.setPaneResizeMode(false); terminal.controlModifier = false }
     func closeUI() {
         terminal.resignFirstResponder()
         viewIfLoaded?.endEditing(true)

@@ -61,3 +61,13 @@ Run `python3 Scripts/check-pane-drag.py` with tmux installed to test both border
 Implementation constraint: SwiftTerm can call mouseModeChanged during initialization. Do not read getTerminal from that callback before initialization has completed. Drag cleanup must first check that a drag exists.
 
 Validation on 2026-09-18: 35 automated tests pass on both iPhone Simulator and physical iPhone 17 Pro Max; the opt-in interactive tap test is skipped. All 11 automated gesture tests pass on iPad Simulator. The isolated tmux test confirms horizontal and vertical resizing and release behavior. The final signed build is installed on iPhone. Actual two-finger border targeting and physical iPad deployment remain open.
+
+## Explicit pane resize mode
+
+Double-tap the terminal to enter or leave resize mode. In this mode, drag a border with one finger. The toolbar shows Done resizing. Taps and scroll input stay local while the mode is active. Outside the mode, one finger scrolls and two fingers can drag. The double-tap recognizer takes priority over terminal taps, so the mode toggle does not send a remote click.
+
+The mode requires remote mouse-motion reporting. Selection, window removal, view departure, background entry, and disconnect end the mode. Release a held mouse button before normal cleanup, but do not send a release after connection loss. Mode changes do not resize the terminal grid.
+
+The user confirmed all prior non-iPad manual checks on 2026-09-18. Physical iPad deployment remains deferred. The new resize-mode interaction needs its own validation.
+
+Resize-mode validation: 40 automated tests pass on both iPhone Simulator and physical iPhone; 13 automated gesture tests pass on iPad Simulator. Each run skips the opt-in interactive test. The signed build is installed and launched on iPhone. Manual double-tap recognition and border targeting remain separate checks.

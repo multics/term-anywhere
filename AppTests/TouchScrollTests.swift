@@ -36,6 +36,43 @@ import SwiftTerm
         while !ready(), Date() < deadline { try await Task.sleep(for: .milliseconds(100)) }
         XCTAssertTrue(ready(), "The expected interactive gesture did not arrive")
     }
+    func testResizeModeOwnsOneFingerInputAndRestoresScrolling() {
+        let view = SafeTerminalView(frame: CGRect(x: 0, y: 0, width: 390, height: 300))
+        let recorder = ScrollRecorder(); view.terminalDelegate = recorder
+        var changes: [Bool] = []; view.resizeModeChanged = { changes.append($0) }
+        view.setPaneResizeMode(true)
+        XCTAssertFalse(view.isResizingPanes)
+        view.feed(text: "\u{1b}[?1002h\u{1b}[?1006h")
+        let toggle = view.gestureRecognizers?.first { $0.name == "terminal.pane.resize.toggle" } as? UITapGestureRecognizer
+        XCTAssertEqual(toggle?.numberOfTapsRequired, 2)
+        view.setPaneResizeMode(true)
+        let drag = view.gestureRecognizers?.first { $0.name == "terminal.mouse.drag" } as? UIPanGestureRecognizer
+        XCTAssertEqual(drag?.minimumNumberOfTouches, 1)
+        XCTAssertEqual(drag?.maximumNumberOfTouches, 1)
+        view.tapTouch(at: .zero); view.scrollTouch(lines: 1, at: .zero)
+        XCTAssertTrue(recorder.bytes.isEmpty)
+        view.beginMouseDrag(at: .zero)
+        view.setPaneResizeMode(false)
+        XCTAssertEqual(recorder.text, "\u{1b}[<0;1;1M\u{1b}[<0;1;1m")
+        XCTAssertEqual(drag?.minimumNumberOfTouches, 2)
+        XCTAssertEqual(changes, [true, false])
+        recorder.bytes = []
+        view.scrollTouch(lines: 1, at: .zero)
+        XCTAssertEqual(recorder.text, "\u{1b}[<64;1;1M")
+        XCTAssertFalse(view.isFirstResponder)
+    }
+    func testResizeModeEndsOnRemoteModeChangeAndSelection() {
+        let view = SafeTerminalView(frame: CGRect(x: 0, y: 0, width: 390, height: 300))
+        view.feed(text: "\u{1b}[?1002hSELECT ME")
+        view.setPaneResizeMode(true)
+        view.feed(text: "\u{1b}[?1002l")
+        XCTAssertFalse(view.isResizingPanes)
+        view.feed(text: "\u{1b}[?1002h")
+        XCTAssertFalse(view.isResizingPanes)
+        view.setPaneResizeMode(true)
+        view.selectAll(nil)
+        XCTAssertFalse(view.isResizingPanes)
+    }
     func testTwoFingerDragSendsPressMotionReleaseWithoutWheelOrKeyboard() {
         let view = SafeTerminalView(frame: CGRect(x: 0, y: 0, width: 390, height: 300))
         let recorder = ScrollRecorder(); view.terminalDelegate = recorder
@@ -66,7 +103,9 @@ import SwiftTerm
         let recorder = ScrollRecorder(); view.terminalDelegate = recorder
         view.feed(text: "\u{1b}[?1002h\u{1b}[?1006h")
         view.beginMouseDrag(at: .zero)
+        view.setPaneResizeMode(true)
         view.removeFromSuperview()
+        XCTAssertFalse(view.isResizingPanes)
         view.endMouseDrag()
         XCTAssertEqual(recorder.text, "\u{1b}[<0;1;1M\u{1b}[<0;1;1m")
     }

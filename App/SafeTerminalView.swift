@@ -45,6 +45,22 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
         if result { compositionChanged?() }
         return result
     }
+    var resizeModeChanged: ((Bool) -> Void)?
+    private(set) var isResizingPanes = false
+    private var resizeTap: UITapGestureRecognizer!
+    func setPaneResizeMode(_ enabled: Bool, sendRelease: Bool = true) {
+        endMouseDrag(sendRelease: sendRelease)
+        let enabled = enabled && canDragMouse
+        guard enabled != isResizingPanes else { return }
+        isResizingPanes = enabled
+        mouseDrag.minimumNumberOfTouches = enabled ? 1 : 2
+        mouseDrag.maximumNumberOfTouches = enabled ? 1 : 2
+        resizeModeChanged?(enabled)
+    }
+    @objc private func togglePaneResize(_ gesture: UITapGestureRecognizer) {
+        guard gesture.state == .ended else { return }
+        setPaneResizeMode(!isResizingPanes)
+    }
     private var mouseDrag: UIPanGestureRecognizer!
     private var dragPoint: CGPoint?
     var canDragMouse: Bool {
@@ -97,8 +113,19 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
         }
         touchTap.require(toFail: touchPan)
         addGestureRecognizer(touchTap)
+        resizeTap = UITapGestureRecognizer(target: self, action: #selector(togglePaneResize(_:)))
+        resizeTap.name = "terminal.pane.resize.toggle"
+        resizeTap.numberOfTapsRequired = 2
+        resizeTap.allowedTouchTypes = [NSNumber(value: UITouch.TouchType.direct.rawValue)]
+        resizeTap.delegate = self
+        for gesture in gestureRecognizers ?? [] where gesture is UITapGestureRecognizer {
+            gesture.require(toFail: resizeTap)
+        }
+        addGestureRecognizer(resizeTap)
+        touchPan.require(toFail: mouseDrag)
     }
     override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        if gestureRecognizer === resizeTap { return canDragMouse }
         if gestureRecognizer === mouseDrag { return canDragMouse }
         if gestureRecognizer === touchTap {
             let terminal = getTerminal()
@@ -107,11 +134,11 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
         }
         guard gestureRecognizer === touchPan else { return super.gestureRecognizerShouldBegin(gestureRecognizer) }
         let velocity = touchPan.velocity(in: self)
-        return abs(velocity.y) > abs(velocity.x) && scrollRoute != .local && scrollRoute != .selection
+        return !isResizingPanes && abs(velocity.y) > abs(velocity.x) && scrollRoute != .local && scrollRoute != .selection
     }
     override func selectionChanged(source: Terminal) {
         // Long-press Select stays local, including while the remote application produces output.
-        if selection.active { endMouseDrag() }
+        if selection.active { setPaneResizeMode(false) }
         allowMouseReporting = !selection.active
         super.selectionChanged(source: source)
     }
@@ -122,7 +149,7 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
     }
     func tapTouch(at point: CGPoint) {
         let terminal = getTerminal()
-        guard !selection.active, terminal.mouseMode != .off else { return }
+        guard !isResizingPanes, !selection.active, terminal.mouseMode != .off else { return }
         if UIMenuController.shared.isMenuVisible { UIMenuController.shared.hideMenu(); return }
         sendMouseEvent(0, at: point)
         if terminal.mouseMode != .x10 { sendMouseEvent(3, at: point) }
@@ -162,7 +189,7 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
         }
     }
     override func willMove(toWindow newWindow: UIWindow?) {
-        if newWindow == nil { endMouseDrag() }
+        if newWindow == nil { setPaneResizeMode(false) }
         super.willMove(toWindow: newWindow)
     }
     private func sendMouseEvent(_ flags: Int, at point: CGPoint) {
@@ -175,7 +202,7 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
     }
     override func mouseModeChanged(source: Terminal) {
         // SwiftTerm also calls this during initialization, before its terminal exists.
-        if dragPoint != nil && !canDragMouse { endMouseDrag() }
+        if (dragPoint != nil || isResizingPanes) && !canDragMouse { setPaneResizeMode(false) }
         // Keep SwiftTerm's pointer gesture separate from direct-touch gestures.
         let previous = Set((gestureRecognizers ?? []).map(ObjectIdentifier.init))
         super.mouseModeChanged(source: source)
@@ -189,14 +216,14 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
         let translation = gesture.translation(in: self).y
         let rowHeight = max(1, getOptimalFrameSize().height / CGFloat(max(1, getTerminal().rows)))
         let lines = Int((translation - lastScrollTranslation) / rowHeight)
-        guard lines != 0, dragPoint == nil else { return }
+        guard !isResizingPanes, lines != 0, dragPoint == nil else { return }
         lastScrollTranslation += CGFloat(lines) * rowHeight
         var point = gesture.location(in: self); point.y -= contentOffset.y
         scrollTouch(lines: lines, at: point)
     }
     /// Positive lines reveal older content. Normal-buffer scrolling stays with UIScrollView.
     func scrollTouch(lines: Int, at point: CGPoint) {
-        guard lines != 0, dragPoint == nil else { return }
+        guard !isResizingPanes, lines != 0, dragPoint == nil else { return }
         let terminal = getTerminal(), count = min(30, abs(lines))
         switch scrollRoute {
         case .local, .selection: return

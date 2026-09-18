@@ -18,7 +18,7 @@ Tap the session title in the terminal header to switch between open tabs for the
 
 Drag vertically in the terminal to scroll. Normal shells use local output history. Applications that request mouse input receive wheel events. Configured tmux sessions use server history even when mouse reporting is off; scrolling back to the bottom leaves copy mode. Long-press text selection remains available. The app does not change server-wide tmux settings. See [the input design and validation](docs/TERMINAL_INPUT.md).
 
-To resize a tmux pane, place two fingers with their midpoint on its border, then drag. One-finger drags still scroll. This requires tmux mouse mode and its border-drag binding. The app does not change server settings. Local text selection blocks remote dragging; clear the selection first.
+To resize a tmux pane, double-tap the terminal, then drag its border with one finger. Tap Done resizing or double-tap again to restore scrolling. You can also drag with two fingers outside resize mode, with their midpoint on the border. This requires tmux mouse mode and its border-drag binding. The app does not change server settings. Local text selection blocks remote dragging; clear the selection first.
 
 When tmux enables mouse input, tap a pane to select it. The keyboard can remain hidden. Long press to open the local text-selection menu. The app follows the server's effective mouse mode and bindings; it does not enable mouse support on the server for you.
 
