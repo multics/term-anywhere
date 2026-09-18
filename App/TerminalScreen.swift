@@ -78,11 +78,10 @@ struct TerminalScreen: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Section("Connection") {
-                        Text(session.status)
+                        Button("Disconnect", systemImage: "xmark.circle") { onDisconnect() }
                         Button("Sessions…", systemImage: "rectangle.on.rectangle") { showSessions?() }.disabled(showSessions == nil)
                         Button("Previous tab", systemImage: "chevron.left") { session.store?.stepTab(for: session.host.id, by: -1) }.keyboardShortcut(.leftArrow, modifiers: [.command, .option])
                         Button("Next tab", systemImage: "chevron.right") { session.store?.stepTab(for: session.host.id, by: 1) }.keyboardShortcut(.rightArrow, modifiers: [.command, .option])
-                        Button("Close tab", systemImage: "xmark.circle") { onDisconnect() }
                     }
                     Section("Terminal") {
                         if let message = session.scrollStatus { Text(message) }
