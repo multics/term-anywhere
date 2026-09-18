@@ -143,6 +143,7 @@ struct TerminalContainer: UIViewControllerRepresentable {
     }
     func updateUIViewController(_ controller: TerminalCoordinator, context: Context) {
         session.updateTerminalColors()
+        controller.updateKeyboardViewport()
     }
 }
 
@@ -150,6 +151,7 @@ struct TerminalContainer: UIViewControllerRepresentable {
     weak var session: TerminalSession?
     let terminal: TerminalView
     private var keyboardFrame: CGRect?
+    let compositionPreview = CompositionPreview()
     init(session: TerminalSession) { self.session = session; self.terminal = session.terminal; super.init(nibName: nil, bundle: nil) }
     required init?(coder: NSCoder) { fatalError("init(coder:) is unavailable") }
     override func loadView() {
@@ -170,6 +172,17 @@ struct TerminalContainer: UIViewControllerRepresentable {
             self.present(alert, animated: true)
         }
         terminal.inputAccessoryView = nil
+        compositionPreview.isHidden = true
+        compositionPreview.isUserInteractionEnabled = false
+        compositionPreview.accessibilityIdentifier = "terminal.composition"
+        compositionPreview.accessibilityLabel = "Uncommitted text"
+        compositionPreview.isAccessibilityElement = true
+        compositionPreview.textColor = .label
+        compositionPreview.backgroundColor = .secondarySystemBackground
+        compositionPreview.layer.cornerRadius = 4
+        compositionPreview.clipsToBounds = true
+        view.addSubview(compositionPreview)
+        (terminal as? SafeTerminalView)?.compositionChanged = { [weak self] in self?.updateKeyboardViewport() }
         session?.updateTerminalColors()
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardFrameChanged), name: UIResponder.keyboardWillChangeFrameNotification, object: nil)
@@ -194,6 +207,20 @@ struct TerminalContainer: UIViewControllerRepresentable {
         let cursorBottom = CGFloat(terminal.getTerminal().getCursorLocation().y + 1) * cellHeight
         let shift = min(max(0, view.bounds.height - visibleHeight), max(0, cursorBottom - visibleHeight))
         terminal.transform = CGAffineTransform(translationX: 0, y: -shift)
+        let marked = (terminal as? SafeTerminalView)?.compositionText ?? ""
+        compositionPreview.isHidden = marked.isEmpty || !terminal.isFirstResponder || session?.isLive != true
+        guard !compositionPreview.isHidden else { compositionPreview.text = nil; return }
+        compositionPreview.font = .monospacedSystemFont(ofSize: max(16, terminal.font.pointSize), weight: .regular)
+        if compositionPreview.text != marked {
+            compositionPreview.attributedText = NSAttributedString(string: marked, attributes: [.underlineStyle: NSUnderlineStyle.single.rawValue])
+        }
+        compositionPreview.accessibilityValue = marked
+        let size = compositionPreview.sizeThatFits(CGSize(width: max(0, view.bounds.width - 12), height: .greatestFiniteMagnitude))
+        let width = min(view.bounds.width, size.width + 12), height = size.height + 8
+        let cellWidth = terminal.getOptimalFrameSize().width / CGFloat(max(1, terminal.getTerminal().cols))
+        let x = min(CGFloat(terminal.getTerminal().getCursorLocation().x) * cellWidth, max(0, view.bounds.width - width))
+        let y = max(0, min(cursorBottom - cellHeight - shift, visibleHeight - height))
+        compositionPreview.frame = CGRect(x: x, y: y, width: width, height: height)
     }
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
@@ -206,12 +233,14 @@ struct TerminalContainer: UIViewControllerRepresentable {
         viewIfLoaded?.endEditing(true)
         dismiss(animated: false)
         (terminal as? SafeTerminalView)?.approvePaste = nil
+        (terminal as? SafeTerminalView)?.compositionChanged = nil
     }
     @objc private func keyboardFrameChanged(_ notification: Notification) {
         keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
         updateKeyboardViewport()
     }
     @objc private func keyboardWillShow() {
+        (terminal as? SafeTerminalView)?.observeComposition()
         if terminal.isFirstResponder { session?.keyboardVisible = true }
     }
     @objc private func keyboardWillHide() { session?.keyboardVisible = false; keyboardFrame = nil; updateKeyboardViewport() }
@@ -228,4 +257,8 @@ struct TerminalContainer: UIViewControllerRepresentable {
     func bell(source: TerminalView) {}
     func rangeChanged(source: TerminalView, startY: Int, endY: Int) {}
     deinit { NotificationCenter.default.removeObserver(self) }
+}
+
+final class CompositionPreview: UILabel {
+    override func drawText(in rect: CGRect) { super.drawText(in: rect.insetBy(dx: 6, dy: 4)) }
 }

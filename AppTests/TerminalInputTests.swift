@@ -353,6 +353,86 @@ import TermCore
         terminal.insertText("你")
         XCTAssertEqual(String(decoding: output.data, as: UTF8.self), "你")
     }
+    func testCompositionPreviewTracksEditingCommitAndCancellation() async throws {
+        let store = AppStore(); store.configuration.onChange = nil
+        let host = Host(name: "Pinyin fixture", address: "example.invalid", username: "fixture", keyID: "missing-fixture")
+        let session = store.session(for: host); session.hasStarted = true; session.isLive = true
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let window = UIWindow(windowScene: scene)
+        let controller = TerminalCoordinator(session: session); session.coordinator = controller
+        window.rootViewController = controller; window.makeKeyAndVisible()
+        defer { store.closeSession(host.id); window.isHidden = true; window.rootViewController = nil }
+        try await Task.sleep(for: .milliseconds(300))
+        let terminal = try XCTUnwrap(session.terminal as? SafeTerminalView)
+        let output = InputRecorder(); terminal.terminalDelegate = output
+        session.showKeyboard()
+        try await Task.sleep(for: .milliseconds(500))
+        XCTAssertTrue(terminal.isFirstResponder)
+        let rows = terminal.getTerminal().rows, cols = terminal.getTerminal().cols
+        terminal.feed(text: "\u{1b}[999;999H")
+        let buffer = terminal.getTerminal().getBufferAsData()
+        terminal.setMarkedText("nihao", selectedRange: NSRange(location: 5, length: 0))
+        XCTAssertEqual(controller.compositionPreview.text, "nihao")
+        XCTAssertFalse(controller.compositionPreview.isHidden)
+        XCTAssertTrue(output.data.isEmpty)
+        XCTAssertEqual(terminal.getTerminal().getBufferAsData(), buffer)
+        XCTAssertLessThanOrEqual(controller.compositionPreview.frame.maxX, controller.view.bounds.width)
+        XCTAssertLessThanOrEqual(controller.compositionPreview.frame.maxY, controller.view.keyboardLayoutGuide.layoutFrame.minY + 1)
+        terminal.deleteBackward()
+        XCTAssertEqual(controller.compositionPreview.text, "niha")
+        XCTAssertTrue(output.data.isEmpty)
+        terminal.setMarkedText("ni'hao", selectedRange: NSRange(location: 6, length: 0))
+        try await Task.sleep(for: .milliseconds(150))
+        let image = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in window.drawHierarchy(in: window.bounds, afterScreenUpdates: true) }
+        let attachment = XCTAttachment(image: image); attachment.name = "Visible Pinyin composition"; attachment.lifetime = .keepAlways; add(attachment)
+        terminal.insertText("你好")
+        XCTAssertEqual(output.data, Data("你好".utf8))
+        XCTAssertTrue(controller.compositionPreview.isHidden)
+        terminal.setMarkedText("cancel", selectedRange: NSRange(location: 6, length: 0))
+        terminal.setMarkedText(nil, selectedRange: NSRange(location: 0, length: 0))
+        XCTAssertTrue(controller.compositionPreview.isHidden)
+        XCTAssertEqual(output.data, Data("你好".utf8))
+        terminal.setMarkedText("unfinished", selectedRange: NSRange(location: 10, length: 0))
+        session.hideKeyboard()
+        XCTAssertTrue(controller.compositionPreview.isHidden)
+        XCTAssertNil(terminal.compositionText)
+        XCTAssertEqual(output.data, Data("你好".utf8))
+        XCTAssertEqual(terminal.getTerminal().rows, rows)
+        XCTAssertEqual(terminal.getTerminal().cols, cols)
+        XCTAssertEqual(terminal.getTerminal().getBufferAsData(), buffer)
+    }
+    func testMarkedTextDeletionStaysLocalAndPreservesUnicode() {
+        let terminal = SafeTerminalView(frame: CGRect(x: 0, y: 0, width: 400, height: 300))
+        let output = InputRecorder(); terminal.terminalDelegate = output
+        terminal.setMarkedText("nihao", selectedRange: NSRange(location: 2, length: 2))
+        terminal.deleteBackward()
+        XCTAssertEqual(terminal.compositionText, "nio")
+        terminal.setMarkedText("ni😊", selectedRange: NSRange(location: 4, length: 0))
+        terminal.deleteBackward()
+        XCTAssertEqual(terminal.compositionText, "ni")
+        terminal.setMarkedText("ni", selectedRange: NSRange(location: 0, length: 0))
+        terminal.deleteBackward()
+        XCTAssertEqual(terminal.compositionText, "ni")
+        terminal.setMarkedText("n", selectedRange: NSRange(location: 1, length: 0))
+        terminal.deleteBackward()
+        XCTAssertNil(terminal.compositionText)
+        XCTAssertTrue(output.data.isEmpty)
+    }
+    func testCompositionObserverForwardsNativeInputDelegateCallbacks() {
+        let terminal = SafeTerminalView(frame: CGRect(x: 0, y: 0, width: 400, height: 300))
+        let native = TextInputDelegateRecorder()
+        terminal.inputDelegate = native
+        terminal.observeComposition()
+        var observed: String?
+        terminal.compositionChanged = { observed = terminal.compositionText }
+        terminal.setMarkedText("pin", selectedRange: NSRange(location: 3, length: 0))
+        XCTAssertEqual(observed, "pin")
+        XCTAssertEqual(native.calls, ["selectionWillChange", "textWillChange", "textDidChange", "selectionDidChange"])
+        let output = InputRecorder(); terminal.terminalDelegate = output
+        terminal.unmarkText()
+        XCTAssertNil(observed)
+        XCTAssertEqual(output.data, Data("pin".utf8), "An explicit unmark commits exactly once")
+    }
     func testControlModifierIsOneShot() {
         let terminal = SafeTerminalView(frame: CGRect(x: 0, y: 0, width: 393, height: 500))
         let output = InputRecorder(); terminal.terminalDelegate = output
@@ -387,4 +467,13 @@ import TermCore
     func requestOpenLink(source: TerminalView, link: String, params: [String: String]) {}
     func bell(source: TerminalView) {}
     func rangeChanged(source: TerminalView, startY: Int, endY: Int) {}
+}
+
+@MainActor private final class TextInputDelegateRecorder: NSObject, UITextInputDelegate {
+    var calls: [String] = []
+    func conversationContext(_ context: UIConversationContext?, didChange textInput: UITextInput?) { calls.append("conversationContext") }
+    func selectionWillChange(_ textInput: UITextInput?) { calls.append("selectionWillChange") }
+    func selectionDidChange(_ textInput: UITextInput?) { calls.append("selectionDidChange") }
+    func textWillChange(_ textInput: UITextInput?) { calls.append("textWillChange") }
+    func textDidChange(_ textInput: UITextInput?) { calls.append("textDidChange") }
 }

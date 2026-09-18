@@ -5,6 +5,46 @@ import SwiftTerm
 final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
     var approvePaste: ((String, @escaping () -> Void) -> Void)?
     var tmuxScrollHandler: ((Int) -> Void)?
+    var compositionChanged: (() -> Void)?
+    private let compositionDelegate = CompositionInputDelegate()
+    var compositionText: String? { markedTextRange.flatMap { text(in: $0) } }
+
+    func observeComposition() {
+        // UIKit owns the input delegate. Forward all of its callbacks unchanged.
+        if inputDelegate !== compositionDelegate {
+            compositionDelegate.forward = inputDelegate
+            inputDelegate = compositionDelegate
+        }
+        compositionDelegate.didChange = { [weak self] in self?.compositionChanged?() }
+        compositionChanged?()
+    }
+    override func becomeFirstResponder() -> Bool {
+        let result = super.becomeFirstResponder()
+        if result { observeComposition() }
+        return result
+    }
+    override func deleteBackward() {
+        guard let marked = markedTextRange, let text = text(in: marked), let selected = selectedTextRange else {
+            super.deleteBackward(); return
+        }
+        // SwiftTerm's default path sends backspaces even for text that was never sent.
+        let value = text as NSString
+        let start = max(0, min(value.length, offset(from: marked.start, to: selected.start)))
+        let end = max(start, min(value.length, offset(from: marked.start, to: selected.end)))
+        guard end > start || start > 0 else { return }
+        let range = end > start
+            ? value.rangeOfComposedCharacterSequences(for: NSRange(location: start, length: end - start))
+            : value.rangeOfComposedCharacterSequence(at: start - 1)
+        let remaining = value.replacingCharacters(in: range, with: "")
+        setMarkedText(remaining.isEmpty ? nil : remaining, selectedRange: NSRange(location: range.location, length: 0))
+    }
+    override func resignFirstResponder() -> Bool {
+        // Leaving the terminal must not send an unfinished composition to the server.
+        if markedTextRange != nil { setMarkedText(nil, selectedRange: NSRange(location: 0, length: 0)) }
+        let result = super.resignFirstResponder()
+        if result { compositionChanged?() }
+        return result
+    }
     private var touchPan: UIPanGestureRecognizer!
     private var touchTap: UITapGestureRecognizer!
     private var lastScrollTranslation: CGFloat = 0
@@ -28,6 +68,7 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
         configureTouchPan()
     }
     private func configureTouchPan() {
+        observeComposition()
         touchPan = UIPanGestureRecognizer(target: self, action: #selector(scrollPan(_:)))
         touchPan.maximumNumberOfTouches = 1
         touchPan.allowedTouchTypes = [NSNumber(value: UITouch.TouchType.direct.rawValue)]
@@ -125,5 +166,21 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
         if text.contains("\n") || text.contains("\r") || text.contains("\u{1b}") {
             approvePaste?(text, insert)
         } else { insert() }
+    }
+}
+
+@MainActor private final class CompositionInputDelegate: NSObject, UITextInputDelegate {
+    weak var forward: UITextInputDelegate?
+    var didChange: (() -> Void)?
+    func conversationContext(_ context: UIConversationContext?, didChange textInput: UITextInput?) {
+        forward?.conversationContext(context, didChange: textInput)
+    }
+    func selectionWillChange(_ textInput: UITextInput?) { forward?.selectionWillChange(textInput) }
+    func selectionDidChange(_ textInput: UITextInput?) {
+        forward?.selectionDidChange(textInput); didChange?()
+    }
+    func textWillChange(_ textInput: UITextInput?) { forward?.textWillChange(textInput) }
+    func textDidChange(_ textInput: UITextInput?) {
+        forward?.textDidChange(textInput); didChange?()
     }
 }

@@ -39,3 +39,13 @@ Pane-tap validation on 2026-09-12: all 23 automated regressions passed in Simula
 - [SwiftTerm iOS terminal implementation](https://github.com/migueldeicaza/SwiftTerm/blob/main/Sources/SwiftTerm/iOS/iOSTerminalView.swift). The local pinned checkout is the implementation authority for this app.
 - [Xterm control sequences](https://www.invisible-island.net/xterm/ctlseqs/ctlseqs.html): mouse-wheel encoding and Alternate Scroll mode.
 - [tmux manual](https://man.openbsd.org/tmux): pane history, copy mode, mouse events, and targeted commands.
+
+## Local text composition
+
+SwiftTerm stores marked text but does not draw it. The app displays a temporary native label near the cursor. The label stays within the visible terminal area above the docked keyboard. It does not change the terminal grid or output buffer.
+
+A forwarding input delegate observes marked-text changes and retains the native delegate callbacks. Candidate commit uses SwiftTerm's input path. Backspace edits marked text locally, including selections and complete Unicode characters. It must not send Backspace for text that was never sent to the server. Leaving the terminal clears uncommitted text.
+
+Hosted tests cover the visible preview with the software keyboard, local editing, candidate text commit, cancellation, keyboard dismissal, Unicode deletion, and native delegate forwarding. These tests call the text-input APIs directly. They do not replace a manual Pinyin candidate-selection check.
+
+Validation on 2026-09-18: All 24 input, tab, and composition tests pass on iPhone Simulator and physical iPhone 17 Pro Max. Four selected iPad Simulator checks pass. The preview render was inspected. The signed combined build is installed on iPhone. Physical iPad deployment remains deferred because the device is unavailable.

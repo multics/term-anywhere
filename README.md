@@ -8,6 +8,8 @@ The iPhone app stays in landscape right, including the Hosts screen. Turning the
 
 On iPhone and iPad, tap the keyboard button beside the terminal's tools menu to hide the keyboard and see more output. Tap it again to resume typing. The connection and terminal output stay available. The keyboard and Hosts sidebar do not change the terminal rows or columns. The sidebar overlays the terminal. When the keyboard covers the cursor, the terminal view moves up without changing its grid. Hide the keyboard to see the full screen.
 
+With Pinyin and other composing keyboards, an underlined local preview shows the uncommitted text near the cursor. Only committed text goes to the server. Backspace edits the composition locally. Leaving the terminal cancels unfinished text.
+
 Tap the session title in the terminal header to switch between open tabs for the same host. The panel offers **Open session…** and **New session…**. Selecting an already-open session returns to its tab. Each tab keeps its connection and output. Closing a tab leaves the remote tmux session running; the host-row Disconnect action closes all local tabs for that host. Use Command-Option-Left or Command-Option-Right with a hardware keyboard to switch tabs.
 
 Drag vertically in the terminal to scroll. Normal shells use local output history. Applications that request mouse input receive wheel events. Configured tmux sessions use server history even when mouse reporting is off; scrolling back to the bottom leaves copy mode. Long-press text selection remains available. The app does not change server-wide tmux settings. See [the input design and validation](docs/TERMINAL_INPUT.md).
