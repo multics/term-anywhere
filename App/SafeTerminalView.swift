@@ -118,8 +118,11 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
         mouseDrag.allowedTouchTypes = [NSNumber(value: UITouch.TouchType.direct.rawValue)]
         mouseDrag.delegate = self
         addGestureRecognizer(mouseDrag)
-        panGestureRecognizer.require(toFail: mouseDrag)
+        // Separate by touch count. Waiting for a two-finger pan to fail can
+        // hold a one-finger scroll until the finger is lifted.
+        panGestureRecognizer.maximumNumberOfTouches = 1
         touchPan = UIPanGestureRecognizer(target: self, action: #selector(scrollPan(_:)))
+        touchPan.name = "terminal.touch.scroll"
         touchPan.maximumNumberOfTouches = 1
         touchPan.allowedTouchTypes = [NSNumber(value: UITouch.TouchType.direct.rawValue)]
         touchPan.delegate = self
@@ -144,7 +147,6 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
             gesture.require(toFail: resizeTap)
         }
         addGestureRecognizer(resizeTap)
-        touchPan.require(toFail: mouseDrag)
     }
     override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
         if gestureRecognizer === resizeTap { return isResizingPanes || (paneResizeAvailable && canDragMouse) }

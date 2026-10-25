@@ -99,3 +99,7 @@ Read the layout when resize mode opens and refresh it after a drag ends. The too
 Send motion only when the target terminal cell changes. Preserve the first motion and final release. Pane dimensions use terminal cells, so resizing changes in whole columns or rows. Hold the keyboard viewport translation while a drag is active or waiting for its border; restore cursor-following after release. This prevents server cursor redraws from changing the touch coordinate mapping. Network latency still affects when a remote redraw arrives.
 
 Responsiveness validation: 48 automated checks pass on iPhone Simulator and physical iPhone; 21 selected checks pass on iPad Simulator, with one interactive-test skip in each run. Tests cover prepared layout reuse and invalidation, 120 sub-cell movements without duplicate mouse events, final release order, and fixed viewport translation during a drag. The signed app is installed and launched on iPhone. Real-network latency and physical gesture feel have not been measured.
+
+### One-finger scroll ownership
+
+Do not make a one-finger pan wait for the two-finger mouse-drag recognizer to fail. That recognizer can remain possible until finger release. Limit both native history scrolling and custom remote scrolling to one finger. Outside resize mode, two fingers belong to mouse dragging. Inside resize mode, disable the competing scrolling recognizers as before. Retain native scrolling as the fallback when the remote-scroll recognizer rejects local-history input.
