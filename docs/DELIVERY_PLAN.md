@@ -158,3 +158,17 @@ The user authorized deletion and recreation after an old commit URL remained acc
 - Implementation: Move the existing current-tab close/disconnect action to the first row and label it Disconnect. Remove the status text and duplicate Close tab row. Reuse the existing session cleanup behavior.
 - Acceptance: Review menu order, run existing disconnect/tab checks, deploy to iPhone, commit and push. Physical iPad remains deferred; prior resize responsiveness hands-on check remains open.
 - Status: Implemented. Source review confirms Disconnect is the first action and the status row is removed. All seven existing disconnect and tab checks pass on iPhone Simulator and physical iPhone 17 Pro Max. Signed build and whitespace checks pass. Installed and normally launched on iPhone. Evidence: `.build/disconnect-menu-simulator.log`, `.build/disconnect-menu-iphone.log`, `.build/disconnect-menu-build.log`, `.build/disconnect-menu-install.log`, and `.build/disconnect-menu-launch.log`. Physical iPad deployment and the prior manual resize-responsiveness check remain deferred/open respectively.
+
+## iPad update (2026-10-25)
+
+- Request: Update Term Anywhere on the physical iPad.
+- Scope: Deploy current source revision 8232a90, including the previously deferred iPad changes; preserve installed app data.
+- Acceptance: Signed build, device installation, normal launch and process readback; relevant hosted iPad checks if reachable. Keep manual resize feel separate from automated evidence.
+- Status: Signed build from 8232a90 passes with Xcode 27.1 after installing the missing Metal Toolchain. The physical iPad mini (6th generation), iPadOS 27.0.1, is connected and unlocked. The update is installed over the existing app and normal launch succeeded. All 48 automated terminal, input, lifecycle, navigation, and tab checks passed on the physical iPad; the opt-in interactive test was skipped. Normal launch after testing and process readback pass. The prior physical iPad installation blocker is resolved; hands-on resize feel and the newly reported swipe-scrolling issue remain open. Additional evidence: `.build/ipad-update-tests.log`, `.build/ipad-update-final-launch.log`, `.build/ipad-update-processes.log`. Evidence: `.build/ipad-update-build.log`, `.build/ipad-update-install.log`, `.build/ipad-update-launch.log`.
+
+## Feature 29: Restore one-finger terminal scrolling
+
+- Request: Vertical one-finger swipes do not scroll terminal output, especially in tmux. Match mouse-wheel scrolling on Mac.
+- Scope: Normal buffer, tmux mouse reporting and tmux fallback; preserve pane resize mode and text selection.
+- Acceptance: Reproduce gesture ownership failure; fix one-finger scroll delivery, validate local/remote scroll behavior, deploy to iPad, commit and push.
+- Status: Queued after completion of the active iPad update checks. Next action: inspect pan recognizer failure dependencies and routing.
