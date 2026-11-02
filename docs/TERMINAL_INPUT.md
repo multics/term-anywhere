@@ -107,3 +107,15 @@ Do not make a one-finger pan wait for the two-finger mouse-drag recognizer to fa
 ## Toolbar-free terminal
 
 The detail view hides its navigation bar. A floating side control opens Hosts and sessions or toggles the keyboard. The sidebar contains the current host's open tabs, server-session discovery and creation, Disconnect, terminal preferences, and tmux controls. Server-session navigation stays inside the sidebar. The existing prominent-detail split view overlays the terminal without changing its grid. Pane resize mode has a temporary floating exit button.
+
+## Floating keys
+
+Use a native six-key overlay for Esc, Shift and arrows. Keep the 44-point drag handle separate from the 44-point key buttons. Dragging updates position directly and sends no input. Store normalized position on the device; constrain placement to safe bounds and avoid the keyboard. The controls are siblings of the terminal, so touches outside them retain terminal scrolling and resizing.
+
+Shift can be armed for one key or held across arrow presses. Repeated arrow input begins after 400 ms and repeats every 75 ms. Stop on touch release, cancellation, hide, background, tab departure, or disconnect. Clear armed Shift on those lifecycle transitions. Esc does not repeat. Native button actions do not summon the software keyboard.
+
+Use normal or application cursor sequences as negotiated. Shift arrows use CSI 1;2 plus the direction letter. Respect enhanced keyboard disambiguation and event reporting for applications that request them, including Esc press/release. The isolated `Scripts/check-floating-keys.py` verifies all four arrows, four Shift-arrow combinations, and Esc against tmux key bindings. This verifies protocol delivery, not actions within the user's live Codex session.
+
+The sidebar toggle sets the current tab's visibility and the device default for new tabs. Existing tabs keep their values. Default to visible when no preference exists. Palette visibility and movement do not change terminal layout constraints.
+
+Floating-key validation: 52 automated checks pass on Simulator and both physical devices, with the opt-in interactive test skipped. Native-button tests verify a tap sends Esc once, Shift latch and held combinations, cursor modes, enhanced Esc events, repeated-arrow cancellation, 44-point targets, visibility, and stable terminal rows/columns. Geometry tests and a software-keyboard check verify safe positioning. Rendered screenshots were inspected. Isolated tmux accepts all nine arrow, Shift-arrow, and Esc cases. Both devices have the signed build and pass normal launch/process readback. Live Codex behavior and physical drag comfort remain user checks.

@@ -24,6 +24,7 @@
 		37C5060F464070D13999A5D5 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DDCA7CB2E722CB905E65133 /* SettingsView.swift */; };
 		3C4B87568267675A90EE9B36 /* HostRowActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF5FC9D9CB7126DC047ED72 /* HostRowActions.swift */; };
 		3C523905473FCAC122224DDC /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 225A9D04BBE0D1FEF61BB42B /* KeychainStore.swift */; };
+		3C7B1322B5F90530FFFB95BC /* FloatingKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10BB13C214C1E92EC5575C7 /* FloatingKeys.swift */; };
 		3C9DC946747A5A918E7E7862 /* OpenSSL.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 02FB853CEB4CEF98DD4067A8 /* OpenSSL.xcframework */; };
 		3F82813CE7152753CF45EA7C /* TermAnywhereApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C6061EAB216FF2EEA28CCBF /* TermAnywhereApp.swift */; };
 		4192A4191370F46702255DAB /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 225A9D04BBE0D1FEF61BB42B /* KeychainStore.swift */; };
@@ -284,6 +285,7 @@
 		D6716B694AAC9F3691D1CE69 /* ConfigurationNotificationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigurationNotificationTests.swift; sourceTree = "<group>"; };
 		D8B9E09F19190D0B16DC87F9 /* ExternalSSHSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalSSHSession.swift; sourceTree = "<group>"; };
 		DFEE8DFA113E47D9BF83387A /* MacHostListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacHostListView.swift; sourceTree = "<group>"; };
+		E10BB13C214C1E92EC5575C7 /* FloatingKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingKeys.swift; sourceTree = "<group>"; };
 		E260444A780A9616953992ED /* TerminalSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalSession.swift; sourceTree = "<group>"; };
 		E29EA05109ED0B03B1A30C29 /* TermAnywhere.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TermAnywhere.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E30A2C523DA22B128ED2B6C8 /* TermAnywhereMacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TermAnywhereMacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -361,6 +363,7 @@
 				87E209B7B94DD050DBE71C47 /* Assets.xcassets */,
 				F95E071FF0A5BB5E041CC047 /* ConfigurationSync.swift */,
 				EEC4435E05FB8B4F13FF3093 /* CredentialsView.swift */,
+				E10BB13C214C1E92EC5575C7 /* FloatingKeys.swift */,
 				485E2420C5CAD0E555FE32D7 /* HostEditor.swift */,
 				5AE5D0544E9F4F81025CEFC7 /* HostListView.swift */,
 				AAF5FC9D9CB7126DC047ED72 /* HostRowActions.swift */,
@@ -841,6 +844,7 @@
 			files = (
 				0C0DBF301BD839D14621074B /* ConfigurationSync.swift in Sources */,
 				CE2A1AED6D6A91ED1887D674 /* CredentialsView.swift in Sources */,
+				3C7B1322B5F90530FFFB95BC /* FloatingKeys.swift in Sources */,
 				653B53C79A61D48BA83561A1 /* HostEditor.swift in Sources */,
 				ECAAC86BE09E4E1D58B39B86 /* HostListView.swift in Sources */,
 				A0EF4EA79CE957C8880B7F82 /* HostRowActions.swift in Sources */,

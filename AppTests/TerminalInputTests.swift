@@ -5,6 +5,105 @@ import TermCore
 @testable import TermAnywhere
 
 @MainActor final class TerminalInputTests: XCTestCase {
+    func testFloatingKeysEncodeArrowsShiftEscapeAndNegotiatedModes() {
+        let store = AppStore(); store.configuration.onChange = nil
+        let session = TerminalSession(host: Host(name: "Keys", address: "example.invalid"), store: store)
+        let previous = UserDefaults.standard.object(forKey: "floatingKeys.visible")
+        defer { session.disconnect(); UserDefaults.standard.set(previous, forKey: "floatingKeys.visible") }
+        session.setFloatingKeysVisible(true); session.isLive = true
+        let output = InputRecorder(); session.terminal.terminalDelegate = output
+        let input = session.floatingKeyInput
+        for key: FloatingTerminalKey in [.up, .down, .left, .right, .escape] { input.press(key); input.release() }
+        XCTAssertEqual(String(decoding: output.data, as: UTF8.self), "\u{1b}[A\u{1b}[B\u{1b}[D\u{1b}[C\u{1b}")
+        output.data = Data()
+        input.shiftDown(); input.shiftUp()
+        XCTAssertTrue(input.shifted)
+        input.press(.up); input.release()
+        XCTAssertFalse(input.shifted)
+        input.press(.up); input.release()
+        input.shiftDown(); input.press(.left); input.release(); input.press(.right); input.release(); input.shiftUp()
+        XCTAssertFalse(input.shifted)
+        XCTAssertEqual(String(decoding: output.data, as: UTF8.self), "\u{1b}[1;2A\u{1b}[A\u{1b}[1;2D\u{1b}[1;2C")
+        output.data = Data()
+        session.terminal.feed(text: "\u{1b}[?1h")
+        input.press(.down); input.release()
+        XCTAssertEqual(String(decoding: output.data, as: UTF8.self), "\u{1b}OB")
+        output.data = Data()
+        session.terminal.feed(text: "\u{1b}[>3u")
+        input.press(.escape); input.release()
+        XCTAssertEqual(String(decoding: output.data, as: UTF8.self), "\u{1b}[27;1u\u{1b}[27;1:3u")
+        XCTAssertFalse(session.terminal.isFirstResponder, "Floating keys must not open the software keyboard")
+    }
+    func testFloatingArrowRepeatStopsOnReleaseHideBackgroundAndDisconnect() async throws {
+        let store = AppStore(); store.configuration.onChange = nil
+        let session = TerminalSession(host: Host(name: "Repeat", address: "example.invalid"), store: store)
+        let previous = UserDefaults.standard.object(forKey: "floatingKeys.visible")
+        defer { session.disconnect(); UserDefaults.standard.set(previous, forKey: "floatingKeys.visible") }
+        session.setFloatingKeysVisible(true); session.isLive = true
+        let output = InputRecorder(); session.terminal.terminalDelegate = output
+        let input = session.floatingKeyInput
+        input.press(.down)
+        try await Task.sleep(for: .milliseconds(510))
+        XCTAssertGreaterThanOrEqual(output.data.count, 6)
+        input.release()
+        let afterRelease = output.data
+        try await Task.sleep(for: .milliseconds(120))
+        XCTAssertEqual(output.data, afterRelease)
+        for stop in [{ session.setFloatingKeysVisible(false) }, { session.prepareForBackground() }, { session.disconnect() }] {
+            input.shiftDown(); input.shiftUp(); input.press(.up)
+            stop()
+            let stopped = output.data
+            try await Task.sleep(for: .milliseconds(450))
+            XCTAssertEqual(output.data, stopped)
+            XCTAssertFalse(input.shifted)
+            session.setFloatingKeysVisible(true)
+        }
+        let disconnected = output.data
+        input.press(.escape); input.release()
+        XCTAssertEqual(output.data, disconnected)
+    }
+    func testFloatingPaletteStaysInsideBoundsAndAboveKeyboard() {
+        let bounds = CGRect(x: 0, y: 0, width: 800, height: 400)
+        let keyboard = CGRect(x: 0, y: 240, width: 800, height: 160)
+        let origin = FloatingKeyPalette.constrainedOrigin(CGPoint(x: 900, y: 800), in: bounds, avoiding: keyboard)
+        let rect = CGRect(origin: origin, size: FloatingKeyPalette.paletteSize)
+        XCTAssertTrue(bounds.contains(rect))
+        XCTAssertLessThanOrEqual(rect.maxY, keyboard.minY)
+        XCTAssertEqual(FloatingKeyPalette.constrainedOrigin(CGPoint(x: -100, y: -200), in: bounds), .zero)
+    }
+    func testFloatingPaletteVisibilityAndNativeButtonsPreserveTerminalGrid() async throws {
+        let store = AppStore(); store.configuration.onChange = nil
+        let previous = UserDefaults.standard.object(forKey: "floatingKeys.visible")
+        UserDefaults.standard.removeObject(forKey: "floatingKeys.visible")
+        let session = TerminalSession(host: Host(name: "Palette", address: "example.invalid"), store: store)
+        session.hasStarted = true; session.isLive = true
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let window = UIWindow(windowScene: scene)
+        let controller = TerminalCoordinator(session: session); session.coordinator = controller
+        window.rootViewController = controller; window.makeKeyAndVisible()
+        defer { session.disconnect(); window.isHidden = true; window.rootViewController = nil; UserDefaults.standard.set(previous, forKey: "floatingKeys.visible") }
+        try await Task.sleep(for: .milliseconds(300))
+        let palette = try XCTUnwrap(controller.keyPalette)
+        XCTAssertFalse(palette.isHidden)
+        let rows = session.terminal.getTerminal().rows, cols = session.terminal.getTerminal().cols
+        func buttons(_ view: UIView) -> [UIButton] { view.subviews.flatMap { ($0 as? UIButton).map { [$0] } ?? buttons($0) } }
+        let all = buttons(palette)
+        XCTAssertEqual(all.count, 6)
+        XCTAssertTrue(all.allSatisfy { $0.bounds.width >= 44 && $0.bounds.height >= 44 })
+        let output = InputRecorder(); session.terminal.terminalDelegate = output
+        let esc = try XCTUnwrap(all.first { $0.tag == FloatingTerminalKey.escape.rawValue })
+        esc.sendActions(for: .touchDown); esc.sendActions(for: .touchUpInside); esc.sendActions(for: .primaryActionTriggered)
+        XCTAssertEqual(output.data, Data([27]), "A normal native tap must send Escape only once")
+        session.terminal.feed(text: "Floating controls leave all terminal rows available.\r\n")
+        let picture = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in window.drawHierarchy(in: window.bounds, afterScreenUpdates: true) }
+        let attachment = XCTAttachment(image: picture); attachment.name = "Floating six-key palette"; attachment.lifetime = .keepAlways; add(attachment)
+        session.setFloatingKeysVisible(false); controller.updateKeyboardViewport()
+        XCTAssertTrue(palette.isHidden)
+        session.setFloatingKeysVisible(true); controller.updateKeyboardViewport()
+        XCTAssertFalse(palette.isHidden)
+        XCTAssertEqual(session.terminal.getTerminal().rows, rows)
+        XCTAssertEqual(session.terminal.getTerminal().cols, cols)
+    }
     func testPreparedPaneLayoutIsReusedAndDiscardedOnModeExit() async throws {
         let store = AppStore(); store.configuration.onChange = nil
         let host = Host(name: "Resize fixture", address: "example.invalid", username: "fixture", keyID: "missing", tmuxSession: "fixture")
@@ -249,6 +348,10 @@ import TermCore
         let viewport = try XCTUnwrap(session.coordinator)
         XCTAssertLessThan(viewport.view.keyboardLayoutGuide.layoutFrame.minY, viewport.view.bounds.height,
                           "The test must show the software keyboard")
+        if let palette = viewport.keyPalette, !palette.isHidden {
+            XCTAssertLessThanOrEqual(palette.frame.maxY, viewport.view.keyboardLayoutGuide.layoutFrame.minY + 1,
+                                     "Floating keys must stay above the software keyboard")
+        }
         let cursorBottom = CGFloat(session.terminal.getTerminal().getCursorLocation().y + 1)
             * session.terminal.getOptimalFrameSize().height / CGFloat(session.terminal.getTerminal().rows)
         XCTAssertLessThanOrEqual(cursorBottom + session.terminal.transform.ty,

@@ -14,9 +14,20 @@ import TermCore
     private var paneLayoutTask: Task<String?, Never>?
     private var paneLayoutRequest = UUID()
     func finishPaneResize() { (terminal as? SafeTerminalView)?.setPaneResizeMode(false) }
+    let floatingKeyInput = FloatingKeyInput()
+    @Published private(set) var floatingKeysVisible = true
+    func setFloatingKeysVisible(_ visible: Bool) {
+        floatingKeyInput.reset()
+        floatingKeysVisible = visible
+        UserDefaults.standard.set(visible, forKey: "floatingKeys.visible")
+        floatingKeyInput.enabled = visible && isLive
+    }
     @Published var status = "Disconnected"
     @Published var isLive = false {
-        didSet { (terminal as? SafeTerminalView)?.paneResizeAvailable = isLive && !host.tmuxSession.isEmpty }
+        didSet {
+            (terminal as? SafeTerminalView)?.paneResizeAvailable = isLive && !host.tmuxSession.isEmpty
+            floatingKeyInput.enabled = isLive && floatingKeysVisible
+        }
     }
     @Published var isConnecting = false
     @Published var error: String?
@@ -52,6 +63,7 @@ import TermCore
     private var requestedBackgroundTime = false
 
     func prepareForBackground() {
+        floatingKeyInput.reset()
         stopScrolling()
         (terminal as? SafeTerminalView)?.setPaneResizeMode(false)
         guard !requestedBackgroundTime, isLive || isConnecting else { return }
@@ -69,6 +81,14 @@ import TermCore
     init(host: TermCore.Host, store: AppStore) {
         self.host = host; self.store = store
         terminal = SafeTerminalView(frame: .zero)
+        floatingKeysVisible = UserDefaults.standard.object(forKey: "floatingKeys.visible") as? Bool ?? true
+        floatingKeyInput.emit = { [weak self] key, shifted, event in
+            guard let self, self.isLive, self.floatingKeysVisible else { return }
+            let t = self.terminal.getTerminal()
+            let text = key.sequence(shifted: shifted, applicationCursor: t.applicationCursor,
+                                    flags: t.keyboardEnhancementFlags, event: event)
+            if !text.isEmpty { self.terminal.send(txt: text) }
+        }
         (terminal as? SafeTerminalView)?.resizeModeChanged = { [weak self] enabled in
             guard let self else { return }
             self.isResizingPanes = enabled
@@ -392,6 +412,7 @@ import TermCore
         didClose("Connection lost while the app was inactive.")
     }
     private func resetModifiers() {
+        floatingKeyInput.reset()
         #if os(iOS)
         terminal.controlModifier = false; terminal.metaModifier = false
         #endif

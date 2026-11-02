@@ -42,7 +42,7 @@ struct TerminalScreen: View {
         .sheet(isPresented: $session.selectingTmux) { TmuxSessionPicker(session: session).interactiveDismissDisabled() }
         .task { if !session.hasStarted { session.connect() } }
         .onChange(of: session.optionAsMeta) { _, value in session.terminal.optionAsMetaKey = value }
-        .onDisappear { session.terminal.controlModifier = false; session.terminal.metaModifier = false }
+        .onDisappear { session.floatingKeyInput.reset(); session.terminal.controlModifier = false; session.terminal.metaModifier = false }
     }
 }
 
@@ -64,6 +64,8 @@ struct TerminalSidebarTools: View {
             Button("Next tab", systemImage: "chevron.right") { session.store?.stepTab(for: session.host.id, by: 1) }.keyboardShortcut(.rightArrow, modifiers: [.command, .option])
         }
         Section("Terminal") {
+            Toggle("Floating keys", isOn: Binding(get: { session.floatingKeysVisible }, set: session.setFloatingKeysVisible))
+                .accessibilityIdentifier("terminal.floatingKeys.toggle")
             if let message = session.scrollStatus { Text(message) }
             Button(session.keyboardVisible ? "Hide keyboard" : "Show keyboard", systemImage: "keyboard") { session.toggleKeyboard() }
             Button("Larger text", systemImage: "textformat.size.larger") { session.changeFontSize(by: 1) }
@@ -154,6 +156,7 @@ struct TerminalContainer: UIViewControllerRepresentable {
     let terminal: TerminalView
     private var keyboardFrame: CGRect?
     let compositionPreview = CompositionPreview()
+    private(set) var keyPalette: FloatingKeyPalette!
     init(session: TerminalSession) { self.session = session; self.terminal = session.terminal; super.init(nibName: nil, bundle: nil) }
     required init?(coder: NSCoder) { fatalError("init(coder:) is unavailable") }
     override func loadView() {
@@ -184,6 +187,10 @@ struct TerminalContainer: UIViewControllerRepresentable {
         compositionPreview.layer.cornerRadius = 4
         compositionPreview.clipsToBounds = true
         view.addSubview(compositionPreview)
+        if let session {
+            keyPalette = FloatingKeyPalette(input: session.floatingKeyInput)
+            view.addSubview(keyPalette)
+        }
         (terminal as? SafeTerminalView)?.compositionChanged = { [weak self] in self?.updateKeyboardViewport() }
         session?.updateTerminalColors()
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
@@ -196,6 +203,7 @@ struct TerminalContainer: UIViewControllerRepresentable {
     }
     func updateKeyboardViewport() {
         guard isViewLoaded else { return }
+        updateKeyPalette()
         // Server redraws move the cursor while resizing; keep touch coordinates stable.
         guard (terminal as? SafeTerminalView)?.isDraggingPane != true else { return }
         // Move the viewport to keep the cursor visible without changing the PTY grid.
@@ -231,13 +239,23 @@ struct TerminalContainer: UIViewControllerRepresentable {
         session?.updateTerminalColors()
         session?.restoreKeyboardIfNeeded()
     }
-    override func viewWillDisappear(_ animated: Bool) { super.viewWillDisappear(animated); (terminal as? SafeTerminalView)?.setPaneResizeMode(false); terminal.controlModifier = false }
+    override func viewWillDisappear(_ animated: Bool) { super.viewWillDisappear(animated); session?.floatingKeyInput.reset(); (terminal as? SafeTerminalView)?.setPaneResizeMode(false); terminal.controlModifier = false }
     func closeUI() {
         terminal.resignFirstResponder()
         viewIfLoaded?.endEditing(true)
         dismiss(animated: false)
         (terminal as? SafeTerminalView)?.approvePaste = nil
         (terminal as? SafeTerminalView)?.compositionChanged = nil
+    }
+    private func updateKeyPalette() {
+        guard let keyPalette, let session else { return }
+        keyPalette.isHidden = !session.floatingKeysVisible || !session.isLive
+        var keyboard: CGRect?
+        if let keyboardFrame, let window = view.window {
+            let converted = view.convert(keyboardFrame, from: window.screen.coordinateSpace)
+            if converted.intersects(view.bounds) { keyboard = converted }
+        }
+        keyPalette.place(in: view.bounds.inset(by: view.safeAreaInsets), avoiding: keyboard)
     }
     @objc private func keyboardFrameChanged(_ notification: Notification) {
         keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
