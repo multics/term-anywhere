@@ -25,6 +25,9 @@ with tempfile.TemporaryDirectory(prefix='term-floating-keys-') as folder:
                  ('Tab', '\t'), ('BTab', '\x1b[Z'), ('Home', '\x1b[H'), ('End', '\x1b[F'),
                  ('PPage', '\x1b[5~'), ('NPage', '\x1b[6~'), ('C-Left', '\x1b[1;5D'),
                  ('C-S-Right', '\x1b[1;6C'), ('C-j', '\n'), ('C-c', '\x03'), ('M-b', '\x1bb')]
+        plain_functions = ['OP', 'OQ', 'OR', 'OS', '[15~', '[17~', '[18~', '[19~', '[20~', '[21~', '[23~', '[24~']
+        cases += [(f'F{i + 1}', '\x1b' + sequence) for i, sequence in enumerate(plain_functions)]
+        cases += [('S-F1', '\x1b[1;2P'), ('C-F5', '\x1b[15;5~'), ('M-F12', '\x1b[24;3~')]
         for key, _ in cases:
             tmux('bind-key', '-n', key, 'set-option', '-g', '@floating-key', key)
         attached = subprocess.Popen(command + ['attach', '-t', 'keys'], stdin=slave, stdout=slave, stderr=slave,

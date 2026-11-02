@@ -13,10 +13,13 @@ struct FloatingModifiers: OptionSet {
 enum FloatingTerminalKey: Int, CaseIterable {
     case escape, tab, control, shift, left, down, up, right
     case home, end, pageUp, pageDown, alt, newline, interrupt
+    case f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12
+    static let functionKeys: [Self] = [.f1, .f2, .f3, .f4, .f5, .f6, .f7, .f8, .f9, .f10, .f11, .f12]
     static let primary: [Self] = [.escape, .tab, .control, .shift, .left, .down, .up, .right]
     var label: String {
         ["Escape", "Tab", "Control", "Shift", "Left arrow", "Down arrow", "Up arrow", "Right arrow",
-         "Home", "End", "Page Up", "Page Down", "Alt / Meta", "New line (Ctrl+J)", "Ctrl+C"][rawValue]
+         "Home", "End", "Page Up", "Page Down", "Alt / Meta", "New line (Ctrl+J)", "Ctrl+C",
+         "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12"][rawValue]
     }
     var title: String { self == .escape ? "esc" : self == .control ? "ctrl" : label }
     var symbol: String? {
@@ -45,6 +48,16 @@ enum FloatingTerminalKey: Int, CaseIterable {
         let enhanced = flags.contains(.disambiguate) || flags.contains(.reportAllKeys)
         let mod = 1 + modifiers.rawValue
         let altPrefix = modifiers.contains(.alt) ? "\u{1b}" : ""
+        if let index = Self.functionKeys.firstIndex(of: self) {
+            // Kitty uses CSI 13~ for F3; legacy terminals use SS3 R.
+            if index < 4 && !(self == .f3 && !flags.isEmpty) {
+                let letter = ["P", "Q", "R", "S"][index]
+                if modifiers.isEmpty && suffix.isEmpty && !enhanced { return "\u{1b}O" + letter }
+                return "\u{1b}[1;\(mod)\(suffix)\(letter)"
+            }
+            let code = self == .f3 ? 13 : [15, 17, 18, 19, 20, 21, 23, 24][index - 4]
+            return "\u{1b}[\(code)" + (modifiers.isEmpty && suffix.isEmpty ? "" : ";\(mod)\(suffix)") + "~"
+        }
         switch self {
         case .escape:
             if enhanced { return "\u{1b}[27;\(mod)\(suffix)u" }
@@ -140,6 +153,9 @@ enum FloatingTerminalKey: Int, CaseIterable {
     private let preferences: UserDefaults
     private var buttons: [FloatingTerminalKey: UIButton] = [:]
     private var observations: Set<AnyCancellable> = []
+    var showSidebar: (() -> Void)?
+    var toggleKeyboard: (() -> Void)?
+    private let keyboardButton = UIButton(type: .system)
     private let moreButton = UIButton(type: .system)
     private var dragOrigin = CGPoint.zero
     private var moving = false
@@ -157,7 +173,7 @@ enum FloatingTerminalKey: Int, CaseIterable {
         layer.cornerRadius = 16; clipsToBounds = true
         material.frame = bounds; material.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         addSubview(material)
-        let handle = UIView(frame: CGRect(x: 8, y: 0, width: 140, height: 44))
+        let handle = UIView(frame: CGRect(x: 8, y: 0, width: 44, height: 44))
         handle.accessibilityLabel = "Move floating keys"; handle.isAccessibilityElement = true
         handle.accessibilityHint = "Drag to move the controls."
         handle.accessibilityCustomActions = [
@@ -165,7 +181,7 @@ enum FloatingTerminalKey: Int, CaseIterable {
             UIAccessibilityCustomAction(name: "Move to right edge", actionHandler: { [weak self] _ in self?.moveToEdge(x: 1); return true })
         ]
         handle.addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(drag(_:))))
-        let grip = UIView(frame: CGRect(x: 52, y: 20, width: 36, height: 4))
+        let grip = UIView(frame: CGRect(x: 12, y: 20, width: 20, height: 4))
         grip.backgroundColor = .tertiaryLabel; grip.layer.cornerRadius = 2; grip.isUserInteractionEnabled = false
         handle.addSubview(grip); material.contentView.addSubview(handle)
         for (index, key) in FloatingTerminalKey.primary.enumerated() {
@@ -190,6 +206,22 @@ enum FloatingTerminalKey: Int, CaseIterable {
             button.addTarget(self, action: #selector(accessiblePress(_:)), for: .primaryActionTriggered)
             material.contentView.addSubview(button); buttons[key] = button
         }
+        let sidebarButton = UIButton(type: .system)
+        sidebarButton.frame = CGRect(x: 56, y: 0, width: 44, height: 44)
+        sidebarButton.setImage(UIImage(systemName: "sidebar.left"), for: .normal)
+        sidebarButton.accessibilityLabel = "Hosts and sessions"
+        sidebarButton.accessibilityIdentifier = "terminal.sessions"
+        sidebarButton.addAction(UIAction { [weak self] _ in
+            self?.input.reset(); self?.showSidebar?()
+        }, for: .primaryActionTriggered)
+        material.contentView.addSubview(sidebarButton)
+        keyboardButton.frame = CGRect(x: 104, y: 0, width: 44, height: 44)
+        keyboardButton.accessibilityIdentifier = "terminal.keyboard.toggle"
+        keyboardButton.addAction(UIAction { [weak self] _ in
+            self?.input.reset(); self?.toggleKeyboard?()
+        }, for: .primaryActionTriggered)
+        setKeyboardVisible(false)
+        material.contentView.addSubview(keyboardButton)
         moreButton.frame = CGRect(x: 152, y: 0, width: 44, height: 44)
         moreButton.setImage(UIImage(systemName: "ellipsis"), for: .normal)
         moreButton.accessibilityLabel = "More terminal keys"
@@ -207,9 +239,13 @@ enum FloatingTerminalKey: Int, CaseIterable {
             self?.updateMenu(modifiers: modifiers)
         }.store(in: &observations)
     }
+    func setKeyboardVisible(_ visible: Bool) {
+        keyboardButton.setImage(UIImage(systemName: visible ? "keyboard.chevron.compact.down" : "keyboard"), for: .normal)
+        keyboardButton.accessibilityLabel = visible ? "Hide keyboard" : "Show keyboard"
+    }
     private func updateMenu(modifiers: FloatingModifiers) {
         let keys: [FloatingTerminalKey] = [.home, .end, .pageUp, .pageDown, .alt, .newline, .interrupt]
-        var actions = keys.map { key in
+        var actions: [UIMenuElement] = keys.map { key in
             UIAction(title: key.label, state: key == .alt && modifiers.contains(.alt) ? .on : .off) { [weak input] _ in
                 guard let input else { return }
                 if let modifier = key.modifier { input.modifierDown(modifier); input.modifierUp(modifier) }
@@ -217,7 +253,10 @@ enum FloatingTerminalKey: Int, CaseIterable {
             }
         }
         actions.append(UIAction(title: "Paste", image: UIImage(systemName: "doc.on.clipboard")) { [weak input] _ in input?.pasteFromClipboard() })
-        moreButton.menu = UIMenu(children: actions)
+        let functionKeys = FloatingTerminalKey.functionKeys.map { key in
+            UIAction(title: key.label) { [weak input] _ in input?.press(key); input?.release() }
+        }
+        moreButton.menu = UIMenu(children: actions + [UIMenu(title: "F1–F12", children: functionKeys)])
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is unavailable") }

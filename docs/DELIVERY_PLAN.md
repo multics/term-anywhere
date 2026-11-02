@@ -263,3 +263,13 @@ The user authorized deletion and recreation after an old commit URL remained acc
 
 - Completed the remaining iPhone checks and launched Term Anywhere normally immediately after the test runner finished. Left the app in the foreground. Evidence: `.build/latest-size-iphone-unlocked-test.log`, `.build/latest-size-iphone-unlocked-launch.log`, `.build/latest-size-iphone-unlocked-processes.log`.
 - Added the user’s standing project instruction to AGENTS.md: always relaunch normally after device tests, including failed/interrupted tests, and leave the app open so its keep-awake setting remains active. No application code changed.
+
+## Feature 35: Consolidate floating controls and add function keys
+
+- Request: Move sidebar and software-keyboard controls into the floating palette; add F1–F12 under More.
+- Design: Keep the 204 × 148 palette and 44-point targets. Header: drag handle, sidebar, keyboard, More. Keep a sidebar entry when the palette is hidden or the connection is not live; the sidebar can restore the palette and keyboard. Function keys use a native submenu and consume active modifiers.
+- Acceptance: Verify function-key bytes, native callbacks, menu contents, unchanged terminal grid, and tmux bindings. Test and deploy to iPad and iPhone 27; launch normally and leave foreground after tests, then commit/push.
+- Status: Implemented, verified, and deployed to both devices. Prior live-server and manual touch checks remain open.
+- Validation: All 59 automated hosted checks pass on Simulator, iPad, and iPhone 27 (one opt-in manual check skipped). Verified F1–F12 and combined modifiers, enhanced key events, native header callbacks, menu contents, 44-point targets, and stable terminal grid. Isolated tmux accepts 35 plain/modified key sequences. Inspected light Simulator and dark iPad palette screenshots. The initial test read keyboard visibility before the asynchronous iOS notification; corrected the fixture to verify first-responder behavior and notification-driven labels.
+- Evidence: `.build/palette-controls-simulator-final.log`, `.build/palette-controls-ipad-final.log`, `.build/palette-controls-iphone.log`, `.build/palette-controls-tmux.log`, and exported attachments under `.build/palette-controls-{simulator-final,ipad}-images`.
+- Delivery: Signed app installed through device test deployment on iPad and iPhone 27. Immediate normal launch and process readback pass on both; apps left open. Evidence: `.build/palette-controls-ipad-final-launch.log`, `-processes.log`, `.build/palette-controls-iphone-launch.log`, and `-processes.log`. No device blocker remains. Live Codex function-key bindings and physical touch comfort remain manual checks.

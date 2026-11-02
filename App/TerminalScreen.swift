@@ -8,7 +8,7 @@ struct TerminalScreen: View {
     var tabCount = 1
     var showSessions: (() -> Void)?
     var body: some View {
-        TerminalContainer(session: session)
+        TerminalContainer(session: session, showSessions: showSessions)
             .ignoresSafeArea(.keyboard)
             .allowsHitTesting(session.isLive)
             .accessibilityHidden(!session.isLive)
@@ -17,18 +17,14 @@ struct TerminalScreen: View {
             }
         .toolbar(.hidden, for: .navigationBar)
         .overlay(alignment: .leading) {
-            VStack(spacing: 0) {
+            if !session.isLive || !session.floatingKeysVisible {
                 Button("Hosts and sessions", systemImage: "sidebar.left") { showSessions?() }
                     .accessibilityIdentifier("terminal.sessions")
-                Button(session.keyboardVisible ? "Hide keyboard" : "Show keyboard",
-                       systemImage: session.keyboardVisible ? "keyboard.chevron.compact.down" : "keyboard") {
-                    session.toggleKeyboard()
-                }.accessibilityIdentifier("terminal.keyboard.toggle")
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(SideControlButtonStyle())
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+                    .padding(.leading, 4)
             }
-            .labelStyle(.iconOnly)
-            .buttonStyle(SideControlButtonStyle())
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
-            .padding(.leading, 4)
         }
         .overlay(alignment: .topTrailing) {
             if session.isResizingPanes {
@@ -142,16 +138,21 @@ private struct ConnectionOverlay: View {
 
 struct TerminalContainer: UIViewControllerRepresentable {
     @ObservedObject var session: TerminalSession
+    var showSessions: (() -> Void)?
     func makeUIViewController(context: Context) -> TerminalCoordinator {
-        let controller = TerminalCoordinator(session: session); session.coordinator = controller; return controller
+        let controller = TerminalCoordinator(session: session); session.coordinator = controller
+        controller.showSessions = showSessions
+        return controller
     }
     func updateUIViewController(_ controller: TerminalCoordinator, context: Context) {
+        controller.showSessions = showSessions
         session.updateTerminalColors()
         controller.updateKeyboardViewport()
     }
 }
 
 @MainActor final class TerminalCoordinator: UIViewController, @preconcurrency TerminalViewDelegate {
+    var showSessions: (() -> Void)?
     weak var session: TerminalSession?
     let terminal: TerminalView
     private var keyboardFrame: CGRect?
@@ -189,6 +190,8 @@ struct TerminalContainer: UIViewControllerRepresentable {
         view.addSubview(compositionPreview)
         if let session {
             keyPalette = FloatingKeyPalette(input: session.floatingKeyInput)
+            keyPalette.showSidebar = { [weak self] in self?.showSessions?() }
+            keyPalette.toggleKeyboard = { [weak session] in session?.toggleKeyboard() }
             view.addSubview(keyPalette)
         }
         (terminal as? SafeTerminalView)?.compositionChanged = { [weak self] in self?.updateKeyboardViewport() }
@@ -250,6 +253,7 @@ struct TerminalContainer: UIViewControllerRepresentable {
     }
     private func updateKeyPalette() {
         guard let keyPalette, let session else { return }
+        keyPalette.setKeyboardVisible(session.keyboardVisible)
         keyPalette.isHidden = !session.floatingKeysVisible || !session.isLive
         var keyboard: CGRect?
         if let keyboardFrame, let window = view.window {

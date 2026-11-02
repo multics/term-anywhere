@@ -26,6 +26,19 @@ import TermCore
         XCTAssertFalse(store.sessions[plain.id]!.ownsTmuxFocus)
         XCTAssertFalse(secondSession.ownsTmuxFocus)
     }
+    func testFunctionKeyEncoding() {
+        let plain = ["OP", "OQ", "OR", "OS", "[15~", "[17~", "[18~", "[19~", "[20~", "[21~", "[23~", "[24~"]
+        for (index, key) in FloatingTerminalKey.functionKeys.enumerated() {
+            XCTAssertEqual(key.sequence(modifiers: [], applicationCursor: false), "\u{1b}" + plain[index])
+            XCTAssertEqual(key.sequence(modifiers: [], applicationCursor: true), "\u{1b}" + plain[index])
+            XCTAssertEqual(key.sequence(modifiers: [], applicationCursor: false, event: 3), "")
+            let ending = index < 4 ? "1;8" + ["P", "Q", "R", "S"][index] : String(plain[index].dropFirst().dropLast()) + ";8~"
+            XCTAssertEqual(key.sequence(modifiers: [.shift, .alt, .control], applicationCursor: false), "\u{1b}[" + ending)
+        }
+        XCTAssertEqual(FloatingTerminalKey.f3.sequence(modifiers: [], applicationCursor: false, flags: [.disambiguate]), "\u{1b}[13~")
+        XCTAssertEqual(FloatingTerminalKey.f1.sequence(modifiers: [.shift], applicationCursor: false, flags: [.disambiguate, .reportEvents], event: 3), "\u{1b}[1;2:3P")
+        XCTAssertEqual(FloatingTerminalKey.f12.sequence(modifiers: [.control], applicationCursor: false, flags: [.reportEvents], event: 3), "\u{1b}[24;5:3~")
+    }
     func testExpandedKeyEncodingAndCombinedModifiers() {
         let cases: [(FloatingTerminalKey, String)] = [(.tab, "\t"), (.home, "\u{1b}[H"), (.end, "\u{1b}[F"),
             (.pageUp, "\u{1b}[5~"), (.pageDown, "\u{1b}[6~"), (.newline, "\n"), (.interrupt, "\u{3}")]
@@ -165,10 +178,30 @@ import TermCore
         let rows = session.terminal.getTerminal().rows, cols = session.terminal.getTerminal().cols
         func buttons(_ view: UIView) -> [UIButton] { view.subviews.flatMap { ($0 as? UIButton).map { [$0] } ?? buttons($0) } }
         let all = buttons(palette)
-        XCTAssertEqual(all.count, 9)
+        XCTAssertEqual(all.count, 11)
         XCTAssertTrue(all.allSatisfy { $0.bounds.width >= 44 && $0.bounds.height >= 44 })
         let more = try XCTUnwrap(all.first { $0.accessibilityIdentifier == "terminal.key.more" })
-        XCTAssertEqual(more.menu?.children.map(\.title), ["Home", "End", "Page Up", "Page Down", "Alt / Meta", "New line (Ctrl+J)", "Ctrl+C", "Paste"])
+        XCTAssertEqual(more.menu?.children.map(\.title), ["Home", "End", "Page Up", "Page Down", "Alt / Meta", "New line (Ctrl+J)", "Ctrl+C", "Paste", "F1–F12"])
+        let functions = try XCTUnwrap(more.menu?.children.last as? UIMenu)
+        XCTAssertEqual(functions.children.map(\.title), (1...12).map { "F\($0)" })
+        var sidebarOpens = 0
+        controller.showSessions = { sidebarOpens += 1 }
+        let sidebar = try XCTUnwrap(all.first { $0.accessibilityIdentifier == "terminal.sessions" })
+        sidebar.sendActions(for: .primaryActionTriggered)
+        XCTAssertEqual(sidebarOpens, 1)
+        let keyboard = try XCTUnwrap(all.first { $0.accessibilityIdentifier == "terminal.keyboard.toggle" })
+        session.hideKeyboard()
+        keyboard.sendActions(for: .primaryActionTriggered)
+        XCTAssertTrue(session.terminal.isFirstResponder)
+        try await Task.sleep(for: .milliseconds(400))
+        // External keyboards can suppress the software keyboard notification.
+        NotificationCenter.default.post(name: UIResponder.keyboardWillShowNotification, object: nil)
+        XCTAssertTrue(session.keyboardVisible)
+        controller.updateKeyboardViewport()
+        XCTAssertEqual(keyboard.accessibilityLabel, session.keyboardVisible ? "Hide keyboard" : "Show keyboard")
+        keyboard.sendActions(for: .primaryActionTriggered)
+        XCTAssertFalse(session.terminal.isFirstResponder)
+        XCTAssertFalse(session.keyboardVisible)
         let output = InputRecorder(); session.terminal.terminalDelegate = output
         let esc = try XCTUnwrap(all.first { $0.accessibilityIdentifier == "terminal.key.escape" })
         esc.sendActions(for: .touchDown); esc.sendActions(for: .touchUpInside); esc.sendActions(for: .primaryActionTriggered)
