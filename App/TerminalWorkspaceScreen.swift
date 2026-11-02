@@ -4,57 +4,13 @@ import TermCore
 struct TerminalWorkspaceScreen: View {
     @ObservedObject var store: AppStore
     let hostID: UUID
-    @Environment(\.verticalSizeClass) private var verticalSizeClass
-    @State private var showingSessions = false
-    @State private var keyboardWasVisible = false
-    private var isPad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
-    private var usesSidePanel: Bool { !isPad && verticalSizeClass == .compact }
-    private var sheetPresented: Binding<Bool> {
-        Binding(get: { showingSessions && !usesSidePanel && !isPad }, set: { showingSessions = $0 })
-    }
-    private var popoverPresented: Binding<Bool> {
-        Binding(get: { showingSessions && isPad }, set: { showingSessions = $0 })
-    }
+    var showSidebar: () -> Void = {}
     var body: some View {
-        GeometryReader { geometry in
-            if let session = store.sessions[hostID] {
-                TerminalScreen(session: session, onDisconnect: { store.closeTab(session) },
-                               tabCount: store.tabs[hostID]?.count ?? 1, showSessions: {
-                    keyboardWasVisible = session.keyboardVisible
-                    showingSessions = true
-                })
+        if let session = store.sessions[hostID] {
+            TerminalScreen(session: session, onDisconnect: { store.closeTab(session) },
+                           tabCount: store.tabs[hostID]?.count ?? 1, showSessions: showSidebar)
                 .id(session.id)
-                .popover(isPresented: popoverPresented, attachmentAnchor: .point(.topTrailing), arrowEdge: .top) {
-                    panel.frame(width: 340, height: 420).presentationCompactAdaptation(.popover)
-                }
-                .sheet(isPresented: sheetPresented, onDismiss: restoreKeyboard) {
-                    panel.presentationDetents([.medium, .large])
-                }
-                .overlay(alignment: .trailing) {
-                    if showingSessions && usesSidePanel {
-                        ZStack(alignment: .trailing) {
-                            Color.black.opacity(0.18).contentShape(Rectangle())
-                                .onTapGesture { showingSessions = false }
-                                .accessibilityLabel("Dismiss sessions")
-                                .accessibilityAddTraits(.isButton)
-                            panel.frame(width: min(320, geometry.size.width * 0.6))
-                                .clipShape(RoundedRectangle(cornerRadius: 16))
-                                .shadow(radius: 12)
-                        }
-                    }
-                }
-            }
         }
-        .onChange(of: showingSessions) { _, visible in if !visible { restoreKeyboard() } }
-    }
-    private var panel: some View {
-        SessionPanel(store: store, hostID: hostID) { showingSessions = false }
-    }
-    private func restoreKeyboard() {
-        guard let session = store.sessions[hostID] else { return }
-        session.restoreKeyboardOnAppear = keyboardWasVisible
-        // A tab change mounts its terminal after this SwiftUI update.
-        DispatchQueue.main.async { session.restoreKeyboardIfNeeded() }
     }
 }
 
@@ -64,53 +20,59 @@ struct SessionPanel: View {
     let dismiss: () -> Void
     var body: some View {
         NavigationStack {
-            List {
-                Section("Open tabs") {
-                    ForEach(store.tabs[hostID] ?? [], id: \.id) { tab in
-                        HStack {
-                            Button {
-                                store.selectTab(tab); dismiss()
-                            } label: {
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 3) {
-                                        Text(tab.host.sessionLabel).foregroundStyle(.primary)
-                                        Text(tab.status).font(.caption).foregroundStyle(.secondary)
-                                    }
-                                    Spacer()
-                                    if store.sessions[hostID] === tab {
-                                        Image(systemName: "checkmark").accessibilityLabel("Current tab")
-                                    }
-                                }.contentShape(Rectangle())
-                            }.buttonStyle(.plain)
-                            Button {
-                                store.closeTab(tab)
-                                if store.tabs[hostID] == nil { dismiss() }
-                            } label: {
-                                Image(systemName: "xmark").frame(width: 44, height: 44)
-                            }.buttonStyle(.borderless).accessibilityLabel("Close \(tab.host.sessionLabel) tab")
-                        }
+            List { SidebarSessionRows(store: store, hostID: hostID, dismiss: dismiss) }
+                .navigationDestination(for: Bool.self) { create in
+                    if let source = store.sessions[hostID] {
+                        ServerSessionBrowser(store: store, source: source, createOnly: create, dismiss: dismiss)
                     }
                 }
-                if let source = store.sessions[hostID] {
-                    Section {
-                        NavigationLink {
-                            ServerSessionBrowser(store: store, source: source, createOnly: false, dismiss: dismiss)
-                        } label: { Label("Open session…", systemImage: "rectangle.on.rectangle") }
-                        NavigationLink {
-                            ServerSessionBrowser(store: store, source: source, createOnly: true, dismiss: dismiss)
-                        } label: { Label("New session…", systemImage: "plus") }
-                    } footer: { Text("Closing a tab leaves its remote tmux session running.") }
-                    .disabled(!source.isLive)
-                }
-            }
-            .navigationTitle("Sessions")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done", action: dismiss) } }
+                .navigationTitle("Sessions")
         }
     }
 }
 
-private struct ServerSessionBrowser: View {
+struct SidebarSessionRows: View {
+    @ObservedObject var store: AppStore
+    let hostID: UUID
+    let dismiss: () -> Void
+    var body: some View {
+        Section(store.hosts.first(where: { $0.id == hostID })?.name ?? "Open sessions") {
+            ForEach(store.tabs[hostID] ?? [], id: \.id) { tab in
+                HStack {
+                    Button {
+                        store.selectTab(tab); dismiss()
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(tab.host.sessionLabel).foregroundStyle(.primary)
+                                Text(tab.status).font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            if store.sessions[hostID] === tab {
+                                Image(systemName: "checkmark").accessibilityLabel("Current tab")
+                            }
+                        }.contentShape(Rectangle())
+                    }.buttonStyle(.plain)
+                    Button {
+                        store.closeTab(tab)
+                        if store.tabs[hostID] == nil { dismiss() }
+                    } label: {
+                        Image(systemName: "xmark").frame(width: 44, height: 44)
+                    }.buttonStyle(.borderless).accessibilityLabel("Close \(tab.host.sessionLabel) tab")
+                }
+            }
+        }
+        if let source = store.sessions[hostID] {
+            Section {
+                NavigationLink(value: false) { Label("Open session…", systemImage: "rectangle.on.rectangle") }
+                NavigationLink(value: true) { Label("New session…", systemImage: "plus") }
+            } footer: { Text("Closing a tab leaves its remote tmux session running.") }
+            .disabled(!source.isLive)
+        }
+    }
+}
+
+struct ServerSessionBrowser: View {
     @ObservedObject var store: AppStore
     @ObservedObject var source: TerminalSession
     let createOnly: Bool

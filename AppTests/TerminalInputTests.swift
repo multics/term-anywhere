@@ -280,7 +280,7 @@ import TermCore
         store.hosts = [host]
         let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
         let window = UIWindow(windowScene: scene)
-        let root = UIHostingController(rootView: HostListView().environmentObject(store))
+        let root = UIHostingController(rootView: HostListView().environmentObject(store).environment(\.scenePhase, .active))
         window.rootViewController = root; window.makeKeyAndVisible()
         defer { store.closeSession(host.id); window.isHidden = true; window.rootViewController = nil }
         try await Task.sleep(for: .milliseconds(300))
@@ -295,6 +295,9 @@ import TermCore
         }
         let navigation = try XCTUnwrap(split(in: root))
         XCTAssertFalse(navigation.isCollapsed, "Exercise the landscape sidebar")
+        let terminalFrame = session.terminal.convert(session.terminal.bounds, to: window)
+        XCTAssertLessThanOrEqual(terminalFrame.minY, window.safeAreaInsets.top + 1,
+                                 "Terminal must start at the safe-area top without a toolbar")
         let size = session.terminal.bounds.size
         let rows = session.terminal.getTerminal().rows, cols = session.terminal.getTerminal().cols
         session.terminal.feed(text: "Sidebar keeps output and terminal dimensions\r\n$ ")
@@ -306,6 +309,8 @@ import TermCore
         XCTAssertEqual(session.terminal.getTerminal().rows, rows)
         XCTAssertEqual(session.terminal.getTerminal().cols, cols)
         XCTAssertEqual(session.terminal.getTerminal().getBufferAsData(), output)
+        let screenshot = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in window.drawHierarchy(in: window.bounds, afterScreenUpdates: true) }
+        let attachment = XCTAttachment(image: screenshot); attachment.name = "Toolbar-free terminal and sidebar"; attachment.lifetime = .keepAlways; add(attachment)
         navigation.hide(.primary)
         try await Task.sleep(for: .milliseconds(600))
         XCTAssertEqual(session.terminal.bounds.size, size)

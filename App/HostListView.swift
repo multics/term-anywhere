@@ -6,6 +6,7 @@ struct HostListView: View {
     @EnvironmentObject private var store: AppStore
     @State private var columnVisibility: NavigationSplitViewVisibility = .detailOnly
     @State private var compactColumn: NavigationSplitViewColumn = .sidebar
+    @State private var sidebarPath = NavigationPath()
     @State private var search = ""
     @State private var editing: Host?
     @State private var credentials = false
@@ -15,7 +16,12 @@ struct HostListView: View {
     @Environment(\.scenePhase) private var scenePhase
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility, preferredCompactColumn: $compactColumn) {
+            NavigationStack(path: $sidebarPath) {
             List(selection: Binding(get: { store.selectedHostID }, set: { store.selectHost($0) })) {
+                if let selected = store.selectedHostID, let session = store.sessions[selected] {
+                    SidebarSessionRows(store: store, hostID: selected, dismiss: closeSidebar)
+                    TerminalSidebarTools(session: session, onDisconnect: { store.closeTab(session) })
+                }
                 if store.hosts.isEmpty {
                     ContentUnavailableView("No hosts yet", systemImage: "terminal", description: Text("Add a host or import selected connections from your Mac."))
                         .listRowBackground(Color.clear)
@@ -42,6 +48,11 @@ struct HostListView: View {
                 .onMove { offsets, destination in store.moveHosts(from: offsets, to: destination) }
                 .moveDisabled(!search.isEmpty)
             }
+            .navigationDestination(for: Bool.self) { create in
+                if let selected = store.selectedHostID, let source = store.sessions[selected] {
+                    ServerSessionBrowser(store: store, source: source, createOnly: create, dismiss: closeSidebar)
+                }
+            }
             .environment(\.editMode, $editMode)
             .navigationTitle("Hosts")
             .searchable(text: $search, prompt: "Find a server")
@@ -58,9 +69,12 @@ struct HostListView: View {
                     } label: { Label("Add", systemImage: "plus") }
                 }
             }
+            }
         } detail: {
             if let selected = store.selectedHostID, store.sessions[selected] != nil {
-                TerminalWorkspaceScreen(store: store, hostID: selected).id(selected)
+                TerminalWorkspaceScreen(store: store, hostID: selected, showSidebar: {
+                    columnVisibility = .all; compactColumn = .sidebar
+                }).id(selected)
             } else {
                 ContentUnavailableView("Term Anywhere", systemImage: "terminal", description: Text("Choose a server to open a terminal."))
             }
@@ -95,4 +109,12 @@ struct HostListView: View {
         }
         .overlay { if scenePhase == .background { Color(.systemBackground).ignoresSafeArea().overlay { Image(systemName: "terminal").font(.largeTitle) } } }
     }
+    private func closeSidebar() {
+        sidebarPath = NavigationPath()
+        guard store.selectedHostID != nil else { columnVisibility = .all; compactColumn = .sidebar; return }
+        compactColumn = .detail; columnVisibility = .detailOnly
+        let session = store.selectedHostID.flatMap { store.sessions[$0] }
+        DispatchQueue.main.async { session?.restoreKeyboardIfNeeded() }
+    }
+
 }

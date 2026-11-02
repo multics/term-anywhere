@@ -15,88 +15,81 @@ struct TerminalScreen: View {
             .overlay {
                 if !session.isLive { ConnectionOverlay(session: session) }
             }
-        .navigationTitle(session.host.name)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                if session.isResizingPanes {
-                    if session.isPreparingPaneResize {
-                        ProgressView().accessibilityLabel("Reading pane borders")
-                    }
-                    Button("Done resizing") { session.finishPaneResize() }
-                        .accessibilityIdentifier("terminal.pane.resize.done")
-                }
-            }
-            ToolbarItem(placement: .principal) {
-                Button { showSessions?() } label: {
-                    VStack(spacing: 1) {
-                        Text(session.host.name).font(.headline).lineLimit(1)
-                        HStack(spacing: 4) {
-                            Text(session.host.sessionLabel).lineLimit(1)
-                            if showSessions != nil {
-                                Image(systemName: "chevron.down")
-                                Text("\(tabCount)").monospacedDigit()
-                            }
-                        }.font(.caption2).foregroundStyle(.secondary)
-                    }
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Sessions, \(session.host.sessionLabel), \(tabCount) open")
-                .accessibilityIdentifier("terminal.sessions")
-                .disabled(showSessions == nil)
-            }
-            ToolbarItem(placement: .topBarTrailing) {
+        .toolbar(.hidden, for: .navigationBar)
+        .overlay(alignment: .leading) {
+            VStack(spacing: 0) {
+                Button("Hosts and sessions", systemImage: "sidebar.left") { showSessions?() }
+                    .accessibilityIdentifier("terminal.sessions")
                 Button(session.keyboardVisible ? "Hide keyboard" : "Show keyboard",
                        systemImage: session.keyboardVisible ? "keyboard.chevron.compact.down" : "keyboard") {
                     session.toggleKeyboard()
-                }
-                .accessibilityIdentifier("terminal.keyboard.toggle")
+                }.accessibilityIdentifier("terminal.keyboard.toggle")
             }
-            ToolbarItem(placement: .topBarTrailing) {
-                if !session.host.tmuxSession.isEmpty {
-                    Menu {
-                        Section {
-                            ForEach(session.bindings?.shortcuts ?? []) { shortcut in
-                                Button(shortcut.title + " · " + shortcut.keys) { session.send(shortcut.bytes) }
-                                    .disabled(!session.isLive)
-                            }
-                        }
-                        Section {
-                            Text("Double-tap to resize panes, then drag a border with one finger. Requires tmux mouse mode.")
-                            Text(session.bindingsStatus)
-                            if let prefix = session.prefixBytes {
-                                Button("Send prefix") { session.send(prefix) }.disabled(!session.isLive)
-                            }
-                            Button("Refresh shortcuts", systemImage: "arrow.clockwise") {
-                                Task { await session.refreshBindings() }
-                            }.disabled(!session.isLive)
-                        }
-                    } label: { Label("tmux controls", systemImage: "rectangle.split.2x1") }
-                    .accessibilityIdentifier("terminal.tmux")
-                }
-            }
-            ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Section("Connection") {
-                        Button("Disconnect", systemImage: "xmark.circle") { onDisconnect() }
-                        Button("Sessions…", systemImage: "rectangle.on.rectangle") { showSessions?() }.disabled(showSessions == nil)
-                        Button("Previous tab", systemImage: "chevron.left") { session.store?.stepTab(for: session.host.id, by: -1) }.keyboardShortcut(.leftArrow, modifiers: [.command, .option])
-                        Button("Next tab", systemImage: "chevron.right") { session.store?.stepTab(for: session.host.id, by: 1) }.keyboardShortcut(.rightArrow, modifiers: [.command, .option])
-                    }
-                    Section("Terminal") {
-                        if let message = session.scrollStatus { Text(message) }
-                        Button(session.keyboardVisible ? "Hide keyboard" : "Show keyboard", systemImage: "keyboard") { session.toggleKeyboard() }
-                        Button("Larger text", systemImage: "textformat.size.larger") { session.changeFontSize(by: 1) }
-                        Button("Smaller text", systemImage: "textformat.size.smaller") { session.changeFontSize(by: -1) }
-                        Toggle("Option as Meta", isOn: Binding(get: { session.optionAsMeta }, set: { session.setOptionAsMeta($0) }))
-                    }
-                } label: { Label("Session and terminal tools", systemImage: "ellipsis.circle") }
+            .labelStyle(.iconOnly)
+            .buttonStyle(SideControlButtonStyle())
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+            .padding(.leading, 4)
+        }
+        .overlay(alignment: .topTrailing) {
+            if session.isResizingPanes {
+                HStack {
+                    if session.isPreparingPaneResize { ProgressView().accessibilityLabel("Reading pane borders") }
+                    Button("Done resizing") { session.finishPaneResize() }
+                        .accessibilityIdentifier("terminal.pane.resize.done")
+                }.padding(12).background(.regularMaterial, in: Capsule()).padding(8)
             }
         }
         .sheet(isPresented: $session.selectingTmux) { TmuxSessionPicker(session: session).interactiveDismissDisabled() }
         .task { if !session.hasStarted { session.connect() } }
         .onChange(of: session.optionAsMeta) { _, value in session.terminal.optionAsMetaKey = value }
         .onDisappear { session.terminal.controlModifier = false; session.terminal.metaModifier = false }
+    }
+}
+
+private struct SideControlButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.frame(width: 44, height: 44)
+            .background(configuration.isPressed ? Color.accentColor.opacity(0.2) : .clear)
+            .contentShape(Rectangle())
+    }
+}
+
+struct TerminalSidebarTools: View {
+    @ObservedObject var session: TerminalSession
+    let onDisconnect: () -> Void
+    var body: some View {
+        Section("Connection") {
+            Button("Disconnect", systemImage: "xmark.circle") { onDisconnect() }
+            Button("Previous tab", systemImage: "chevron.left") { session.store?.stepTab(for: session.host.id, by: -1) }.keyboardShortcut(.leftArrow, modifiers: [.command, .option])
+            Button("Next tab", systemImage: "chevron.right") { session.store?.stepTab(for: session.host.id, by: 1) }.keyboardShortcut(.rightArrow, modifiers: [.command, .option])
+        }
+        Section("Terminal") {
+            if let message = session.scrollStatus { Text(message) }
+            Button(session.keyboardVisible ? "Hide keyboard" : "Show keyboard", systemImage: "keyboard") { session.toggleKeyboard() }
+            Button("Larger text", systemImage: "textformat.size.larger") { session.changeFontSize(by: 1) }
+            Button("Smaller text", systemImage: "textformat.size.smaller") { session.changeFontSize(by: -1) }
+            Toggle("Option as Meta", isOn: Binding(get: { session.optionAsMeta }, set: { session.setOptionAsMeta($0) }))
+        }
+        if !session.host.tmuxSession.isEmpty {
+            DisclosureGroup("tmux controls") {
+                Group {
+                    ForEach(session.bindings?.shortcuts ?? []) { shortcut in
+                        Button(shortcut.title + " · " + shortcut.keys) { session.send(shortcut.bytes) }
+                            .disabled(!session.isLive)
+                    }
+                }
+                Group {
+                    Text("Double-tap to resize panes, then drag a border with one finger. Requires tmux mouse mode.")
+                    Text(session.bindingsStatus)
+                    if let prefix = session.prefixBytes {
+                        Button("Send prefix") { session.send(prefix) }.disabled(!session.isLive)
+                    }
+                    Button("Refresh shortcuts", systemImage: "arrow.clockwise") {
+                        Task { await session.refreshBindings() }
+                    }.disabled(!session.isLive)
+                }
+            }
+        }
     }
 }
 

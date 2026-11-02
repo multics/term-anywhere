@@ -103,3 +103,7 @@ Responsiveness validation: 48 automated checks pass on iPhone Simulator and phys
 ### One-finger scroll ownership
 
 Do not make a one-finger pan wait for the two-finger mouse-drag recognizer to fail. That recognizer can remain possible until finger release. Limit both native history scrolling and custom remote scrolling to one finger. Outside resize mode, two fingers belong to mouse dragging. Inside resize mode, disable the competing scrolling recognizers as before. Retain native scrolling as the fallback when the remote-scroll recognizer rejects local-history input.
+
+## Toolbar-free terminal
+
+The detail view hides its navigation bar. A floating side control opens Hosts and sessions or toggles the keyboard. The sidebar contains the current host's open tabs, server-session discovery and creation, Disconnect, terminal preferences, and tmux controls. Server-session navigation stays inside the sidebar. The existing prominent-detail split view overlays the terminal without changing its grid. Pane resize mode has a temporary floating exit button.
