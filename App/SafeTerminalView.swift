@@ -3,6 +3,29 @@ import SwiftTerm
 
 /// Native keyboard and text selection with mouse input that follows the remote terminal mode.
 final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
+    weak var floatingInput: FloatingKeyInput?
+    override func insertText(_ text: String) {
+        guard let input = floatingInput, input.enabled, !input.modifiers.isEmpty else { super.insertText(text); return }
+        // A composition or multi-character replacement is text, never a shortcut.
+        guard markedTextRange == nil, text.unicodeScalars.count == 1,
+              let scalar = text.unicodeScalars.first, scalar.isASCII else {
+            input.reset(); super.insertText(text); return
+        }
+        let modifiers = input.consumeModifiers()
+        if text == "\n", modifiers.contains(.shift) {
+            send(txt: FloatingTerminalKey.newline.sequence(modifiers: [], applicationCursor: false,
+                                                          flags: getTerminal().keyboardEnhancementFlags))
+            return
+        }
+        controlModifier = modifiers.contains(.control)
+        metaModifier = modifiers.contains(.alt)
+        // SwiftTerm's legacy text path handles Ctrl or Meta, not both together.
+        if controlModifier && metaModifier && getTerminal().keyboardEnhancementFlags.isEmpty {
+            send(txt: "\u{1b}"); metaModifier = false
+        }
+        super.insertText(modifiers.contains(.shift) ? text.uppercased() : text)
+        controlModifier = false; metaModifier = false
+    }
     var approvePaste: ((String, @escaping () -> Void) -> Void)?
     var tmuxScrollHandler: ((Int) -> Void)?
     var tmuxPanHandler: ((Int) -> Void)?
@@ -16,7 +39,11 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
             compositionDelegate.forward = inputDelegate
             inputDelegate = compositionDelegate
         }
-        compositionDelegate.didChange = { [weak self] in self?.compositionChanged?() }
+        compositionDelegate.didChange = { [weak self] in
+            guard let self else { return }
+            if self.markedTextRange != nil { self.floatingInput?.reset() }
+            self.compositionChanged?()
+        }
         compositionChanged?()
     }
     override func becomeFirstResponder() -> Bool {

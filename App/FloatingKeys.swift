@@ -2,62 +2,123 @@ import UIKit
 import Combine
 import SwiftTerm
 
-/// Only the six requested keys; use the terminal's negotiated cursor/keyboard modes.
+struct FloatingModifiers: OptionSet {
+    let rawValue: Int
+    static let shift = Self(rawValue: 1)
+    static let alt = Self(rawValue: 2)
+    static let control = Self(rawValue: 4)
+}
+
+/// Encode keys for the terminal's negotiated cursor and enhanced keyboard modes.
 enum FloatingTerminalKey: Int, CaseIterable {
-    case escape, up, shift, left, down, right
-    var label: String { ["Escape", "Up arrow", "Shift", "Left arrow", "Down arrow", "Right arrow"][rawValue] }
-    var symbol: String? { [nil, "arrow.up", "shift", "arrow.left", "arrow.down", "arrow.right"][rawValue] }
+    case escape, tab, control, shift, left, down, up, right
+    case home, end, pageUp, pageDown, alt, newline, interrupt
+    static let primary: [Self] = [.escape, .tab, .control, .shift, .left, .down, .up, .right]
+    var label: String {
+        ["Escape", "Tab", "Control", "Shift", "Left arrow", "Down arrow", "Up arrow", "Right arrow",
+         "Home", "End", "Page Up", "Page Down", "Alt / Meta", "New line (Ctrl+J)", "Ctrl+C"][rawValue]
+    }
+    var title: String { self == .escape ? "esc" : self == .control ? "ctrl" : label }
+    var symbol: String? {
+        switch self {
+        case .tab: return "arrow.right.to.line"
+        case .shift: return "shift"
+        case .left: return "arrow.left"
+        case .down: return "arrow.down"
+        case .up: return "arrow.up"
+        case .right: return "arrow.right"
+        default: return nil
+        }
+    }
+    var modifier: FloatingModifiers? {
+        switch self { case .shift: return .shift; case .control: return .control; case .alt: return .alt; default: return nil }
+    }
+    var repeats: Bool { [.left, .down, .up, .right, .pageUp, .pageDown].contains(self) }
     func sequence(shifted: Bool, applicationCursor: Bool, flags: KittyKeyboardFlags = [], event: Int = 1) -> String {
-        guard self != .shift else { return "" }
+        sequence(modifiers: shifted ? .shift : [], applicationCursor: applicationCursor, flags: flags, event: event)
+    }
+    func sequence(modifiers: FloatingModifiers, applicationCursor: Bool, flags: KittyKeyboardFlags = [], event: Int = 1) -> String {
+        guard modifier == nil else { return "" }
         let reportsEvents = flags.contains(.reportEvents)
         if event == 3 && !reportsEvents { return "" }
-        let modifier = shifted ? 2 : 1
         let suffix = reportsEvents && event != 1 ? ":\(event)" : ""
-        if self == .escape {
-            if flags.contains(.disambiguate) || flags.contains(.reportAllKeys) {
-                return "\u{1b}[27;\(modifier)\(suffix)u"
+        let enhanced = flags.contains(.disambiguate) || flags.contains(.reportAllKeys)
+        let mod = 1 + modifiers.rawValue
+        let altPrefix = modifiers.contains(.alt) ? "\u{1b}" : ""
+        switch self {
+        case .escape:
+            if enhanced { return "\u{1b}[27;\(mod)\(suffix)u" }
+            return event == 3 ? "" : altPrefix + "\u{1b}"
+        case .tab:
+            if enhanced || modifiers.contains(.control) { return "\u{1b}[9;\(mod)\(suffix)u" }
+            return event == 3 ? "" : altPrefix + (modifiers.contains(.shift) ? "\u{1b}[Z" : "\t")
+        case .newline, .interrupt:
+            let code = self == .newline ? 106 : 99
+            if enhanced { return "\u{1b}[\(code);5\(suffix)u" }
+            return event == 3 ? "" : (self == .newline ? "\n" : "\u{3}")
+        case .pageUp, .pageDown:
+            let code = self == .pageUp ? 5 : 6
+            return "\u{1b}[\(code)" + (modifiers.isEmpty && suffix.isEmpty ? "" : ";\(mod)\(suffix)") + "~"
+        default:
+            let letter: String
+            switch self {
+            case .up: letter = "A"
+            case .down: letter = "B"
+            case .right: letter = "C"
+            case .left: letter = "D"
+            case .home: letter = "H"
+            case .end: letter = "F"
+            default: return ""
             }
-            return event == 3 ? "" : "\u{1b}"
+            if !modifiers.isEmpty || !suffix.isEmpty { return "\u{1b}[1;\(mod)\(suffix)\(letter)" }
+            return "\u{1b}" + (applicationCursor && flags.isEmpty ? "O" : "[") + letter
         }
-        let letter = self == .up ? "A" : self == .down ? "B" : self == .right ? "C" : "D"
-        if shifted || !suffix.isEmpty { return "\u{1b}[1;\(modifier)\(suffix)\(letter)" }
-        return "\u{1b}" + (applicationCursor && flags.isEmpty ? "O" : "[") + letter
     }
 }
 
 @MainActor final class FloatingKeyInput: ObservableObject {
-    @Published private(set) var shifted = false
+    @Published private(set) var modifiers: FloatingModifiers = []
+    var shifted: Bool { modifiers.contains(.shift) }
+    var paste: (() -> Void)?
     var enabled = false { didSet { if !enabled { reset() } } }
-    var emit: ((FloatingTerminalKey, Bool, Int) -> Void)?
-    private var heldShift = false
-    private var shiftUsed = false
-    private var wasArmed = false
-    private var pressed: (FloatingTerminalKey, Bool)?
+    var emit: ((FloatingTerminalKey, FloatingModifiers, Int) -> Void)?
+    private var held: FloatingModifiers = []
+    private var used: FloatingModifiers = []
+    private var armedBefore: FloatingModifiers = []
+    private var pressed: (FloatingTerminalKey, FloatingModifiers)?
     private var repeating: Task<Void, Never>?
 
-    func shiftDown() {
+    func modifierDown(_ modifier: FloatingModifiers) {
         guard enabled else { return }
-        wasArmed = shifted; heldShift = true; shiftUsed = false; shifted = true
+        if modifiers.contains(modifier) { armedBefore.insert(modifier) } else { armedBefore.remove(modifier) }
+        held.insert(modifier); used.remove(modifier); modifiers.insert(modifier)
     }
-    func shiftUp(cancelled: Bool = false) {
-        guard heldShift else { return }
-        heldShift = false
-        shifted = !cancelled && !shiftUsed && !wasArmed
+    func modifierUp(_ modifier: FloatingModifiers, cancelled: Bool = false) {
+        guard held.contains(modifier) else { return }
+        held.remove(modifier)
+        if cancelled || used.contains(modifier) || armedBefore.contains(modifier) { modifiers.remove(modifier) }
+    }
+    func shiftDown() { modifierDown(.shift) }
+    func shiftUp(cancelled: Bool = false) { modifierUp(.shift, cancelled: cancelled) }
+    func consumeModifiers() -> FloatingModifiers {
+        let value = modifiers
+        used.formUnion(held)
+        modifiers.formIntersection(held)
+        return value
     }
     func press(_ key: FloatingTerminalKey) {
-        guard enabled, key != .shift else { return }
+        guard enabled, key.modifier == nil else { return }
         release()
-        let modifier = shifted
-        if heldShift { shiftUsed = true } else { shifted = false }
-        pressed = (key, modifier)
-        emit?(key, modifier, 1)
-        guard key != .escape else { return }
+        let modifiers = consumeModifiers()
+        pressed = (key, modifiers)
+        emit?(key, modifiers, 1)
+        guard key.repeats else { return }
         repeating = Task { [weak self] in
             do {
                 try await Task.sleep(for: .milliseconds(400))
                 while !Task.isCancelled {
-                    guard let self, self.enabled, let (key, modifier) = self.pressed else { return }
-                    self.emit?(key, modifier, 2)
+                    guard let self, self.enabled, let (key, modifiers) = self.pressed else { return }
+                    self.emit?(key, modifiers, 2)
                     try await Task.sleep(for: .milliseconds(75))
                 }
             } catch { }
@@ -65,21 +126,21 @@ enum FloatingTerminalKey: Int, CaseIterable {
     }
     func release() {
         repeating?.cancel(); repeating = nil
-        if let (key, modifier) = pressed { emit?(key, modifier, 3) }
+        if let (key, modifiers) = pressed { emit?(key, modifiers, 3) }
         pressed = nil
     }
-    func reset() {
-        release(); heldShift = false; shiftUsed = false; wasArmed = false; shifted = false
-    }
+    func reset() { release(); held = []; used = []; armedBefore = []; modifiers = [] }
+    func pasteFromClipboard() { guard enabled else { return }; reset(); paste?() }
 }
 
 /// A small native overlay. Only its handle owns the drag gesture.
 @MainActor final class FloatingKeyPalette: UIView {
-    static let paletteSize = CGSize(width: 156, height: 148)
+    static let paletteSize = CGSize(width: 204, height: 148)
     private let input: FloatingKeyInput
     private let preferences: UserDefaults
     private var buttons: [FloatingTerminalKey: UIButton] = [:]
-    private var shiftObservation: AnyCancellable?
+    private var observations: Set<AnyCancellable> = []
+    private let moreButton = UIButton(type: .system)
     private var dragOrigin = CGPoint.zero
     private var moving = false
     private var allowedBounds = CGRect.zero
@@ -107,10 +168,10 @@ enum FloatingTerminalKey: Int, CaseIterable {
         let grip = UIView(frame: CGRect(x: 52, y: 20, width: 36, height: 4))
         grip.backgroundColor = .tertiaryLabel; grip.layer.cornerRadius = 2; grip.isUserInteractionEnabled = false
         handle.addSubview(grip); material.contentView.addSubview(handle)
-        for key in FloatingTerminalKey.allCases {
+        for (index, key) in FloatingTerminalKey.primary.enumerated() {
             let button = UIButton(type: .system)
             var config = UIButton.Configuration.plain()
-            if let symbol = key.symbol { config.image = UIImage(systemName: symbol) } else { config.title = "esc" }
+            if let symbol = key.symbol { config.image = UIImage(systemName: symbol) } else { config.title = key.title }
             config.contentInsets = NSDirectionalEdgeInsets(top: 2, leading: 2, bottom: 2, trailing: 2)
             config.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { attributes in
                 var result = attributes; result.font = UIFont.monospacedSystemFont(ofSize: 14, weight: .medium); return result
@@ -121,7 +182,7 @@ enum FloatingTerminalKey: Int, CaseIterable {
             button.configuration = config
             button.tag = key.rawValue; button.accessibilityLabel = key.label
             button.accessibilityIdentifier = "terminal.key.\(key)"
-            button.frame = CGRect(x: 8 + (key.rawValue % 3) * 48, y: 48 + (key.rawValue / 3) * 48, width: 44, height: 44)
+            button.frame = CGRect(x: 8 + (index % 4) * 48, y: 48 + (index / 4) * 48, width: 44, height: 44)
             button.isExclusiveTouch = false
             button.addTarget(self, action: #selector(keyDown(_:)), for: .touchDown)
             button.addTarget(self, action: #selector(keyUp(_:)), for: [.touchUpInside, .touchUpOutside])
@@ -129,23 +190,46 @@ enum FloatingTerminalKey: Int, CaseIterable {
             button.addTarget(self, action: #selector(accessiblePress(_:)), for: .primaryActionTriggered)
             material.contentView.addSubview(button); buttons[key] = button
         }
-        shiftObservation = input.$shifted.sink { [weak self] shifted in
-            let button = self?.buttons[.shift]
-            button?.configuration?.baseForegroundColor = shifted ? .white : .label
-            button?.configuration?.background.backgroundColor = shifted ? .systemBlue : .secondarySystemFill
-            button?.accessibilityValue = shifted ? "On" : "Off"
-        }
+        moreButton.frame = CGRect(x: 152, y: 0, width: 44, height: 44)
+        moreButton.setImage(UIImage(systemName: "ellipsis"), for: .normal)
+        moreButton.accessibilityLabel = "More terminal keys"
+        moreButton.accessibilityIdentifier = "terminal.key.more"
+        moreButton.showsMenuAsPrimaryAction = true
+        material.contentView.addSubview(moreButton)
+        input.$modifiers.sink { [weak self] modifiers in
+            for key: FloatingTerminalKey in [.shift, .control] {
+                let active = modifiers.contains(key.modifier!)
+                let button = self?.buttons[key]
+                button?.configuration?.baseForegroundColor = active ? .white : .label
+                button?.configuration?.background.backgroundColor = active ? .systemBlue : .secondarySystemFill
+                button?.accessibilityValue = active ? "On" : "Off"
+            }
+            self?.updateMenu(modifiers: modifiers)
+        }.store(in: &observations)
     }
+    private func updateMenu(modifiers: FloatingModifiers) {
+        let keys: [FloatingTerminalKey] = [.home, .end, .pageUp, .pageDown, .alt, .newline, .interrupt]
+        var actions = keys.map { key in
+            UIAction(title: key.label, state: key == .alt && modifiers.contains(.alt) ? .on : .off) { [weak input] _ in
+                guard let input else { return }
+                if let modifier = key.modifier { input.modifierDown(modifier); input.modifierUp(modifier) }
+                else { input.press(key); input.release() }
+            }
+        }
+        actions.append(UIAction(title: "Paste", image: UIImage(systemName: "doc.on.clipboard")) { [weak input] _ in input?.pasteFromClipboard() })
+        moreButton.menu = UIMenu(children: actions)
+    }
+
     required init?(coder: NSCoder) { fatalError("init(coder:) is unavailable") }
     @objc private func keyDown(_ button: UIButton) {
         guard let key = FloatingTerminalKey(rawValue: button.tag) else { return }
-        if key == .shift { input.shiftDown() } else { input.press(key) }
+        if let modifier = key.modifier { input.modifierDown(modifier) } else { input.press(key) }
     }
     @objc private func keyUp(_ button: UIButton) {
-        if button.tag == FloatingTerminalKey.shift.rawValue { input.shiftUp() } else { input.release() }
+        if let modifier = FloatingTerminalKey(rawValue: button.tag)?.modifier { input.modifierUp(modifier) } else { input.release() }
     }
     @objc private func keyCancel(_ button: UIButton) {
-        if button.tag == FloatingTerminalKey.shift.rawValue { input.shiftUp(cancelled: true) } else { input.release() }
+        if let modifier = FloatingTerminalKey(rawValue: button.tag)?.modifier { input.modifierUp(modifier, cancelled: true) } else { input.release() }
     }
     @objc private func accessiblePress(_ button: UIButton) {
         // UIKit emits primaryActionTriggered for physical taps too. Only synthesize

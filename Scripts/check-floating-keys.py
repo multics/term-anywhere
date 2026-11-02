@@ -21,7 +21,10 @@ with tempfile.TemporaryDirectory(prefix='term-floating-keys-') as folder:
         tmux('-f', '/dev/null', 'new-session', '-d', '-s', 'keys')
         cases = [('Up', '\x1b[A'), ('Down', '\x1b[B'), ('Right', '\x1b[C'), ('Left', '\x1b[D'),
                  ('S-Up', '\x1b[1;2A'), ('S-Down', '\x1b[1;2B'),
-                 ('S-Right', '\x1b[1;2C'), ('S-Left', '\x1b[1;2D'), ('Escape', '\x1b')]
+                 ('S-Right', '\x1b[1;2C'), ('S-Left', '\x1b[1;2D'), ('Escape', '\x1b'),
+                 ('Tab', '\t'), ('BTab', '\x1b[Z'), ('Home', '\x1b[H'), ('End', '\x1b[F'),
+                 ('PPage', '\x1b[5~'), ('NPage', '\x1b[6~'), ('C-Left', '\x1b[1;5D'),
+                 ('C-S-Right', '\x1b[1;6C'), ('C-j', '\n'), ('C-c', '\x03'), ('M-b', '\x1bb')]
         for key, _ in cases:
             tmux('bind-key', '-n', key, 'set-option', '-g', '@floating-key', key)
         attached = subprocess.Popen(command + ['attach', '-t', 'keys'], stdin=slave, stdout=slave, stderr=slave,
@@ -39,7 +42,11 @@ with tempfile.TemporaryDirectory(prefix='term-floating-keys-') as folder:
             print('TMUX_FLOATING_KEY_OK', key)
     finally:
         subprocess.run(command + ['kill-server'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        if attached:
-            attached.wait(timeout=5)
         os.close(master)
         os.close(slave)
+        if attached:
+            try:
+                attached.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                attached.terminate()
+                attached.wait(timeout=5)

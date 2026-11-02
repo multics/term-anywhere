@@ -86,10 +86,12 @@ import TermCore
         self.host = host; self.store = store
         terminal = SafeTerminalView(frame: .zero)
         floatingKeysVisible = UserDefaults.standard.object(forKey: "floatingKeys.visible") as? Bool ?? true
-        floatingKeyInput.emit = { [weak self] key, shifted, event in
+        (terminal as? SafeTerminalView)?.floatingInput = floatingKeyInput
+        floatingKeyInput.paste = { [weak self] in self?.terminal.paste(nil) }
+        floatingKeyInput.emit = { [weak self] key, modifiers, event in
             guard let self, self.isLive, self.floatingKeysVisible else { return }
             let t = self.terminal.getTerminal()
-            let text = key.sequence(shifted: shifted, applicationCursor: t.applicationCursor,
+            let text = key.sequence(modifiers: modifiers, applicationCursor: t.applicationCursor,
                                     flags: t.keyboardEnhancementFlags, event: event)
             if !text.isEmpty { self.terminal.send(txt: text) }
         }

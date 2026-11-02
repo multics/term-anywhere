@@ -5,6 +5,59 @@ import TermCore
 @testable import TermAnywhere
 
 @MainActor final class TerminalInputTests: XCTestCase {
+    func testExpandedKeyEncodingAndCombinedModifiers() {
+        let cases: [(FloatingTerminalKey, String)] = [(.tab, "\t"), (.home, "\u{1b}[H"), (.end, "\u{1b}[F"),
+            (.pageUp, "\u{1b}[5~"), (.pageDown, "\u{1b}[6~"), (.newline, "\n"), (.interrupt, "\u{3}")]
+        for (key, bytes) in cases {
+            XCTAssertEqual(key.sequence(modifiers: [], applicationCursor: false), bytes)
+            XCTAssertEqual(key.sequence(modifiers: [], applicationCursor: false, event: 3), "")
+        }
+        XCTAssertEqual(FloatingTerminalKey.tab.sequence(modifiers: .shift, applicationCursor: false), "\u{1b}[Z")
+        XCTAssertEqual(FloatingTerminalKey.left.sequence(modifiers: .control, applicationCursor: false), "\u{1b}[1;5D")
+        XCTAssertEqual(FloatingTerminalKey.right.sequence(modifiers: [.control, .shift], applicationCursor: false), "\u{1b}[1;6C")
+        XCTAssertEqual(FloatingTerminalKey.home.sequence(modifiers: [], applicationCursor: true), "\u{1b}OH")
+        XCTAssertEqual(FloatingTerminalKey.pageDown.sequence(modifiers: .alt, applicationCursor: false), "\u{1b}[6;3~")
+        XCTAssertEqual(FloatingTerminalKey.tab.sequence(modifiers: .shift, applicationCursor: false, flags: [.disambiguate, .reportEvents], event: 3), "\u{1b}[9;2:3u")
+        XCTAssertEqual(FloatingTerminalKey.newline.sequence(modifiers: [], applicationCursor: false, flags: .disambiguate), "\u{1b}[106;5u")
+    }
+    func testFloatingModifiersReachSoftwareKeyboardWithoutChangingComposition() {
+        let view = SafeTerminalView(frame: CGRect(x: 0, y: 0, width: 700, height: 400))
+        view.inputAccessoryView = nil
+        let input = FloatingKeyInput(); input.enabled = true; view.floatingInput = input
+        let output = InputRecorder(); view.terminalDelegate = output
+        func tap(_ modifier: FloatingModifiers) { input.modifierDown(modifier); input.modifierUp(modifier) }
+        tap(.control); view.insertText("c"); view.insertText("x")
+        tap(.alt); view.insertText("b")
+        tap(.control); tap(.alt); view.insertText("c")
+        input.modifierDown(.control); view.insertText("a"); view.insertText("e"); input.modifierUp(.control)
+        XCTAssertEqual(output.data, Data([3, 120, 27, 98, 27, 3, 1, 5]))
+        XCTAssertTrue(input.modifiers.isEmpty)
+        XCTAssertFalse(view.controlModifier); XCTAssertFalse(view.metaModifier)
+        output.data = Data()
+        tap(.control)
+        view.setMarkedText("ni", selectedRange: NSRange(location: 2, length: 0))
+        XCTAssertTrue(output.data.isEmpty); XCTAssertEqual(view.compositionText, "ni")
+        XCTAssertTrue(input.modifiers.isEmpty)
+        view.insertText("你")
+        XCTAssertEqual(output.data, Data("你".utf8))
+        output.data = Data()
+        tap(.shift); view.insertText("\n")
+        XCTAssertEqual(output.data, Data([10]), "Shift+Return must insert a newline, not submit")
+        view.feed(text: "\u{1b}[>9u")
+        output.data = Data(); tap(.control); view.insertText("r")
+        XCTAssertEqual(output.data, Data("\u{1b}[114;5u".utf8))
+    }
+    func testFloatingPasteIsALocalActionAndClearsModifiers() {
+        let input = FloatingKeyInput(); input.enabled = true
+        var pastes = 0, emitted = 0
+        input.paste = { pastes += 1 }
+        input.emit = { _, _, _ in emitted += 1 }
+        input.modifierDown(.alt); input.modifierUp(.alt)
+        input.pasteFromClipboard(); XCTAssertEqual(pastes, 1); XCTAssertTrue(input.modifiers.isEmpty)
+        XCTAssertEqual(emitted, 0, "Local actions must not send keys to the remote application")
+        input.enabled = false; input.pasteFromClipboard()
+        XCTAssertEqual(pastes, 1)
+    }
     func testFloatingKeysEncodeArrowsShiftEscapeAndNegotiatedModes() {
         let store = AppStore(); store.configuration.onChange = nil
         let session = TerminalSession(host: Host(name: "Keys", address: "example.invalid"), store: store)
@@ -50,12 +103,15 @@ import TermCore
         try await Task.sleep(for: .milliseconds(120))
         XCTAssertEqual(output.data, afterRelease)
         for stop in [{ session.setFloatingKeysVisible(false) }, { session.prepareForBackground() }, { session.disconnect() }] {
+            input.modifierDown(.control); input.modifierUp(.control)
+            input.modifierDown(.alt); input.modifierUp(.alt)
             input.shiftDown(); input.shiftUp(); input.press(.up)
             stop()
             let stopped = output.data
             try await Task.sleep(for: .milliseconds(450))
             XCTAssertEqual(output.data, stopped)
             XCTAssertFalse(input.shifted)
+            XCTAssertTrue(input.modifiers.isEmpty)
             session.setFloatingKeysVisible(true)
         }
         let disconnected = output.data
@@ -88,15 +144,17 @@ import TermCore
         let rows = session.terminal.getTerminal().rows, cols = session.terminal.getTerminal().cols
         func buttons(_ view: UIView) -> [UIButton] { view.subviews.flatMap { ($0 as? UIButton).map { [$0] } ?? buttons($0) } }
         let all = buttons(palette)
-        XCTAssertEqual(all.count, 6)
+        XCTAssertEqual(all.count, 9)
         XCTAssertTrue(all.allSatisfy { $0.bounds.width >= 44 && $0.bounds.height >= 44 })
+        let more = try XCTUnwrap(all.first { $0.accessibilityIdentifier == "terminal.key.more" })
+        XCTAssertEqual(more.menu?.children.map(\.title), ["Home", "End", "Page Up", "Page Down", "Alt / Meta", "New line (Ctrl+J)", "Ctrl+C", "Paste"])
         let output = InputRecorder(); session.terminal.terminalDelegate = output
-        let esc = try XCTUnwrap(all.first { $0.tag == FloatingTerminalKey.escape.rawValue })
+        let esc = try XCTUnwrap(all.first { $0.accessibilityIdentifier == "terminal.key.escape" })
         esc.sendActions(for: .touchDown); esc.sendActions(for: .touchUpInside); esc.sendActions(for: .primaryActionTriggered)
         XCTAssertEqual(output.data, Data([27]), "A normal native tap must send Escape only once")
         session.terminal.feed(text: "Floating controls leave all terminal rows available.\r\n")
         let picture = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in window.drawHierarchy(in: window.bounds, afterScreenUpdates: true) }
-        let attachment = XCTAttachment(image: picture); attachment.name = "Floating six-key palette"; attachment.lifetime = .keepAlways; add(attachment)
+        let attachment = XCTAttachment(image: picture); attachment.name = "Expanded floating palette"; attachment.lifetime = .keepAlways; add(attachment)
         session.setFloatingKeysVisible(false); controller.updateKeyboardViewport()
         XCTAssertTrue(palette.isHidden)
         session.setFloatingKeysVisible(true); controller.updateKeyboardViewport()

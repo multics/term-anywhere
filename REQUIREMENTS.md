@@ -59,3 +59,5 @@ Test offline configuration merges, competing host edits, settings persistence, a
 Implementation decisions are in [DESIGN.md](DESIGN.md). Keep local planning notes that contain private environment details out of source control.
 
 Delivery state, including requirements that are not yet deployed, is tracked in [docs/DELIVERY_PLAN.md](docs/DELIVERY_PLAN.md). Follow the test, deploy, then commit sequence in [AGENTS.md](AGENTS.md).
+
+- Provide Esc, Tab, Ctrl, Shift, and arrows in the floating keyboard. Put Home/End, Page Up/Down, Alt/Meta, New line, Ctrl+C, and Paste in its native More menu. Modifiers support one-shot combinations and software-keyboard ASCII shortcuts; do not reinterpret IME composition as control input.
