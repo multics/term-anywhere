@@ -38,7 +38,7 @@ Reference: [tmux window-size](https://man.openbsd.org/tmux.1#window-size).
 
 Pane-border snapping accepts a window smaller than the local client. Use the actual tmux status-line count (`on`, `off`, or a numeric multi-line value) for top-status placement; unused rows from a smaller client are not status rows. Oversized windows remain rejected rather than guessing a border position.
 
-Sizing validation: 39 core checks and the full 56 automated hosted checks pass; one opt-in manual gesture check is skipped. The final status-line geometry refinement passes the 21-check iPhone gesture suite. The iPad supplemental rerun and final normal launch are pending unlock; its earlier full and gesture suites passed. Final builds are installed on both devices. See DELIVERY_PLAN.md for exact evidence and remaining manual checks.
+Sizing validation: 39 core checks and the full 56 automated hosted checks pass; one opt-in manual gesture check is skipped. The final status-line geometry refinement passes the 21-check iPhone gesture suite. The iPad supplemental status-line regression, final normal launch, and process readback also pass after unlock; its earlier full and gesture suites passed. Final builds are installed on both devices. See DELIVERY_PLAN.md for exact evidence and remaining manual checks.
 
 ## Validation history
 
