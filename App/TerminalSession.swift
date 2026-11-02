@@ -53,10 +53,6 @@ import TermCore
     private var scrollTask: Task<Void, Never>?
     private var pendingScrollLines = 0
     private var scrollRequestID = UUID()
-    private var panTask: Task<Void, Never>?
-    private var pendingPanColumns = 0
-    private var pendingFollowCursor = false
-    private var panRequestID = UUID()
     var hasStarted = false
     @Published private var wantsConnection = false
     var canDisconnect: Bool { isLive || isConnecting || wantsConnection }
@@ -98,7 +94,7 @@ import TermCore
         (terminal as? SafeTerminalView)?.resizeModeChanged = { [weak self] enabled in
             guard let self else { return }
             self.isResizingPanes = enabled
-            if enabled { self.stopPanning(); self.preparePaneResizeLayout() }
+            if enabled { self.preparePaneResizeLayout() }
             else {
                 self.paneLayoutRequest = UUID()
                 self.paneLayoutTask?.cancel(); self.paneLayoutTask = nil
@@ -198,13 +194,15 @@ import TermCore
                 let attachOnly = try await prepareTmuxSession(using: c, forceSelection: forceSessionSelection)
                 guard generation == attempt, !Task.isCancelled else { c.close(); return }
                 (terminal as? SafeTerminalView)?.tmuxScrollHandler = host.tmuxSession.isEmpty ? nil : { [weak self] lines in self?.scrollTmux(lines: lines) }
-                (terminal as? SafeTerminalView)?.tmuxPanHandler = host.tmuxSession.isEmpty ? nil : { [weak self] columns in self?.panTmux(columns: columns) }
                 let t = terminal.getTerminal()
                 try await c.startTerminal(host: host, reconnecting: attachOnly, columns: t.cols, rows: t.rows)
                 guard generation == attempt, !Task.isCancelled else { c.close(); return }
                 createTmuxOnConnect = false
                 retryCount = 0; isConnecting = false; isLive = true; status = "Connected"
                 store.rememberSession(self)
+                do { try await c.fitTmuxWindows(for: host) }
+                catch { if generation == attempt { scrollStatus = "Terminal sizing: " + error.localizedDescription } }
+                guard generation == attempt, !Task.isCancelled else { return }
                 await refreshBindings()
             } catch {
                 guard generation == attempt, !Task.isCancelled else { return }
@@ -316,7 +314,7 @@ import TermCore
             try Task.checkCancellation()
             let id = try await connection.tmuxSessionID(for: host)
             try Task.checkCancellation()
-            let layout = try await connection.execute("\(host.tmuxCommand) list-panes -t \(shellQuote(id + ":")) -F '#{pane_left}|#{pane_top}|#{pane_width}|#{pane_height}|#{window_width}|#{window_height}|#{status-position}|#{window_zoomed_flag}'")
+            let layout = try await connection.execute("\(host.tmuxCommand) list-panes -t \(shellQuote(id + ":")) -F '#{pane_left}|#{pane_top}|#{pane_width}|#{pane_height}|#{window_width}|#{window_height}|#{status-position}|#{window_zoomed_flag}|#{status}'")
             try Task.checkCancellation()
             guard generation == attempt, isLive else { return nil }
             return layout
@@ -361,49 +359,12 @@ import TermCore
     }
     func stopScrolling() {
         scrollRequestID = UUID(); scrollTask?.cancel(); scrollTask = nil; pendingScrollLines = 0
-        stopPanning()
-    }
-    private func stopPanning() {
-        panRequestID = UUID(); panTask?.cancel(); panTask = nil
-        pendingPanColumns = 0; pendingFollowCursor = false
-    }
-    /// Zero restores tmux's native cursor-following viewport.
-    func panTmux(columns: Int) {
-        guard isLive, let connection, !host.tmuxSession.isEmpty else { return }
-        if columns == 0 { pendingPanColumns = 0; pendingFollowCursor = true }
-        else { pendingPanColumns = max(-240, min(240, pendingPanColumns + columns)) }
-        guard panTask == nil else { return }
-        let attempt = generation, request = panRequestID
-        panTask = Task { [weak self] in
-            guard let self else { return }
-            defer { if panRequestID == request { panTask = nil } }
-            do {
-                while !Task.isCancelled, generation == attempt, isLive, pendingFollowCursor || pendingPanColumns != 0 {
-                    try await Task.sleep(for: .milliseconds(40))
-                    // Opposite movements may cancel during batching; zero is reserved
-                    // for an explicit request to follow the cursor.
-                    guard pendingFollowCursor || pendingPanColumns != 0 else { continue }
-                    let columns = pendingFollowCursor ? 0 : pendingPanColumns
-                    if pendingFollowCursor { pendingFollowCursor = false }
-                    else { pendingPanColumns = 0 }
-                    try await connection.panTmux(for: host, columns: columns)
-                    try Task.checkCancellation()
-                    scrollStatus = nil
-                }
-            } catch {
-                if !Task.isCancelled, generation == attempt {
-                    pendingPanColumns = 0; pendingFollowCursor = false
-                    scrollStatus = "Horizontal scrolling: " + error.localizedDescription
-                }
-            }
-        }
     }
     func disconnect(closeUI: Bool = true) {
         endBackgroundTime()
         (terminal as? SafeTerminalView)?.setPaneResizeMode(false)
         stopScrolling(); scrollStatus = nil
         (terminal as? SafeTerminalView)?.tmuxScrollHandler = nil
-        (terminal as? SafeTerminalView)?.tmuxPanHandler = nil
         hasStarted = true; wantsConnection = false; generation = UUID(); connectTask?.cancel(); connectTask = nil
         let pending = tmuxSelectionContinuation; tmuxSelectionContinuation = nil; selectingTmux = false
         pending?.resume(throwing: CancellationError())
@@ -423,7 +384,6 @@ import TermCore
         (terminal as? SafeTerminalView)?.setPaneResizeMode(false, sendRelease: false)
         stopScrolling()
         (terminal as? SafeTerminalView)?.tmuxScrollHandler = nil
-        (terminal as? SafeTerminalView)?.tmuxPanHandler = nil
         connection = nil; isLive = false; isConnecting = false; bindings = nil
         let pending = tmuxSelectionContinuation; tmuxSelectionContinuation = nil; selectingTmux = false
         pending?.resume(throwing: ConnectionError.message(reason ?? "The connection ended while choosing a session."))

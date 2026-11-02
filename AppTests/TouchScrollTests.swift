@@ -3,30 +3,25 @@ import SwiftTerm
 @testable import TermAnywhere
 
 @MainActor final class TouchScrollTests: XCTestCase {
-    func testHorizontalPanUsesTmuxViewportAndDoesNotSendApplicationKeys() {
+    func testHorizontalDragsDoNotPanTheRemoteWindow() {
         let view = SafeTerminalView(frame: CGRect(x: 0, y: 0, width: 700, height: 400))
-        let recorder = ScrollRecorder(); view.terminalDelegate = recorder
-        let grid = (view.getTerminal().cols, view.getTerminal().rows)
-        var moves: [Int] = []
-        XCTAssertFalse(view.canPanHorizontally(velocity: CGPoint(x: 100, y: 2)))
-        view.tmuxPanHandler = { moves.append($0) }
-        XCTAssertTrue(view.canPanHorizontally(velocity: CGPoint(x: 100, y: 2)))
-        XCTAssertFalse(view.canPanHorizontally(velocity: CGPoint(x: 2, y: 100)))
-        view.feed(text: "\u{1b}[?1002h\u{1b}[?1006h")
-        view.panHorizontally(columns: 8); view.panHorizontally(columns: -3); view.panHorizontally(columns: 0)
-        XCTAssertEqual(moves, [8, -3]); XCTAssertTrue(recorder.bytes.isEmpty)
-        view.paneResizeAvailable = true; view.setPaneResizeMode(true)
-        XCTAssertFalse(view.canPanHorizontally(velocity: CGPoint(x: 100, y: 2)))
-        view.panHorizontally(columns: 12); XCTAssertEqual(moves, [8, -3])
-        view.setPaneResizeMode(false)
-        view.feed(text: "Select this text")
-        view.selectAll(nil)
-        XCTAssertFalse(view.canPanHorizontally(velocity: CGPoint(x: 100, y: 2)))
-        view.panHorizontally(columns: 12); XCTAssertEqual(moves, [8, -3])
-        view.selection.selectNone()
-        view.tmuxPanHandler = nil
-        view.panHorizontally(columns: 12); XCTAssertEqual(moves, [8, -3])
-        XCTAssertEqual(view.getTerminal().cols, grid.0); XCTAssertEqual(view.getTerminal().rows, grid.1)
+        view.feed(text: "\u{1b}[?1000h")
+        XCTAssertFalse(view.wantsRemoteScroll(velocity: CGPoint(x: 100, y: 2)))
+        XCTAssertFalse(view.wantsRemoteScroll(velocity: CGPoint(x: -100, y: 2)))
+        XCTAssertTrue(view.wantsRemoteScroll(velocity: CGPoint(x: 2, y: 100)))
+        XCTAssertTrue(view.wantsRemoteScroll(velocity: CGPoint(x: 2, y: -100)))
+    }
+    func testPaneBordersFitWhenAnotherClientMakesTheWindowSmaller() {
+        let cell = CGSize(width: 10, height: 20)
+        let split = "0|0|80|10|80|22|top|0|2\n0|11|80|11|80|22|top|0|2"
+        XCTAssertEqual(SafeTerminalView.nearestPaneBorder(split, to: CGPoint(x: 300, y: 100),
+            cell: cell, columns: 120, rows: 40), CGPoint(x: 300, y: 250))
+        XCTAssertNil(SafeTerminalView.nearestPaneBorder(split, to: .zero,
+            cell: cell, columns: 70, rows: 40), "Do not guess coordinates for an oversized window")
+        for (status, y): (String, CGFloat) in [("on", 230), ("off", 210)] {
+            XCTAssertEqual(SafeTerminalView.nearestPaneBorder(split.replacingOccurrences(of: "|0|2", with: "|0|" + status),
+                to: CGPoint(x: 300, y: 100), cell: cell, columns: 120, rows: 40), CGPoint(x: 300, y: y))
+        }
     }
     /// Opt-in computer-use check. No host, credentials, or saved configuration is involved.
     func testInteractiveTapKeepsKeyboardHidden() async throws {

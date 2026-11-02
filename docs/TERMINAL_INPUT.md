@@ -18,23 +18,27 @@ Normal terminal history belongs to the local scroll view. A full-screen program 
 | Alternate screen outside tmux | Follow the terminal's Alternate Scroll mode; send cursor input only when that mode is enabled |
 | Normal shell without mouse reporting | Scroll local output with the native scroll view; send no keys to the shell |
 
-In an app-selected tmux tab, a horizontal drag moves that client's viewport with `refresh-client -L/-R`. Lock the axis when the gesture starts. Do not send horizontal arrow keys or mouse-wheel events to the pane. Other tabs retain their existing horizontal gesture behavior. Keep tap-to-type and long-press selection. Preserve Chinese composition, one-shot modifiers, bracketed paste, and the keyboard hide/show control. A drag must not submit a command, navigate shell command history, or change global tmux options.
+Keep horizontal drags out of the remote scroll handler. Keep tap-to-type and long-press selection. Preserve Chinese composition, one-shot modifiers, bracketed paste, and the keyboard hide/show control. A drag must not submit a command, navigate shell command history, or change global tmux options.
 
 When the remote program requests mouse input, a tap sends its cell coordinates as a press and release. The tap keeps a hidden keyboard hidden. With mouse mode off, use native tap-to-type. Long press opens the local selection menu; active local selection suppresses remote mouse input. Follow live mouse-mode changes instead of reading or changing the server's configuration file.
 
 Remote scroll requests must be bounded and serialized. Drop pending input when a tab closes, switches away, or loses its connection. Never replay scroll input after reconnection. Remote errors must leave the terminal available for keyboard input.
 
-## Wide tmux windows
+## Device-fitting tmux windows
 
-Keep the existing tmux window-size policy. Horizontal panning changes only the visible portion of the window for the app's client. It does not resize the window, change the desktop client's viewport, or detach other clients. Drag left to reveal columns on the right. Use **tmux controls → Follow tmux cursor** to restore automatic cursor tracking. tmux resets the viewport when its current window changes.
+The user replaced horizontal viewport panning with automatic fitting. The app retains the local terminal grid derived from device bounds. After attaching to an app-selected tmux session, set that session's existing windows to `window-size smallest`. tmux uses the smallest attached client and updates the size on client attachment, detachment, or terminal bounds changes. The shared window may therefore reflow on a desktop. Keyboard and sidebar overlays do not change the local grid.
 
-Before starting tmux, the remote shell reports its PTY path in a one-time OSC marker with a random connection token. The SSH reader removes this marker across arbitrary read boundaries. The shell then uses `exec`, so tmux uses that same PTY. All viewport commands target this exact client, including when several devices use the same session. A missing identity produces a scrolling error rather than guessing a client. Plain-shell connections do not use this handshake.
+Install a session-local `session-window-changed` hook to set the newly active window to `smallest`, covering new windows and selection by other clients. Append to existing local hooks. If the session previously inherited the global hook array, copy its current callbacks into the local array before appending so those callbacks are not suppressed. Subsequent reconnects do not duplicate the fitting hook. A local hook array follows tmux inheritance rules: later global hook edits are not automatically inherited by that session. The app does not edit tmux configuration files or the global window-size default. Windows linked into multiple sessions necessarily share their size policy.
 
-Coalesce movement for 40 ms and serialize remote requests. Clear pending movement on background, tab departure, disconnect, terminal input, or entry into pane resize mode. An already executing SSH request can finish; never replay queued movement on reconnect. Selection and explicit pane resize mode take priority over horizontal panning. Network round trips still affect redraw latency.
+The selected session's window options and hook persist for the life of that tmux server/session. Plain shells and tmux started manually inside them are unchanged. Report setup failures in the existing terminal status area without terminating the working SSH connection. No horizontal viewport commands, cursor-follow buttons, or PTY identity markers remain.
 
-Existing pane-border snapping rejects windows whose geometry does not match the local grid. This feature does not add pane-border resizing for oversized windows. Normal tmux mouse events retain client coordinates; tmux translates them to its viewport. Manually starting tmux inside a plain-shell tab does not enable this app-specific route.
+Validation uses `Scripts/check-tmux-sizing.py`: isolated desktop, iPad-sized and iPhone-sized clients; shrinking/growing on attach/detach; changed terminal bounds; new/selected windows; retained existing hooks; and an untouched unrelated session. This establishes native tmux behavior, not the precise configuration of the user's remote server.
 
-Reference: [tmux refresh-client](https://man.openbsd.org/tmux.1#refresh-client).
+Reference: [tmux window-size](https://man.openbsd.org/tmux.1#window-size).
+
+Pane-border snapping accepts a window smaller than the local client. Use the actual tmux status-line count (`on`, `off`, or a numeric multi-line value) for top-status placement; unused rows from a smaller client are not status rows. Oversized windows remain rejected rather than guessing a border position.
+
+Sizing validation: 39 core checks and the full 56 automated hosted checks pass; one opt-in manual gesture check is skipped. The final status-line geometry refinement passes the 21-check iPhone gesture suite. The iPad supplemental rerun and final normal launch are pending unlock; its earlier full and gesture suites passed. Final builds are installed on both devices. See DELIVERY_PLAN.md for exact evidence and remaining manual checks.
 
 ## Validation history
 

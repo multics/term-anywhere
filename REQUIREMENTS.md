@@ -2,7 +2,7 @@
 
 Status: approved scope for implementation. Minimum OS: iOS/iPadOS 26 and macOS 26. The current Mac build supports Apple Silicon.
 
-- For an app-selected tmux session wider than the mobile terminal, support one-finger horizontal viewport panning through native tmux commands. Preserve shared window dimensions and other clients' viewports. Provide a return-to-cursor action, preserve selection and vertical scrolling, and discard pending pan input when the tab's input context ends.
+- Fit app-selected tmux sessions to the smallest attached client so iPhone and iPad do not clip terminal lines. Keep local grids tied to device bounds, without resizing for keyboard/sidebar overlays. Remove horizontal viewport panning and its cursor-follow controls. Apply sizing to existing and newly selected windows, preserve unrelated sessions and existing hooks, and allow shared desktop views to reflow.
 
 ## Purpose
 

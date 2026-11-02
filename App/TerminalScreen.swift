@@ -74,9 +74,6 @@ struct TerminalSidebarTools: View {
         }
         if !session.host.tmuxSession.isEmpty {
             DisclosureGroup("tmux controls") {
-                Button("Follow tmux cursor", systemImage: "scope") { session.panTmux(columns: 0) }
-                    .disabled(!session.isLive)
-                Text("Swipe sideways to view a wide tmux window without resizing it.")
                 Group {
                     ForEach(session.bindings?.shortcuts ?? []) { shortcut in
                         Button(shortcut.title + " · " + shortcut.keys) { session.send(shortcut.bytes) }

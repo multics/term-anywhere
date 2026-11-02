@@ -1,42 +1,38 @@
 import Foundation
 
-/// Read the PTY identity before exec replaces the shell with the tmux client.
-/// The random OSC marker is removed even when SSH splits it across reads.
-struct TmuxClientHandshake {
-    let token: String
-    private var buffered = Data()
-    private(set) var tty: String?
-    private(set) var complete = false
-    init(token: String = UUID().uuidString) { self.token = token }
-    var prefix: Data { Data("\u{1b}]777;term-anywhere-\(token);".utf8) }
-    var command: String { "printf '\\033]777;term-anywhere-\(token);%s\\007' \"$(tty)\"; " }
-    mutating func consume(_ data: Data) -> Data {
-        guard !complete else { return data }
-        buffered.append(data)
-        if let start = buffered.range(of: prefix) {
-            let before = Data(buffered[..<start.lowerBound])
-            if let end = buffered[start.upperBound...].firstIndex(of: 7) {
-                let value = String(decoding: buffered[start.upperBound..<end], as: UTF8.self)
-                if value.range(of: "^/dev/[A-Za-z0-9_./-]+$", options: .regularExpression) != nil { tty = value }
-                complete = true
-                let result = before + buffered[buffered.index(after: end)...]
-                buffered.removeAll(); return result
-            }
-            if buffered.count > 4096 { complete = true; let result = buffered; buffered.removeAll(); return result }
-            buffered = Data(buffered[start.lowerBound...]); return before
+/// Apply fitting only to the selected session's windows. Preserve existing hooks.
+enum TmuxSizing {
+    static let event = "session-window-changed"
+    // tmux supplies the changed window as the hook command's target context.
+    static let fitHook = "set-option -w window-size smallest"
+    static func hooks(_ output: String) -> [(name: String, command: String)] {
+        output.split(separator: "\n").compactMap { line in
+            let fields = line.split(separator: " ", maxSplits: 1)
+            guard fields.count == 2,
+                  fields[0].range(of: "^session-window-changed\\[[0-9]+\\]$", options: .regularExpression) != nil else { return nil }
+            return (String(fields[0]), String(fields[1]))
         }
-        // Retain only a possible partial marker, never ordinary terminal output.
-        var keep = min(buffered.count, prefix.count - 1)
-        while keep > 0 && buffered.suffix(keep) != prefix.prefix(keep) { keep -= 1 }
-        let result = Data(buffered.prefix(buffered.count - keep))
-        buffered = Data(buffered.suffix(keep)); return result
     }
-}
-
-enum TmuxViewport {
-    static func command(tmux: String, tty: String, columns: Int) -> String {
-        let move = columns == 0 ? "-c" : "\(columns > 0 ? "-R" : "-L") \(min(240, max(-240, columns).magnitude))"
-        return "\(tmux) refresh-client -t \(shellQuote(tty)) \(move)"
+    static func command(tmux: String, sessionID: String, windows: String, localHooks: String, inheritedHooks: String) throws -> String {
+        guard sessionID.range(of: "^\\$[0-9]+$", options: .regularExpression) != nil else { throw ConnectionError.message("Invalid tmux session for sizing.") }
+        let ids = windows.split(whereSeparator: \.isNewline).map(String.init)
+        guard !ids.isEmpty, ids.allSatisfy({ $0.range(of: "^@[0-9]+$", options: .regularExpression) != nil }) else {
+            throw ConnectionError.message("Cannot read tmux windows for sizing.")
+        }
+        let local = hooks(localHooks)
+        var commands: [String] = []
+        if !local.contains(where: { $0.command == fitHook }) {
+            // A local hook shadows the inherited array. Copy its current entries
+            // first, rather than silently suppressing the user's existing actions.
+            if local.isEmpty {
+                commands += hooks(inheritedHooks).map {
+                    "\(tmux) set-hook -t \(shellQuote(sessionID)) \(shellQuote($0.name)) \(shellQuote($0.command))"
+                }
+            }
+            commands.append("\(tmux) set-hook -a -t \(shellQuote(sessionID)) \(event) \(shellQuote(fitHook))")
+        }
+        commands += ids.map { "\(tmux) set-option -w -t \(shellQuote($0)) window-size smallest" }
+        return commands.joined(separator: " && ")
     }
 }
 
