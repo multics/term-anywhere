@@ -14,6 +14,7 @@ public final class SSHConnection: @unchecked Sendable {
     private var writeBuffers: [Data] = []
     private var writeOffset = 0
     private var lastKeepalive = Date()
+    private var tmuxClient: TmuxClientHandshake?
     public let fingerprint: String
     public var onData: (@Sendable (Data) -> Void)?
     public var onClose: (@Sendable (String?) -> Void)?
@@ -133,8 +134,9 @@ public final class SSHConnection: @unchecked Sendable {
                     let status: Int32
                     if host.tmuxSession.isEmpty { status = ta_shell(c) }
                     else {
+                        self.tmuxClient = TmuxClientHandshake()
                         let operation = reconnecting ? "attach-session -t \(shellQuote(tmuxID!))" : "new-session -A -s \(shellQuote(host.tmuxSession))"
-                        status = ta_exec(c, "exec \(host.tmuxCommand) \(operation)")
+                        status = ta_exec(c, self.tmuxClient!.command + "exec \(host.tmuxCommand) \(operation)")
                     }
                     guard status == 0 else { throw ConnectionError.message("Cannot start the remote terminal.") }
                     libssh2_session_set_blocking(s, 0)
@@ -162,13 +164,28 @@ public final class SSHConnection: @unchecked Sendable {
     public func resize(columns: Int, rows: Int) {
         worker.async { if !self.stopped, let c = self.channel { _ = libssh2_channel_request_pty_size_ex(c, Int32(max(1, columns)), Int32(max(1, rows)), 0, 0) } }
     }
+    /// A viewport belongs to this PTY's client, not the shared session or window.
+    public func panTmux(for host: Host, columns: Int) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            worker.async {
+                do {
+                    guard let tty = self.tmuxClient?.tty else { throw ConnectionError.message("The tmux client is not ready for horizontal scrolling.") }
+                    _ = try self.executeSync(TmuxViewport.command(tmux: host.tmuxCommand, tty: tty, columns: columns))
+                    continuation.resume()
+                } catch { continuation.resume(throwing: error) }
+            }
+        }
+    }
     private func poll() {
         guard !stopped, let c = channel, let s = session else { return }
         var buffer = [UInt8](repeating: 0, count: 16384), output = Data()
         for stream in [Int32(0), Int32(1)] {
             for _ in 0..<8 {
                 let n = libssh2_channel_read_ex(c, stream, &buffer, buffer.count)
-                if n > 0 { output.append(contentsOf: buffer.prefix(n)) }
+                if n > 0 {
+                    let data = Data(buffer.prefix(n))
+                    output.append(stream == 0 ? (tmuxClient?.consume(data) ?? data) : data)
+                }
                 else if n == Int(LIBSSH2_ERROR_EAGAIN) || n == 0 { break }
                 else { closeSync("SSH connection lost."); return }
             }

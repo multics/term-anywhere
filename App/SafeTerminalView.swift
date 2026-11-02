@@ -5,6 +5,7 @@ import SwiftTerm
 final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
     var approvePaste: ((String, @escaping () -> Void) -> Void)?
     var tmuxScrollHandler: ((Int) -> Void)?
+    var tmuxPanHandler: ((Int) -> Void)?
     var compositionChanged: (() -> Void)?
     private let compositionDelegate = CompositionInputDelegate()
     var compositionText: String? { markedTextRange.flatMap { text(in: $0) } }
@@ -91,6 +92,10 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
     private var touchPan: UIPanGestureRecognizer!
     private var touchTap: UITapGestureRecognizer!
     private var lastScrollTranslation: CGFloat = 0
+    private var horizontalScroll = false
+    func canPanHorizontally(velocity: CGPoint) -> Bool {
+        tmuxPanHandler != nil && !isResizingPanes && !selection.active && abs(velocity.x) > abs(velocity.y)
+    }
     enum ScrollRoute { case selection, local, mouse, tmux, alternate }
     var scrollRoute: ScrollRoute {
         let terminal = getTerminal()
@@ -158,6 +163,7 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
         }
         guard gestureRecognizer === touchPan else { return super.gestureRecognizerShouldBegin(gestureRecognizer) }
         let velocity = touchPan.velocity(in: self)
+        if canPanHorizontally(velocity: velocity) { return true }
         return !isResizingPanes && abs(velocity.y) > abs(velocity.x) && scrollRoute != .local && scrollRoute != .selection
     }
     override func selectionChanged(source: Terminal) {
@@ -296,8 +302,20 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
         }
     }
     @objc private func scrollPan(_ gesture: UIPanGestureRecognizer) {
-        if gesture.state == .began { lastScrollTranslation = 0 }
-        guard gesture.state == .began || gesture.state == .changed else { return }
+        if gesture.state == .began {
+            lastScrollTranslation = 0
+            horizontalScroll = canPanHorizontally(velocity: gesture.velocity(in: self))
+        }
+        guard gesture.state == .began || gesture.state == .changed || gesture.state == .ended else { return }
+        if horizontalScroll {
+            let translation = gesture.translation(in: self).x
+            let cell = max(1, getOptimalFrameSize().width / CGFloat(max(1, getTerminal().cols)))
+            let columns = Int((translation - lastScrollTranslation) / cell)
+            lastScrollTranslation += CGFloat(columns) * cell
+            // Drag the content left to reveal columns on the right.
+            panHorizontally(columns: -columns)
+            return
+        }
         let translation = gesture.translation(in: self).y
         let rowHeight = max(1, getOptimalFrameSize().height / CGFloat(max(1, getTerminal().rows)))
         let lines = Int((translation - lastScrollTranslation) / rowHeight)
@@ -305,6 +323,10 @@ final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
         lastScrollTranslation += CGFloat(lines) * rowHeight
         var point = gesture.location(in: self); point.y -= contentOffset.y
         scrollTouch(lines: lines, at: point)
+    }
+    func panHorizontally(columns: Int) {
+        guard !isResizingPanes, !selection.active, dragPoint == nil, columns != 0 else { return }
+        tmuxPanHandler?(max(-240, min(240, columns)))
     }
     /// Positive lines reveal older content. Normal-buffer scrolling stays with UIScrollView.
     func scrollTouch(lines: Int, at point: CGPoint) {

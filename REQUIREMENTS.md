@@ -2,6 +2,8 @@
 
 Status: approved scope for implementation. Minimum OS: iOS/iPadOS 26 and macOS 26. The current Mac build supports Apple Silicon.
 
+- For an app-selected tmux session wider than the mobile terminal, support one-finger horizontal viewport panning through native tmux commands. Preserve shared window dimensions and other clients' viewports. Provide a return-to-cursor action, preserve selection and vertical scrolling, and discard pending pan input when the tab's input context ends.
+
 ## Purpose
 
 Provide a personal remote terminal on iPhone and iPad. Support the user's selected hosts from the Mac SSH configuration, including direct SSH and SSH through AWS Systems Manager. The app must connect independently of the Mac after setup.

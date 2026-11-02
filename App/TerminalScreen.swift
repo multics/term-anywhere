@@ -42,7 +42,7 @@ struct TerminalScreen: View {
         .sheet(isPresented: $session.selectingTmux) { TmuxSessionPicker(session: session).interactiveDismissDisabled() }
         .task { if !session.hasStarted { session.connect() } }
         .onChange(of: session.optionAsMeta) { _, value in session.terminal.optionAsMetaKey = value }
-        .onDisappear { session.floatingKeyInput.reset(); session.terminal.controlModifier = false; session.terminal.metaModifier = false }
+        .onDisappear { session.stopScrolling(); session.floatingKeyInput.reset(); session.terminal.controlModifier = false; session.terminal.metaModifier = false }
     }
 }
 
@@ -74,6 +74,9 @@ struct TerminalSidebarTools: View {
         }
         if !session.host.tmuxSession.isEmpty {
             DisclosureGroup("tmux controls") {
+                Button("Follow tmux cursor", systemImage: "scope") { session.panTmux(columns: 0) }
+                    .disabled(!session.isLive)
+                Text("Swipe sideways to view a wide tmux window without resizing it.")
                 Group {
                     ForEach(session.bindings?.shortcuts ?? []) { shortcut in
                         Button(shortcut.title + " · " + shortcut.keys) { session.send(shortcut.bytes) }

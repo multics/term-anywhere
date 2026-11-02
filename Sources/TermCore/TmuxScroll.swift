@@ -1,5 +1,45 @@
 import Foundation
 
+/// Read the PTY identity before exec replaces the shell with the tmux client.
+/// The random OSC marker is removed even when SSH splits it across reads.
+struct TmuxClientHandshake {
+    let token: String
+    private var buffered = Data()
+    private(set) var tty: String?
+    private(set) var complete = false
+    init(token: String = UUID().uuidString) { self.token = token }
+    var prefix: Data { Data("\u{1b}]777;term-anywhere-\(token);".utf8) }
+    var command: String { "printf '\\033]777;term-anywhere-\(token);%s\\007' \"$(tty)\"; " }
+    mutating func consume(_ data: Data) -> Data {
+        guard !complete else { return data }
+        buffered.append(data)
+        if let start = buffered.range(of: prefix) {
+            let before = Data(buffered[..<start.lowerBound])
+            if let end = buffered[start.upperBound...].firstIndex(of: 7) {
+                let value = String(decoding: buffered[start.upperBound..<end], as: UTF8.self)
+                if value.range(of: "^/dev/[A-Za-z0-9_./-]+$", options: .regularExpression) != nil { tty = value }
+                complete = true
+                let result = before + buffered[buffered.index(after: end)...]
+                buffered.removeAll(); return result
+            }
+            if buffered.count > 4096 { complete = true; let result = buffered; buffered.removeAll(); return result }
+            buffered = Data(buffered[start.lowerBound...]); return before
+        }
+        // Retain only a possible partial marker, never ordinary terminal output.
+        var keep = min(buffered.count, prefix.count - 1)
+        while keep > 0 && buffered.suffix(keep) != prefix.prefix(keep) { keep -= 1 }
+        let result = Data(buffered.prefix(buffered.count - keep))
+        buffered = Data(buffered.suffix(keep)); return result
+    }
+}
+
+enum TmuxViewport {
+    static func command(tmux: String, tty: String, columns: Int) -> String {
+        let move = columns == 0 ? "-c" : "\(columns > 0 ? "-R" : "-L") \(min(240, max(-240, columns).magnitude))"
+        return "\(tmux) refresh-client -t \(shellQuote(tty)) \(move)"
+    }
+}
+
 /// Resolve history ownership from tmux state, without inspecting application names or key bindings.
 public struct TmuxScroll: Equatable, Sendable {
     public let paneID: String

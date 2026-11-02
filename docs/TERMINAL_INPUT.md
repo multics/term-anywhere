@@ -18,13 +18,25 @@ Normal terminal history belongs to the local scroll view. A full-screen program 
 | Alternate screen outside tmux | Follow the terminal's Alternate Scroll mode; send cursor input only when that mode is enabled |
 | Normal shell without mouse reporting | Scroll local output with the native scroll view; send no keys to the shell |
 
-Keep horizontal drags out of the scroll handler. Keep tap-to-type and long-press selection. Preserve Chinese composition, one-shot modifiers, bracketed paste, and the keyboard hide/show control. A drag must not submit a command, navigate shell command history, or change global tmux options.
+In an app-selected tmux tab, a horizontal drag moves that client's viewport with `refresh-client -L/-R`. Lock the axis when the gesture starts. Do not send horizontal arrow keys or mouse-wheel events to the pane. Other tabs retain their existing horizontal gesture behavior. Keep tap-to-type and long-press selection. Preserve Chinese composition, one-shot modifiers, bracketed paste, and the keyboard hide/show control. A drag must not submit a command, navigate shell command history, or change global tmux options.
 
 When the remote program requests mouse input, a tap sends its cell coordinates as a press and release. The tap keeps a hidden keyboard hidden. With mouse mode off, use native tap-to-type. Long press opens the local selection menu; active local selection suppresses remote mouse input. Follow live mouse-mode changes instead of reading or changing the server's configuration file.
 
 Remote scroll requests must be bounded and serialized. Drop pending input when a tab closes, switches away, or loses its connection. Never replay scroll input after reconnection. Remote errors must leave the terminal available for keyboard input.
 
-## Validation
+## Wide tmux windows
+
+Keep the existing tmux window-size policy. Horizontal panning changes only the visible portion of the window for the app's client. It does not resize the window, change the desktop client's viewport, or detach other clients. Drag left to reveal columns on the right. Use **tmux controls → Follow tmux cursor** to restore automatic cursor tracking. tmux resets the viewport when its current window changes.
+
+Before starting tmux, the remote shell reports its PTY path in a one-time OSC marker with a random connection token. The SSH reader removes this marker across arbitrary read boundaries. The shell then uses `exec`, so tmux uses that same PTY. All viewport commands target this exact client, including when several devices use the same session. A missing identity produces a scrolling error rather than guessing a client. Plain-shell connections do not use this handshake.
+
+Coalesce movement for 40 ms and serialize remote requests. Clear pending movement on background, tab departure, disconnect, terminal input, or entry into pane resize mode. An already executing SSH request can finish; never replay queued movement on reconnect. Selection and explicit pane resize mode take priority over horizontal panning. Network round trips still affect redraw latency.
+
+Existing pane-border snapping rejects windows whose geometry does not match the local grid. This feature does not add pane-border resizing for oversized windows. Normal tmux mouse events retain client coordinates; tmux translates them to its viewport. Manually starting tmux inside a plain-shell tab does not enable this app-specific route.
+
+Reference: [tmux refresh-client](https://man.openbsd.org/tmux.1#refresh-client).
+
+## Validation history
 
 Check local history without transmitted bytes, mouse-wheel encoding and coordinates, application cursor mode, disabled alternate scrolling, text selection, and tmux routing. Check isolated tmux sessions with mouse on and off, a custom prefix, and independent panes. Confirm that closing or switching a tab clears pending scroll work. Use physical-device lifecycle tests and a real SSH/SSM check in addition to Simulator tests.
 
