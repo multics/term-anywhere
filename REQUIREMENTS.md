@@ -2,7 +2,7 @@
 
 Status: approved scope for implementation. Minimum OS: iOS/iPadOS 26 and macOS 26. The current Mac build supports Apple Silicon.
 
-- Fit app-selected tmux sessions to the smallest attached client so iPhone and iPad do not clip terminal lines. Keep local grids tied to device bounds, without resizing for keyboard/sidebar overlays. Remove horizontal viewport panning and its cursor-follow controls. Apply sizing to existing and newly selected windows, preserve unrelated sessions and existing hooks, and allow shared desktop views to reflow.
+- Fit app-selected tmux sessions to the most recently active client: mobile activation uses its dimensions, and desktop focus/input restores desktop dimensions while the phone remains connected. Keep local grids tied to device bounds, without resizing for keyboard/sidebar overlays. Remove horizontal viewport panning and its cursor-follow controls. Apply sizing to existing and newly selected windows, preserve unrelated sessions and existing hooks, and migrate the prior smallest rule so it cannot keep the desktop constrained.
 
 ## Purpose
 

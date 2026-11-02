@@ -233,6 +233,8 @@ The user authorized deletion and recreation after an old commit URL remained acc
 
 ## Feature 33: Fit tmux windows to mobile devices
 
+- Superseded sizing policy: Feature 34 replaces `smallest` with `latest` after the user clarified desktop/mobile switching. Removal of panning and the expanded keyboard remain in effect.
+
 - Request: Remove horizontal panning. iPhone and iPad must show terminal lines within their visible width.
 - Scope: Replace native viewport panning with automatic tmux sizing suitable for attached clients. Keep the local grid matched to device bounds and stable during keyboard/sidebar overlays. Shared tmux windows have shared dimensions, so fitting smaller clients can reflow the desktop view. Remove cursor-follow controls made unnecessary by this change.
 - Status: Implemented after feature 32; supersedes feature 31 horizontal panning.
@@ -245,3 +247,14 @@ The user authorized deletion and recreation after an old commit URL remained acc
 
 - The final status-line geometry regression passes on the physical iPad. Normal launch succeeds and process readback confirms TermAnywhere is running (PID 1483). The lock-related device validation blocker is resolved; no application code changed.
 - Evidence: `.build/device-fit-ipad-unlocked-test.log`, `.build/device-fit-ipad-unlocked-launch.log`, `.build/device-fit-ipad-unlocked-processes.log`.
+
+## Feature 34: Follow the active client's terminal size
+
+- Correction: `smallest` keeps the desktop small while a mobile client remains attached. The user requires mobile dimensions when using iPhone, and desktop dimensions when returning to the desktop, without disconnecting the phone.
+- Scope: Use native tmux `window-size latest` for the selected session. Migrate the exact old smallest hook to latest so switching/new windows cannot restore the rejected policy. Preserve other hooks, the expanded keyboard, and the removal of horizontal panning.
+- Acceptance: Reproduce smallest pinning; verify desktop/mobile alternation with both attached, reattachment, window switching, hook migration/idempotence, and unrelated-session preservation. Deploy to both devices before commit/push. Distinguish terminal input activity from focus-only activation if the desktop terminal does not report focus events.
+- Status: Implemented and installed on both devices. iPhone runtime validation remains blocked by lock; see device status below.
+- Implemented: Migrate exact old smallest hook entries in place and apply latest to existing windows. On attachment, appearance, and foreground resume, the visible live tmux tab sends a focus-in event so mobile size is reclaimed with the keyboard hidden. Hidden tabs and plain shells do not send this event. Do not change the desktop terminal or global focus settings.
+- Verified so far: 40 core tests and all 58 automated hosted Simulator checks pass (one opt-in manual test skipped). The isolated tmux check reproduces smallest pinning, then verifies mobile/desktop focus alternation without typing while all clients remain attached, input-driven restoration, new/window switching, migrated callbacks, and unrelated-session preservation. Evidence: `.build/latest-size-core.log`, `.build/latest-size-simulator.log`, `.build/latest-size-tmux.log`.
+- Device status: All 58 automated hosted iPad checks pass (one opt-in manual test skipped). Final signed build is installed on both iPad and iPhone 27. iPad normal launch and process readback pass (PID 1505). iPhone tests were cancelled while waiting for unlock, and its normal launch is explicitly denied because the phone is locked; neither is verified. Evidence: `.build/latest-size-ipad.log`, `.build/latest-size-iphone.log`, `.build/latest-size-{ipad,iphone}-install.log`, corresponding launch logs, and `.build/latest-size-ipad-processes.log`.
+- Next: Reconnect the affected tmux session once from either updated mobile device to migrate its existing smallest policy. Complete iPhone hosted checks and normal launch after unlock. Live desktop/mobile switching on the user's server and prior manual input checks remain separate from the isolated protocol tests.

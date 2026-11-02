@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check device fitting, reconnects and window switches on an isolated tmux server."""
+"""Check migration and desktop/mobile focus switching on an isolated tmux server."""
 import fcntl
 import os
 import pty
@@ -24,8 +24,8 @@ with tempfile.TemporaryDirectory(prefix='term-fit-') as folder:
                 except OSError: break
     def dimensions(target='fit:'):
         return tmux('display-message', '-p', '-t', target, '#{window_width}|#{window_height}|#{window-size}')
-    def expect(width, height):
-        expected = f'{width}|{height}|smallest'
+    def expect(width, height, policy="latest"):
+        expected = f'{width}|{height}|{policy}'
         deadline = time.monotonic() + 3
         while time.monotonic() < deadline:
             drain()
@@ -54,11 +54,33 @@ with tempfile.TemporaryDirectory(prefix='term-fit-') as folder:
         desktop, _ = attach(200, 40)
         ipad, ipad_slave = attach(100, 30)
         tmux('set-option', '-w', '-t', 'fit:', 'window-size', 'smallest')
+        expect(100, 30, 'smallest')
+        os.write(clients[0][1], b'\x1b[I')
+        time.sleep(.05); drain()
+        expect(100, 30, 'smallest')
+        print('REPRODUCED smallest keeps desktop at mobile size')
+        tmux('set-hook', '-t', 'fit', 'session-window-changed[1]', 'set-option -w window-size latest')
+        tmux('set-option', '-w', '-t', 'fit:', 'window-size', 'latest')
+        os.write(clients[1][1], b'\x1b[I')
         expect(100, 30)
         print('TMUX_FIT_OK desktop + iPad = 100x30')
         phone, phone_slave = attach(70, 24)
         expect(70, 24)
         print('TMUX_FIT_OK iPhone attaches = 70x24')
+        os.write(clients[0][1], b'\x1b[I')
+        time.sleep(.1); drain()
+        expect(200, 40)
+        print('TMUX_LATEST_OK desktop focus restores 200x40 while mobile remains attached')
+        os.write(clients[0][1], b'\x1b[D')
+        expect(200, 40)
+        print('DESKTOP_INPUT', dimensions())
+        os.write(clients[2][1], b'\x1b[I')
+        time.sleep(.1); drain()
+        expect(70, 24)
+        print('TMUX_LATEST_OK phone focus restores 70x24 without typing')
+        os.write(clients[1][1], b'\x1b[D')
+        expect(100, 30)
+
         tmux('detach-client', '-t', os.ttyname(phone_slave))
         expect(100, 30)
         print('TMUX_FIT_OK iPhone detaches = 100x30')

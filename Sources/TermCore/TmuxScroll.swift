@@ -4,7 +4,8 @@ import Foundation
 enum TmuxSizing {
     static let event = "session-window-changed"
     // tmux supplies the changed window as the hook command's target context.
-    static let fitHook = "set-option -w window-size smallest"
+    static let fitHook = "set-option -w window-size latest"
+    static let previousFitHook = "set-option -w window-size smallest"
     static func hooks(_ output: String) -> [(name: String, command: String)] {
         output.split(separator: "\n").compactMap { line in
             let fields = line.split(separator: " ", maxSplits: 1)
@@ -21,7 +22,13 @@ enum TmuxSizing {
         }
         let local = hooks(localHooks)
         var commands: [String] = []
-        if !local.contains(where: { $0.command == fitHook }) {
+        let previous = local.filter { $0.command == previousFitHook }
+        // Migrate the exact rule shipped by the prior app without replacing
+        // unrelated hook entries or leaving an old callback to undo latest.
+        commands += previous.map {
+            "\(tmux) set-hook -t \(shellQuote(sessionID)) \(shellQuote($0.name)) \(shellQuote(fitHook))"
+        }
+        if previous.isEmpty && !local.contains(where: { $0.command == fitHook }) {
             // A local hook shadows the inherited array. Copy its current entries
             // first, rather than silently suppressing the user's existing actions.
             if local.isEmpty {
@@ -31,7 +38,7 @@ enum TmuxSizing {
             }
             commands.append("\(tmux) set-hook -a -t \(shellQuote(sessionID)) \(event) \(shellQuote(fitHook))")
         }
-        commands += ids.map { "\(tmux) set-option -w -t \(shellQuote($0)) window-size smallest" }
+        commands += ids.map { "\(tmux) set-option -w -t \(shellQuote($0)) window-size latest" }
         return commands.joined(separator: " && ")
     }
 }

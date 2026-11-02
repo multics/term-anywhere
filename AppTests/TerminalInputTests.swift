@@ -5,6 +5,27 @@ import TermCore
 @testable import TermAnywhere
 
 @MainActor final class TerminalInputTests: XCTestCase {
+    func testOnlyTheVisibleLiveTmuxSessionCanClaimDeviceSize() throws {
+        let store = AppStore(); store.configuration.onChange = nil
+        let first = Host(name: "First", address: "example.invalid", tmuxSession: "first")
+        let second = Host(name: "Second", address: "example.invalid", tmuxSession: "second")
+        let plain = Host(name: "Plain", address: "example.invalid")
+        store.hosts = [first, second, plain]
+        defer { for host in [first, second, plain] { store.closeSession(host.id) } }
+        store.selectHost(first.id)
+        let firstSession = try XCTUnwrap(store.sessions[first.id])
+        XCTAssertFalse(firstSession.ownsTmuxFocus)
+        firstSession.isLive = true
+        XCTAssertTrue(firstSession.ownsTmuxFocus)
+        store.selectHost(second.id)
+        let secondSession = try XCTUnwrap(store.sessions[second.id]); secondSession.isLive = true
+        XCTAssertFalse(firstSession.ownsTmuxFocus)
+        XCTAssertTrue(secondSession.ownsTmuxFocus)
+        store.selectHost(plain.id)
+        store.sessions[plain.id]?.isLive = true
+        XCTAssertFalse(store.sessions[plain.id]!.ownsTmuxFocus)
+        XCTAssertFalse(secondSession.ownsTmuxFocus)
+    }
     func testExpandedKeyEncodingAndCombinedModifiers() {
         let cases: [(FloatingTerminalKey, String)] = [(.tab, "\t"), (.home, "\u{1b}[H"), (.end, "\u{1b}[F"),
             (.pageUp, "\u{1b}[5~"), (.pageDown, "\u{1b}[6~"), (.newline, "\n"), (.interrupt, "\u{3}")]

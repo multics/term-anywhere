@@ -238,6 +238,7 @@ struct TerminalContainer: UIViewControllerRepresentable {
         super.viewDidAppear(animated)
         session?.updateTerminalColors()
         session?.restoreKeyboardIfNeeded()
+        session?.activateTmuxClient()
     }
     override func viewWillDisappear(_ animated: Bool) { super.viewWillDisappear(animated); session?.floatingKeyInput.reset(); (terminal as? SafeTerminalView)?.setPaneResizeMode(false); terminal.controlModifier = false }
     func closeUI() {

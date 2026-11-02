@@ -203,6 +203,7 @@ import TermCore
                 do { try await c.fitTmuxWindows(for: host) }
                 catch { if generation == attempt { scrollStatus = "Terminal sizing: " + error.localizedDescription } }
                 guard generation == attempt, !Task.isCancelled else { return }
+                activateTmuxClient()
                 await refreshBindings()
             } catch {
                 guard generation == attempt, !Task.isCancelled else { return }
@@ -399,6 +400,7 @@ import TermCore
     }
     func resume() {
         endBackgroundTime(); requestedBackgroundTime = false
+        activateTmuxClient()
         guard wantsConnection else { return }
         if !isLive && !isConnecting { connect() }
         else if let connection {
@@ -411,6 +413,15 @@ import TermCore
                 }
             }
         }
+    }
+    /// tmux consumes terminal focus events even when the software keyboard is hidden.
+    /// Foregrounding this client must reclaim its size without sending a command key.
+    var ownsTmuxFocus: Bool {
+        isLive && !host.tmuxSession.isEmpty && store?.selectedHostID == host.id && store?.sessions[host.id] === self
+    }
+    func activateTmuxClient() {
+        guard ownsTmuxFocus, UIApplication.shared.applicationState == .active else { return }
+        connection?.send(Data("\u{1b}[I".utf8))
     }
     private func disconnectForNetworkLoss() {
         generation = UUID(); connection?.close(); connection = nil

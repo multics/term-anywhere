@@ -8,8 +8,8 @@ final class TmuxScrollTests: XCTestCase {
         XCTAssertTrue(command.contains("set-hook -t '$2' 'session-window-changed[3]' 'display-message hello'"))
         XCTAssertFalse(command.contains("display-message other"))
         XCTAssertTrue(command.contains("set-hook -a -t '$2' session-window-changed"))
-        XCTAssertTrue(command.contains("set-option -w -t '@3' window-size smallest"))
-        XCTAssertTrue(command.contains("set-option -w -t '@4' window-size smallest"))
+        XCTAssertTrue(command.contains("set-option -w -t '@3' window-size latest"))
+        XCTAssertTrue(command.contains("set-option -w -t '@4' window-size latest"))
         XCTAssertFalse(command.contains(" -g"))
     }
     func testFittingPreservesLocalHooksAndIsIdempotent() throws {
@@ -19,11 +19,22 @@ final class TmuxScrollTests: XCTestCase {
         XCTAssertFalse(first.contains("display-message local"), "Append without replacing existing local actions")
         let installed = existing + "\nsession-window-changed[1] " + TmuxSizing.fitHook
         let next = try TmuxSizing.command(tmux: "tmux", sessionID: "$2", windows: "@3", localHooks: installed, inheritedHooks: "")
-        XCTAssertEqual(next, "tmux set-option -w -t '@3' window-size smallest")
+        XCTAssertEqual(next, "tmux set-option -w -t '@3' window-size latest")
     }
     func testFittingRejectsMalformedTargets() {
         XCTAssertThrowsError(try TmuxSizing.command(tmux: "tmux", sessionID: "bad", windows: "@3", localHooks: "", inheritedHooks: ""))
         XCTAssertThrowsError(try TmuxSizing.command(tmux: "tmux", sessionID: "$2", windows: "@3; other", localHooks: "", inheritedHooks: ""))
+    }
+    func testOldSmallestHooksAreMigratedInPlaceWithoutTouchingOtherEntries() throws {
+        let hooks = "session-window-changed[0] display-message keep\n" +
+            "session-window-changed[3] \(TmuxSizing.previousFitHook)\n" +
+            "session-window-changed[7] \(TmuxSizing.previousFitHook)"
+        let command = try TmuxSizing.command(tmux: "tmux", sessionID: "$2", windows: "@3", localHooks: hooks, inheritedHooks: "")
+        XCTAssertTrue(command.contains("set-hook -t '$2' 'session-window-changed[3]' 'set-option -w window-size latest'"))
+        XCTAssertTrue(command.contains("set-hook -t '$2' 'session-window-changed[7]' 'set-option -w window-size latest'"))
+        XCTAssertFalse(command.contains("session-window-changed[0]"))
+        XCTAssertFalse(command.contains("set-hook -a"))
+        XCTAssertFalse(command.contains("smallest"))
     }
     func testShellHistoryUsesCopyModeInsteadOfArrowKeys() throws {
         let state = try TmuxScroll(state: "%3||0\n")
