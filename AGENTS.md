@@ -7,3 +7,4 @@
 - Distinguish draft code, passed tests, installed builds, and verified runtime behavior. Do not report a feature as delivered before deployment.
 - Track active requirements and incomplete checks in docs/DELIVERY_PLAN.md. A new request adds to the plan unless the user explicitly replaces an earlier requirement.
 - Keep the implementation small. Use native Apple controls and avoid extra frameworks or services without a concrete need.
+- After device tests, immediately launch Term Anywhere normally and leave it in the foreground. Run this launch even if tests fail or are interrupted, because the test runner may terminate the app. Verify launch before moving to other work; do not close the app afterward. Its active-state keep-awake behavior prevents avoidable lock interruptions.

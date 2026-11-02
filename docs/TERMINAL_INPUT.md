@@ -36,7 +36,7 @@ Validation uses `Scripts/check-tmux-sizing.py`: isolated desktop, iPad-sized and
 
 Reference: [tmux window-size](https://man.openbsd.org/tmux.1#window-size).
 
-Latest-client sizing validation: the isolated test first reproduces the old smallest pinning, then verifies desktop focus restores 200x40 while a 70x24 phone stays attached, and phone focus restores 70x24 without typing. Existing hook actions, window switching, and unrelated sessions remain intact. All 40 core tests and 58 automated hosted checks on Simulator and iPad pass. The final app is installed on both mobile devices and launched on iPad; iPhone tests and normal launch remain blocked by lock. A reconnect from an updated app migrates existing server rules.
+Latest-client sizing validation: the isolated test first reproduces the old smallest pinning, then verifies desktop focus restores 200x40 while a 70x24 phone stays attached, and phone focus restores 70x24 without typing. Existing hook actions, window switching, and unrelated sessions remain intact. All 40 core tests and 58 automated hosted checks on Simulator and iPad pass. The final app is installed on both mobile devices. After unlock, the iPhone also passes all 58 hosted checks, normal launch, and process readback. Both devices have completed normal-launch validation. Leave the app open after tests so its keep-awake behavior remains active. A reconnect from an updated app migrates existing server rules.
 
 Pane-border snapping accepts a window smaller than the local client. Use the actual tmux status-line count (`on`, `off`, or a numeric multi-line value) for top-status placement; unused rows from a smaller client are not status rows. Oversized windows remain rejected rather than guessing a border position.
 
