@@ -81,6 +81,7 @@ import TermCore
     init(host: TermCore.Host, store: AppStore) {
         self.host = host; self.store = store
         terminal = SafeTerminalView(frame: .zero)
+        (terminal as? SafeTerminalView)?.suppressVersionResponse = !host.tmuxSession.isEmpty
         floatingKeysVisible = UserDefaults.standard.object(forKey: "floatingKeys.visible") as? Bool ?? true
         (terminal as? SafeTerminalView)?.floatingInput = floatingKeyInput
         floatingKeyInput.paste = { [weak self] in self?.terminal.paste(nil) }
@@ -194,6 +195,7 @@ import TermCore
                 let attachOnly = try await prepareTmuxSession(using: c, forceSelection: forceSessionSelection)
                 guard generation == attempt, !Task.isCancelled else { c.close(); return }
                 (terminal as? SafeTerminalView)?.tmuxScrollHandler = host.tmuxSession.isEmpty ? nil : { [weak self] lines in self?.scrollTmux(lines: lines) }
+                (terminal as? SafeTerminalView)?.suppressVersionResponse = !host.tmuxSession.isEmpty
                 let t = terminal.getTerminal()
                 try await c.startTerminal(host: host, reconnecting: attachOnly, columns: t.cols, rows: t.rows)
                 guard generation == attempt, !Task.isCancelled else { c.close(); return }

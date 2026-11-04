@@ -3,6 +3,14 @@ import SwiftTerm
 
 /// Native keyboard and text selection with mouse input that follows the remote terminal mode.
 final class SafeTerminalView: TerminalView, UIGestureRecognizerDelegate {
+    // tmux can treat a late XTVERSION reply as pane input after its startup timeout.
+    // This optional identity response is separate from typed/pasted text.
+    var suppressVersionResponse = false
+    override func send(source: Terminal, data: ArraySlice<UInt8>) {
+        if suppressVersionResponse, data.starts(with: [0x1b, 0x50, 0x3e, 0x7c]),
+           data.suffix(2).elementsEqual([0x1b, 0x5c]) { return }
+        super.send(source: source, data: data)
+    }
     weak var floatingInput: FloatingKeyInput?
     override func insertText(_ text: String) {
         guard let input = floatingInput, input.enabled, !input.modifiers.isEmpty else { super.insertText(text); return }

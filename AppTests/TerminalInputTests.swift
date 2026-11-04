@@ -5,6 +5,25 @@ import TermCore
 @testable import TermAnywhere
 
 @MainActor final class TerminalInputTests: XCTestCase {
+    func testTmuxVersionResponseCannotBecomeShellInput() throws {
+        let store = AppStore(); store.configuration.onChange = nil
+        let tmux = TerminalSession(host: Host(name: "Tmux", address: "example.invalid", tmuxSession: "test"), store: store)
+        let plain = TerminalSession(host: Host(name: "Shell", address: "example.invalid"), store: store)
+        defer { tmux.disconnect(); plain.disconnect() }
+        let output = InputRecorder()
+        tmux.terminal.terminalDelegate = output
+        plain.terminal.terminalDelegate = output
+        plain.terminal.feed(text: "\u{1b}[>0q")
+        XCTAssertTrue(String(decoding: output.data, as: UTF8.self).contains("SwiftTerm"))
+        output.data = Data()
+        for fragment in ["\u{1b}[", ">", "0", "q"] { tmux.terminal.feed(text: fragment) }
+        XCTAssertTrue(output.data.isEmpty, "Optional tmux version replies must not enter the SSH input queue")
+        tmux.terminal.feed(text: "\u{1b}[6n")
+        XCTAssertEqual(String(decoding: output.data, as: UTF8.self), "\u{1b}[1;1R", "Cursor reports must still work")
+        output.data = Data()
+        tmux.terminal.send(txt: "SwiftTerm 1.20.0")
+        XCTAssertEqual(String(decoding: output.data, as: UTF8.self), "SwiftTerm 1.20.0", "User text must never be filtered")
+    }
     func testOnlyTheVisibleLiveTmuxSessionCanClaimDeviceSize() throws {
         let store = AppStore(); store.configuration.onChange = nil
         let first = Host(name: "First", address: "example.invalid", tmuxSession: "first")
