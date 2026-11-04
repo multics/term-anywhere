@@ -143,3 +143,7 @@ The palette header has four 44-point targets: drag handle, sidebar, keyboard, an
 ## Tmux version response
 
 For app-managed tmux sessions, omit the optional XTVERSION response from the terminal engine. tmux can forward a reply that arrives after its startup timeout into the active pane. Filter only the complete DCS version response in the engine callback, before it enters the SSH input queue. Do not filter typed or pasted text. Plain-shell identity replies and other terminal responses remain enabled. This prevents version text leakage at the cost of name-based terminal identification for these tmux clients; it does not remove terminal capabilities or change server settings.
+
+## Dark appearance
+
+The app, terminal, floating controls, and software keyboard use dark appearance. The system appearance and older synced System/Light preferences do not override it. Keep the stored appearance field readable for configuration compatibility, but remove the theme picker. Changing the device appearance must preserve terminal output and geometry.

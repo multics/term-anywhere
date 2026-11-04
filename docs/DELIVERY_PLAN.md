@@ -283,3 +283,12 @@ The user authorized deletion and recreation after an old commit URL remained acc
 - Status: Implemented, verified, and deployed to iPad and iPhone 27. No deployment blocker remains. Earlier manual input and live-server checks remain open.
 - Verified: Isolated tmux 3.8 reproduces delayed version-reply leakage and verifies that omission leaves only ordinary input in the pane. All 60 automated hosted checks pass on Simulator, iPad, and iPhone 27; one opt-in manual check is skipped. The regression verifies actual SwiftTerm response generation, split queries, plain-shell identification, cursor reports, and user text. Evidence: `.build/tmux-version-native.log`, `.build/tmux-version-simulator.log`, `.build/tmux-version-ipad.log`, `.build/tmux-version-iphone.log`.
 - Delivery: Signed test deployment, immediate normal launch, and process readback pass on both devices; apps left open. Evidence: `.build/tmux-version-{ipad,iphone}-launch.log` and `-processes.log`. The timeout mechanism is reproduced locally; session switching on the user's actual server still requires hands-on confirmation.
+
+## Feature 38: Dark appearance only
+
+- Request: Stop supporting light/system appearance because terminal content looks wrong; use dark mode only.
+- Scope: Force dark app presentation, terminal colors, native floating controls, keyboard, and launch appearance. Remove the theme picker. Read legacy synced appearance fields without applying them; preserve all other preferences.
+- Acceptance: System Light and legacy System/Light preferences keep the app dark and preserve terminal output. Run relevant hosted tests, deploy to iPad and iPhone 27, relaunch and leave open, then commit/push this feature.
+- Status: Implemented, verified, and deployed to both devices. Feature 37 remains open pending failing sizing behavior details.
+- Verified: All 60 automated hosted checks pass on Simulator, iPad, and iPhone 27 (one opt-in manual check skipped). Legacy System/Light/Dark preferences and system appearance changes keep terminal colors, keyboard, and palette dark without losing output. Inspected the iPad screenshot with a legacy Light preference. Evidence: `.build/dark-only-simulator.log`, `.build/dark-only-ipad.log`, `.build/dark-only-iphone.log`, `.build/dark-only-ipad-images`.
+- Delivery: Signed app installed on iPad and iPhone 27; immediate normal launch and process readback pass on both. Apps left open. Evidence: `.build/dark-only-{ipad,iphone}-launch.log` and `-processes.log`.

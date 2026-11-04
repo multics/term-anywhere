@@ -119,16 +119,12 @@ import TermCore
     }
     func applyPreferences(_ value: TerminalPreferences) {
         optionAsMeta = value.optionAsMeta; terminal.optionAsMetaKey = value.optionAsMeta
-        switch value.appearance {
-        case .system: terminal.overrideUserInterfaceStyle = .unspecified
-        case .light: terminal.overrideUserInterfaceStyle = .light
-        case .dark: terminal.overrideUserInterfaceStyle = .dark
-        }
+        terminal.overrideUserInterfaceStyle = .dark
         updateTerminalColors()
         if terminal.font.pointSize != value.fontSize { terminal.font = .monospacedSystemFont(ofSize: value.fontSize, weight: .regular) }
     }
     func updateTerminalColors() {
-        let style: UIUserInterfaceStyle = terminal.traitCollection.userInterfaceStyle == .dark ? .dark : .light
+        let style: UIUserInterfaceStyle = .dark
         guard terminalStyle != style else { return }
         terminalStyle = style
         let traits = UITraitCollection(userInterfaceStyle: style)
@@ -137,7 +133,7 @@ import TermCore
         terminal.caretColor = UIColor.systemTeal.resolvedColor(with: traits)
         terminal.caretTextColor = terminal.nativeBackgroundColor
         coordinator?.viewIfLoaded?.backgroundColor = terminal.nativeBackgroundColor
-        terminal.keyboardAppearance = style == .dark ? .dark : .light
+        terminal.keyboardAppearance = .dark
         if terminal.isFirstResponder { terminal.reloadInputViews() }
         terminal.setNeedsDisplay()
     }

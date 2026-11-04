@@ -161,6 +161,7 @@ struct TerminalContainer: UIViewControllerRepresentable {
     init(session: TerminalSession) { self.session = session; self.terminal = session.terminal; super.init(nibName: nil, bundle: nil) }
     required init?(coder: NSCoder) { fatalError("init(coder:) is unavailable") }
     override func loadView() {
+        overrideUserInterfaceStyle = .dark
         view = UIView(); view.backgroundColor = terminal.nativeBackgroundColor
         view.clipsToBounds = true
         terminal.removeFromSuperview(); terminal.terminalDelegate = self

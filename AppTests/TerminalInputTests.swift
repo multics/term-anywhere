@@ -549,7 +549,7 @@ import TermCore
         try await Task.sleep(for: .milliseconds(600))
         XCTAssertEqual(session.terminal.bounds.size, size)
     }
-    func testTerminalAppearanceChangesWithoutLosingOutput() async throws {
+    func testTerminalStaysDarkAcrossLegacyPreferencesAndSystemChanges() async throws {
         let store = AppStore()
         // This fixture applies preferences directly; live iCloud delivery must not replace them.
         store.configuration.onChange = nil
@@ -568,24 +568,27 @@ import TermCore
         }
         let before = output()
         var value = TerminalPreferences()
-        for appearance in [AppAppearance.dark, .light] {
+        for appearance in [AppAppearance.dark, .light, .system] {
             value.appearance = appearance; session.applyPreferences(value)
-            let traits = UITraitCollection(userInterfaceStyle: appearance == .dark ? .dark : .light)
+            let traits = UITraitCollection(userInterfaceStyle: .dark)
             for _ in 0..<20 {
                 if session.terminal.nativeBackgroundColor == UIColor.systemBackground.resolvedColor(with: traits) { break }
                 try await Task.sleep(for: .milliseconds(50))
             }
             XCTAssertEqual(session.terminal.nativeBackgroundColor, UIColor.systemBackground.resolvedColor(with: traits))
             XCTAssertEqual(session.terminal.nativeForegroundColor, UIColor.label.resolvedColor(with: traits))
+            XCTAssertEqual(session.terminal.keyboardAppearance, .dark)
+            XCTAssertEqual(controller.keyPalette.traitCollection.userInterfaceStyle, .dark)
+            XCTAssertEqual(store.colorScheme, .dark)
             XCTAssertEqual(output(), before)
             let image = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in window.drawHierarchy(in: window.bounds, afterScreenUpdates: true) }
-            let attachment = XCTAttachment(image: image); attachment.name = appearance.title + " terminal"; attachment.lifetime = .keepAlways; add(attachment)
+            let attachment = XCTAttachment(image: image); attachment.name = "Dark terminal with legacy " + appearance.title + " preference"; attachment.lifetime = .keepAlways; add(attachment)
         }
         value.appearance = .system; session.applyPreferences(value)
         for style in [UIUserInterfaceStyle.dark, .light] {
             window.overrideUserInterfaceStyle = style
             try await Task.sleep(for: .milliseconds(100))
-            XCTAssertEqual(session.terminal.nativeBackgroundColor, UIColor.systemBackground.resolvedColor(with: UITraitCollection(userInterfaceStyle: style)))
+            XCTAssertEqual(session.terminal.nativeBackgroundColor, UIColor.systemBackground.resolvedColor(with: UITraitCollection(userInterfaceStyle: .dark)))
         }
         XCTAssertEqual(output(), before)
     }

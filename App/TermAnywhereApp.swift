@@ -35,9 +35,7 @@ import TermCore
     @Published var awsNames: [String] = []
     @Published var error: String?
     @Published private(set) var preferences = TerminalPreferences()
-    var colorScheme: ColorScheme? {
-        switch preferences.appearance { case .system: nil; case .light: .light; case .dark: .dark }
-    }
+    var colorScheme: ColorScheme { .dark }
     @Published var credentialSyncIssues: [String] = []
     @Published var credentialStorage: [String: CredentialStorage] = [:]
     let vault = KeychainStore(
