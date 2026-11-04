@@ -510,7 +510,16 @@ import TermCore
     }
     func testHostsSidebarDoesNotResizeTerminal() async throws {
         let store = AppStore(); store.configuration.onChange = nil
-        let host = Host(name: "Production", address: "example.invalid", username: "fixture", keyID: "missing-fixture", tmuxSession: "codex")
+        var host = Host(name: "Production", address: "example.invalid", username: "fixture", keyID: "missing-fixture", tmuxSession: "codex")
+        host.tmuxSelectionMade = true
+        // Remove only the screenshot fixtures saved by earlier versions of this test.
+        for record in store.configuration.state.hosts.values where record.deleted != true {
+            let fixture = record.value
+            if fixture.name == "Production", fixture.address == "example.invalid",
+               fixture.keyID == "missing-fixture", fixture.tmuxSession == "codex" {
+                try store.configuration.removeHost(fixture.id)
+            }
+        }
         let other = Host(name: "Development", address: "example.invalid", username: "fixture")
         store.hosts = [host, other]
         let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
