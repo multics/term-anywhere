@@ -52,40 +52,33 @@ private struct SideControlButtonStyle: ButtonStyle {
 
 struct TerminalSidebarTools: View {
     @ObservedObject var session: TerminalSession
-    let onDisconnect: () -> Void
+    let showTerminal: Bool
+    let toggleKeyboard: () -> Void
     var body: some View {
-        Section("Connection") {
-            Button("Disconnect", systemImage: "xmark.circle") { onDisconnect() }
-            Button("Previous tab", systemImage: "chevron.left") { session.store?.stepTab(for: session.host.id, by: -1) }.keyboardShortcut(.leftArrow, modifiers: [.command, .option])
-            Button("Next tab", systemImage: "chevron.right") { session.store?.stepTab(for: session.host.id, by: 1) }.keyboardShortcut(.rightArrow, modifiers: [.command, .option])
-        }
-        Section("Terminal") {
-            Toggle("Floating keys", isOn: Binding(get: { session.floatingKeysVisible }, set: session.setFloatingKeysVisible))
-                .accessibilityIdentifier("terminal.floatingKeys.toggle")
-            if let message = session.scrollStatus { Text(message) }
-            Button(session.keyboardVisible ? "Hide keyboard" : "Show keyboard", systemImage: "keyboard") { session.toggleKeyboard() }
-            Button("Larger text", systemImage: "textformat.size.larger") { session.changeFontSize(by: 1) }
-            Button("Smaller text", systemImage: "textformat.size.smaller") { session.changeFontSize(by: -1) }
-            Toggle("Option as Meta", isOn: Binding(get: { session.optionAsMeta }, set: { session.setOptionAsMeta($0) }))
-        }
-        if !session.host.tmuxSession.isEmpty {
-            DisclosureGroup("tmux controls") {
-                Group {
-                    ForEach(session.bindings?.shortcuts ?? []) { shortcut in
-                        Button(shortcut.title + " · " + shortcut.keys) { session.send(shortcut.bytes) }
-                            .disabled(!session.isLive)
-                    }
+        if showTerminal {
+            Section("Terminal") {
+                Button(session.keyboardVisible ? "Hide keyboard" : "Show keyboard", systemImage: "keyboard", action: toggleKeyboard)
+                Button("Larger text", systemImage: "textformat.size.larger") { session.changeFontSize(by: 1) }
+                Button("Smaller text", systemImage: "textformat.size.smaller") { session.changeFontSize(by: -1) }
+                Toggle("Option as Meta", isOn: Binding(get: { session.optionAsMeta }, set: { session.setOptionAsMeta($0) }))
+            }
+        } else if !session.host.tmuxSession.isEmpty {
+            Section("Shortcuts") {
+                ForEach(session.bindings?.shortcuts ?? []) { shortcut in
+                    Button(shortcut.title + " · " + shortcut.keys) { session.send(shortcut.bytes) }
+                        .disabled(!session.isLive)
                 }
-                Group {
-                    Text("Double-tap to resize panes, then drag a border with one finger. Requires tmux mouse mode.")
-                    Text(session.bindingsStatus)
-                    if let prefix = session.prefixBytes {
-                        Button("Send prefix") { session.send(prefix) }.disabled(!session.isLive)
-                    }
-                    Button("Refresh shortcuts", systemImage: "arrow.clockwise") {
-                        Task { await session.refreshBindings() }
-                    }.disabled(!session.isLive)
+                if let prefix = session.prefixBytes {
+                    Button("Send prefix") { session.send(prefix) }.disabled(!session.isLive)
                 }
+                Button("Refresh shortcuts", systemImage: "arrow.clockwise") {
+                    Task { await session.refreshBindings() }
+                }.disabled(!session.isLive)
+            }
+            Section {
+                Text("Double-tap to resize panes, then drag a border with one finger. Requires tmux mouse mode.")
+                Text(session.bindingsStatus)
+                if let message = session.scrollStatus { Text(message) }
             }
         }
     }

@@ -7,7 +7,9 @@ struct HostListView: View {
     @State private var columnVisibility: NavigationSplitViewVisibility = .detailOnly
     @State private var compactColumn: NavigationSplitViewColumn = .sidebar
     @State private var sidebarPath = NavigationPath()
+    @State private var expandedHosts: Set<UUID> = []
     @State private var search = ""
+    @State private var searching = false
     @State private var editing: Host?
     @State private var credentials = false
     @State private var importing = false
@@ -17,56 +19,71 @@ struct HostListView: View {
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility, preferredCompactColumn: $compactColumn) {
             NavigationStack(path: $sidebarPath) {
-            List(selection: Binding(get: { store.selectedHostID }, set: { store.selectHost($0) })) {
+            List {
+                if searching {
+                    TextField("Find a connection", text: $search)
+                        .textInputAutocapitalization(.never).autocorrectionDisabled()
+                        .accessibilityIdentifier("workspace.search")
+                }
                 if let selected = store.selectedHostID, let session = store.sessions[selected] {
-                    SidebarSessionRows(store: store, hostID: selected, dismiss: closeSidebar)
-                    TerminalSidebarTools(session: session, onDisconnect: { store.closeTab(session) })
+                    WorkspaceCurrentTerminal(session: session).id(session.id)
                 }
-                if store.hosts.isEmpty {
-                    ContentUnavailableView("No hosts yet", systemImage: "terminal", description: Text("Add a host or import selected connections from your Mac."))
-                        .listRowBackground(Color.clear)
-                    Button("Add a host", systemImage: "plus") { editing = Host() }
-                    Button("Import connections", systemImage: "square.and.arrow.down") { importing = true }
-                }
-                ForEach(store.hosts.filter { search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) }) { host in
-                    NavigationLink(value: host.id) {
-                        HStack(spacing: 12) {
-                            Image(systemName: host.isSSM ? "cloud" : "terminal").foregroundStyle(.tint).frame(width: 24)
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(host.name).font(.headline)
-                                Text(host.sessionLabel).font(.caption).foregroundStyle(.secondary)
-                                Text("\(host.username) · \(host.isSSM ? "AWS SSM" : "SSH")").font(.caption).foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            if store.tabs[host.id]?.contains(where: { $0.isLive }) == true { Image(systemName: "circle.fill").font(.system(size: 7)).foregroundStyle(.green).accessibilityLabel("Connected") }
-                        }.padding(.vertical, 5)
+                Section {
+                    if store.hosts.isEmpty {
+                        ContentUnavailableView("No connections yet", systemImage: "terminal", description: Text("Add a connection or import connections from your Mac."))
+                            .listRowBackground(Color.clear)
+                        Button("Add connection", systemImage: "plus") { editing = Host() }
+                        Button("Import connections", systemImage: "square.and.arrow.down") { importing = true }
                     }
-                    .modifier(HostRowActions(host: host, edit: { editing = host }, remove: {
-                        do { try store.removeHost(host.id) } catch { store.error = error.localizedDescription }
-                    }, duplicate: { editing = host.duplicate() }, disconnect: store.tabs[host.id]?.contains(where: { $0.canDisconnect }) == true ? { store.closeSession(host.id) } : nil))
+                    ForEach(store.hosts.filter { search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) }) { host in
+                        connectionRow(host)
+                    }
+                    .onMove { offsets, destination in store.moveHosts(from: offsets, to: destination) }
+                    .moveDisabled(!search.isEmpty)
+                } header: {
+                    HStack {
+                        Text("Connections")
+                        Spacer()
+                        Button(editMode.isEditing ? "Done" : "Reorder") {
+                            search = ""; editMode = editMode.isEditing ? .inactive : .active
+                        }.disabled(store.hosts.count < 2 && !editMode.isEditing)
+                    }
                 }
-                .onMove { offsets, destination in store.moveHosts(from: offsets, to: destination) }
-                .moveDisabled(!search.isEmpty)
             }
-            .navigationDestination(for: Bool.self) { create in
-                if let selected = store.selectedHostID, let source = store.sessions[selected] {
-                    ServerSessionBrowser(store: store, source: source, createOnly: create, dismiss: closeSidebar)
+            .listStyle(.plain)
+            .listSectionSpacing(8)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                HStack {
+                    Button("Credentials", systemImage: "key") { credentials = true }
+                    Spacer()
+                    Button("Settings", systemImage: "gear") { settings = true }
+                }
+                .font(.subheadline).buttonStyle(.borderless)
+                .frame(minHeight: 44).padding(.horizontal, 16)
+                .background(.bar)
+            }
+            .navigationDestination(for: WorkspaceSessionRoute.self) { route in
+                if let source = store.sessions[route.hostID] {
+                    ServerSessionBrowser(store: store, source: source, createOnly: route.create) {
+                        store.selectHost(route.hostID); closeSidebar()
+                    }
                 }
             }
             .environment(\.editMode, $editMode)
-            .navigationTitle("Hosts")
-            .searchable(text: $search, prompt: "Find a server")
+            .navigationTitle("Workspace")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                if editMode.isEditing { ToolbarItem(placement: .confirmationAction) { Button("Done") { editMode = .inactive } } }
-                ToolbarItem(placement: .topBarLeading) { Button("Keys and AWS", systemImage: "key") { credentials = true } }
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(searching ? "Close search" : "Find a connection", systemImage: searching ? "xmark" : "magnifyingglass") {
+                        searching.toggle()
+                        if !searching { search = "" }
+                    }
+                }
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
-                        Button("Add host", systemImage: "plus") { editing = Host() }
+                        Button("Add connection", systemImage: "plus") { editing = Host() }
                         Button("Import connections", systemImage: "square.and.arrow.down") { importing = true }
-                        Button("Reorder hosts", systemImage: "arrow.up.arrow.down") { search = ""; editMode = .active }.disabled(store.hosts.count < 2)
-                        Divider()
-                        Button("Settings and iCloud", systemImage: "gear") { settings = true }
-                    } label: { Label("Add", systemImage: "plus") }
+                    } label: { Label("Add connection", systemImage: "plus") }
                 }
             }
             }
@@ -84,9 +101,11 @@ struct HostListView: View {
         .task {
             // Apply initial visibility after the native split view has mounted.
             await Task.yield()
-            if store.selectedHostID == nil { columnVisibility = .all }
+            if let selected = store.selectedHostID { expandedHosts.insert(selected) }
+            else { columnVisibility = .all }
         }
         .onChange(of: store.selectedHostID) { _, id in
+            if let id { expandedHosts.insert(id) }
             compactColumn = id == nil ? .sidebar : .detail
             columnVisibility = id == nil ? .all : .detailOnly
         }
@@ -109,6 +128,73 @@ struct HostListView: View {
         }
         .overlay { if scenePhase == .background { Color(.systemBackground).ignoresSafeArea().overlay { Image(systemName: "terminal").font(.largeTitle) } } }
     }
+    private func connectionRow(_ host: Host) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 4) {
+                Button {
+                    if expandedHosts.contains(host.id) { expandedHosts.remove(host.id) }
+                    else { expandedHosts.insert(host.id) }
+                } label: {
+                    Image(systemName: expandedHosts.contains(host.id) ? "chevron.down" : "chevron.right")
+                        .font(.caption.weight(.semibold)).frame(width: 44, height: 44)
+                }
+                .accessibilityLabel("\(expandedHosts.contains(host.id) ? "Collapse" : "Expand") \(host.name)")
+                .accessibilityIdentifier("workspace.expand.\(host.id)")
+                Button {
+                    store.selectHost(host.id); expandedHosts.insert(host.id); closeSidebar()
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(host.name).font(.headline).foregroundStyle(.primary)
+                            Text("\(host.username) · \(host.isSSM ? "AWS SSM" : "SSH")").font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer(minLength: 4)
+                        if let tabs = store.tabs[host.id], !tabs.isEmpty {
+                            Text("\(tabs.count) open").font(.caption).foregroundStyle(.secondary)
+                        }
+                        if store.tabs[host.id]?.contains(where: { $0.isLive }) == true {
+                            Image(systemName: "circle.fill").font(.system(size: 7)).foregroundStyle(.green).accessibilityLabel("Connected")
+                        }
+                    }.frame(minHeight: 44).contentShape(Rectangle())
+                }.accessibilityIdentifier("workspace.host.\(host.id)")
+            }
+            .buttonStyle(.borderless)
+            .modifier(HostRowActions(host: host, edit: { editing = host }, remove: {
+                do { try store.removeHost(host.id) } catch { store.error = error.localizedDescription }
+            }, duplicate: { editing = host.duplicate() }, disconnect: store.tabs[host.id]?.contains(where: { $0.canDisconnect }) == true ? { store.closeSession(host.id) } : nil))
+            if expandedHosts.contains(host.id), !editMode.isEditing {
+                ForEach(store.tabs[host.id] ?? [], id: \.id) { tab in
+                    HStack {
+                        Button {
+                            store.activateTab(tab); closeSidebar()
+                        } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(tab.host.sessionLabel).foregroundStyle(.primary)
+                                    Text(tab.status).font(.caption).foregroundStyle(tab.error == nil ? Color.secondary : .red)
+                                }
+                                Spacer()
+                                if store.selectedHostID == host.id && store.sessions[host.id] === tab {
+                                    Image(systemName: "checkmark").accessibilityLabel("Current session")
+                                }
+                            }.frame(minHeight: 44).contentShape(Rectangle())
+                        }.accessibilityIdentifier("workspace.session.\(tab.id)")
+                        Button { store.closeTab(tab) } label: { Image(systemName: "xmark").frame(width: 44, height: 44) }
+                            .accessibilityLabel("Close \(tab.host.sessionLabel) tab")
+                    }.buttonStyle(.borderless).padding(.leading, 44)
+                }
+                if let source = store.sessions[host.id] {
+                    HStack {
+                        Button("Open session…") { sidebarPath.append(WorkspaceSessionRoute(hostID: host.id, create: false)) }
+                        Spacer()
+                        Button("New…") { sidebarPath.append(WorkspaceSessionRoute(hostID: host.id, create: true)) }
+                    }.font(.subheadline).buttonStyle(.borderless).frame(minHeight: 44).padding(.leading, 44).disabled(!source.isLive)
+                } else {
+                    Text("Select this connection to open a terminal.").font(.caption).foregroundStyle(.secondary).padding(.leading, 44)
+                }
+            }
+        }
+    }
     private func closeSidebar() {
         sidebarPath = NavigationPath()
         guard store.selectedHostID != nil else { columnVisibility = .all; compactColumn = .sidebar; return }
@@ -117,4 +203,9 @@ struct HostListView: View {
         DispatchQueue.main.async { session?.restoreKeyboardIfNeeded() }
     }
 
+}
+
+private struct WorkspaceSessionRoute: Hashable {
+    let hostID: UUID
+    let create: Bool
 }

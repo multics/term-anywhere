@@ -120,6 +120,13 @@ import TermCore
         }
         return addTab(host: host, create: create)
     }
+    /// Workspace rows can target an open tab on a different host.
+    func activateTab(_ session: TerminalSession) {
+        guard hosts.contains(where: { $0.id == session.host.id }),
+              tabs[session.host.id]?.contains(where: { $0 === session }) == true else { return }
+        selectHost(session.host.id)
+        selectTab(session)
+    }
     func selectTab(_ session: TerminalSession) {
         guard tabs[session.host.id]?.contains(where: { $0 === session }) == true else { return }
         if let previous = sessions[session.host.id], previous !== session {

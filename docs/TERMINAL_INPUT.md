@@ -124,7 +124,7 @@ Do not make a one-finger pan wait for the two-finger mouse-drag recognizer to fa
 
 ## Toolbar-free terminal
 
-The detail view hides its navigation bar. The floating key palette header opens Hosts and sessions or toggles the keyboard. When the palette is hidden or the connection is not live, a small sidebar button remains. The sidebar can restore the palette and show the keyboard. The sidebar contains the current host's open tabs, server-session discovery and creation, Disconnect, terminal preferences, and tmux controls. Server-session navigation stays inside the sidebar. The existing prominent-detail split view overlays the terminal without changing its grid. Pane resize mode has a temporary floating exit button.
+The detail view hides its navigation bar. The floating key palette header opens Hosts and sessions or toggles the keyboard. When the palette is hidden or the connection is not live, a small sidebar button remains. The sidebar can restore the palette and show the keyboard. The Workspace sidebar separates current-terminal actions, saved connections with their open sessions, and fixed Credentials/Settings entries. Terminal preferences and tmux controls open in sheets. The header plus menu only adds or imports connections. Server-session navigation stays inside the sidebar. The existing prominent-detail split view overlays the terminal without changing its grid. Pane resize mode has a temporary floating exit button.
 
 ## Floating keys
 
@@ -147,3 +147,7 @@ For app-managed tmux sessions, omit the optional XTVERSION response from the ter
 ## Dark appearance
 
 The app, terminal, floating controls, and software keyboard use dark appearance. The system appearance and older synced System/Light preferences do not override it. Keep the stored appearance field readable for configuration compatibility, but remove the theme picker. Changing the device appearance must preserve terminal output and geometry.
+
+Workspace disclosure arrows expand a connection without selecting it. Session rows activate the exact tab and host, then close the sidebar. Open/New session actions carry the host ID through navigation, so they cannot target a different current host. Reordering operates on whole connections and clears search first. Disconnect is first in the current-terminal menu; host edit, duplicate, remove, and disconnect-all remain in row actions. Keyboard toggling from the Terminal sheet runs after dismissal so the sheet does not retain input focus.
+
+Workspace search is opened with the magnifying-glass toolbar button and cleared when closed. Compact native list spacing preserves room for connections in iPhone landscape. The current-terminal strip contains previous/next, Terminal settings, tmux controls when applicable, and an accessible selected-state Floating keys button. Credentials and Settings stay outside the scrolling list at the bottom.

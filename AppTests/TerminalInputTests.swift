@@ -510,8 +510,9 @@ import TermCore
     }
     func testHostsSidebarDoesNotResizeTerminal() async throws {
         let store = AppStore(); store.configuration.onChange = nil
-        let host = Host(name: "Sidebar fixture", address: "example.invalid", username: "fixture", keyID: "missing-fixture")
-        store.hosts = [host]
+        let host = Host(name: "Production", address: "example.invalid", username: "fixture", keyID: "missing-fixture", tmuxSession: "codex")
+        let other = Host(name: "Development", address: "example.invalid", username: "fixture")
+        store.hosts = [host, other]
         let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
         let window = UIWindow(windowScene: scene)
         let root = UIHostingController(rootView: HostListView().environmentObject(store).environment(\.scenePhase, .active))
@@ -521,6 +522,8 @@ import TermCore
         store.selectHost(host.id)
         let session = try XCTUnwrap(store.sessions[host.id]); session.hasStarted = true; session.isLive = true
         try await Task.sleep(for: .milliseconds(1500))
+        let logs = try store.openTab(from: session, name: "logs"); logs.hasStarted = true
+        store.selectTab(session)
         session.hideKeyboard()
         try await Task.sleep(for: .milliseconds(500))
         func split(in controller: UIViewController) -> UISplitViewController? {

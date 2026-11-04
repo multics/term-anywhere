@@ -13,6 +13,28 @@ import TermCore
         session.hasStarted = true
         return (store, session)
     }
+    func testWorkspaceActivatesExactTabAcrossHostsAndIgnoresClosedTabs() throws {
+        let (store, dev) = fixture()
+        let otherHost = Host(name: "Other", address: "example.invalid", tmuxSession: "other")
+        store.hosts.append(otherHost)
+        defer { store.closeSession(dev.host.id); store.closeSession(otherHost.id) }
+        let logs = try store.openTab(from: dev, name: "logs"); logs.hasStarted = true
+        logs.terminal.feed(text: "LOG OUTPUT")
+        store.selectHost(otherHost.id)
+        let other = try XCTUnwrap(store.sessions[otherHost.id]); other.hasStarted = true
+        store.activateTab(dev)
+        XCTAssertEqual(store.selectedHostID, dev.host.id)
+        XCTAssertTrue(store.sessions[dev.host.id] === dev)
+        XCTAssertTrue(store.sessions[otherHost.id] === other)
+        store.activateTab(logs)
+        XCTAssertTrue(store.sessions[dev.host.id] === logs)
+        XCTAssertTrue(buffer(logs).contains("LOG OUTPUT"))
+        store.closeTab(logs)
+        store.activateTab(other)
+        store.activateTab(logs)
+        XCTAssertEqual(store.selectedHostID, otherHost.id, "A stale session row must not reopen a closed tab")
+        XCTAssertEqual(store.tabs[dev.host.id]?.count, 1)
+    }
     func testTabsRetainIndependentBuffersAndReuseOpenSessions() throws {
         let (store, dev) = fixture(); defer { store.closeSession(dev.host.id) }
         dev.terminal.feed(text: "DEV OUTPUT\r\n")
